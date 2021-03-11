@@ -1,4 +1,5 @@
 #pragma once
+#include <cstring>
 #include <cstdint>
 #include <iostream>
 #pragma warning(disable:4996)
@@ -19,7 +20,9 @@ private:
 	bool CheckStartCode(int& startCodeLen, uint8_t* bufPtr, int bufLen,int slice);
 	int ReadFromFile();
 
-	uint8_t** naluBuffer;
+	void getNaluHeader(uint8_t byte);
+
+
 	FILE* f = nullptr;
 
 	typedef struct _NaluUnit

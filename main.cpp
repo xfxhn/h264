@@ -1,39 +1,73 @@
-//#include "AnnexBReader.h"
-using namespace std;
-#include <cstdlib>
-#include <iostream>
 #include "AnnexBReader.h"
-
+#include "BitStream.h"
+//#include <cstdlib>
+//#include <iostream>
+//#include "AnnexBReader.h"
+//using namespace std;
 // NALUµ¥Ôª
 
-typedef struct _NaluUnit
-{
-	int type;
-	int size;
-	uint8_t* data;
-}NaluUnit;
 
 int main()
 {
-	AnnexBReader reader;
 
-	bool isOpen = reader.open("./demo.h264");
+	/*const uint32_t size = 1024 * 1024;
+	int* a = new int[20];
 
-	/*NaluUnit bbb[1024];
+	FILE* f = fopen("./demo.h264", "rb");
+	if (f == nullptr) {
+		return false;
+	}
 
-	uint8_t data[3] = { 22,44,'\0'};
+	uint8_t* buffer = new uint8_t[size];
+	memset(buffer, 0, size);
+	uint32_t count;
 
-	NaluUnit aaa;
 	
-	uint8_t* ccc = new uint8_t[3];
+	while ((count = fread(buffer, 1, size, f)) > 0)
+	{
+		cout << count << endl;
+		
+		if (count < size)
+			break;
 
-	memcpy(ccc,&data,3);
+	} 
 
 
-	aaa.data = ccc;
-	bbb[0] = aaa;
+	cout << _msize(buffer) << endl;
+	cout << sizeof(buffer) << endl;*/
 
-	cout << aaa.data[3] << endl;*/
+
+	/*AnnexBReader reader;
+
+	bool isOpen = reader.open("./demo.h264");*/
+
+
+
+	uint8_t* a = new uint8_t[5];
+
+	/*for (size_t i = 0; i < 5; i++)
+	{
+		a[i] = 10 + i;
+	}*/
+
+	a[0] = 9;
+	a[1] = 33;
+
+
+	BitStream bit(a, 5);
+
+
+	//uint16_t b= bit.readMultiBit(4);
+
+	/*for (size_t i = 0; i < 8; i++)
+	{
+		int b = bit.readBit();
+		cout << b << endl;
+	}*/
+	int b = bit.readUE();
+	//int b = bit.readMultiBit(4);
+	cout << b << endl;
+
 ;	return EXIT_SUCCESS;
 }
 
