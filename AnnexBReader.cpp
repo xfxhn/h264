@@ -12,6 +12,7 @@ bool AnnexBReader::open(const char *filePath)
 {
 	f = fopen(filePath, "rb");
     if (f == nullptr) {
+        cout << "打开失败" << endl;
         return false;
     }
 
@@ -186,36 +187,12 @@ void AnnexBReader::getNaluHeader(uint8_t* buffer,int size)
             slice = nullptr;
         }
 
-      
-       /* for (size_t i = 0; i < ppsCache.size(); i++)
-        {
-            delete ppsCache[i];
-        }
-        ppsCache.clear();*/
         
         BitStream bs(buffer + 1, size);
 
-
-      /*  for (vector<ParseSPS*>::iterator it = spsCache.begin(); it != spsCache.end(); it++)
-        {
-            if (*it->)
-            {
-
-            }
-        }*/
         slice = new ParseSlice(nal_unit_type);
         slice->slice_header(bs, ppsCache, spsCache);
-        for (size_t i = 0; i < ppsCache.size(); i++)
-        {
-            delete ppsCache[i];
-        }
-        ppsCache.clear();
-        for (size_t i = 0; i < spsCache.size(); i++)
-        {
-            delete spsCache[i];
-        }
-        spsCache.clear();
-        cout << ppsCache.size() << endl;
+       
         break;
     }
     case NaluType::H264_NAL_SEI: //6
@@ -225,27 +202,27 @@ void AnnexBReader::getNaluHeader(uint8_t* buffer,int size)
     case NaluType::H264_NAL_SPS: //7
     {
         //ParseSPS sps;
-        
         BitStream bs(buffer + 1, size);
-        ParseSPS* sps = new ParseSPS;
-        bool ret = sps->seq_parameter_set_data(bs);
+        ParseSPS sps;
+        bool ret = sps.seq_parameter_set_data(bs);
 
-
+        spsCache[sps.seq_parameter_set_id] = sps;
         //spsCache[pps->seq_parameter_set_id] = sps;
-        spsCache.push_back(sps);
+        //spsCache.push_back(sps);
         break;
     }
     case NaluType::H264_NAL_PPS: //8
     {
         //ParsePPS pps;
        
-        ParsePPS *pps = new ParsePPS;
+        ParsePPS pps;
+
         BitStream bs(buffer + 1, size);
 
-        bool ret = pps->pic_parameter_set_rbsp(bs);
+        bool ret = pps.pic_parameter_set_rbsp(bs);
 
-        //ppsCache[pps->pic_parameter_set_id] = pps;
-        ppsCache.push_back(pps);
+        ppsCache[pps.pic_parameter_set_id] = pps;
+        //ppsCache.push_back(pps);
         
         break;
     }
@@ -349,11 +326,11 @@ size_t AnnexBReader::unescape(uint8_t* src, uint32_t length)
 //扩展档次：extended profile;
 AnnexBReader::~AnnexBReader()
 {
-    if (sps)
+   /* if (sps)
     {
         delete sps;
         sps = nullptr;
-    }
+    }*/
  
 
     if (slice)

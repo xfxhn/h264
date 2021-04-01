@@ -1,29 +1,15 @@
 #include "AnnexBReader.h"
-#include "BitStream.h"
-#include "cmath"
 
 //#include <cstdlib>
 //#include <iostream>
 //#include "AnnexBReader.h"
 //using namespace std;
 // NALUµ¥Ôª
-struct MinHeapNode {
-	char data;
-	unsigned int freq;
-	MinHeapNode* left, * right;
 
-	MinHeapNode(char data, unsigned int freq) {
-		this->left = this->right = nullptr;
-		this->data = data;
-		this->freq = freq;
-	}
-};
 
 
 int main()
 {
-
-
 	/*AnnexBReader aaa;
 	 
 
@@ -80,22 +66,6 @@ int main()
 	AnnexBReader reader;
 
 	bool isOpen = reader.open("./demo.h264");
-
-
-	//uint8_t* a = new uint8_t[5];
-
-	//a[0] = 9;
-	//a[1] = 33;
-
-
-	//BitStream bs(a, 5);
-
-
-	//
-	//int b = bs.readUE();
-	//int aaa = bs.readMultiBit(4);
-	//cout << b << endl;
-	//cout << aaa << endl;
 
 ;	return EXIT_SUCCESS;
 }

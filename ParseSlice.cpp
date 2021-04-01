@@ -6,30 +6,46 @@
 
 
 
-
+/// <summary>
+/// ,
+/// </summary>
+/// <param name="naluType"></param>
 ParseSlice::ParseSlice( uint32_t naluType)
 {
 
 	memset(this, 0, sizeof(ParseSlice));
-	/*this->pps = pps;
-	this->sps = sps;*/
+	/*this->ppsGather = pps;
+	this->spsGather = sps;*/
 	this->naluType = naluType;
 }
+//
+//bool ParseSlice::getppsAndSps()
+//{
+//	for (size_t i = 0; i < ppsGather.size(); i++)
+//	{
+//		if (ppsGather[i]->pic_parameter_set_id == pic_parameter_set_id)
+//		{
+//			pps = ppsGather[i];
+//			break;
+//		}
+//	}
+//
+//	for (size_t i = 0; i < spsGather.size(); i++)
+//	{
+//		if (spsGather[i]->seq_parameter_set_id == pps->seq_parameter_set_id)
+//		{
+//			sps = spsGather[i];
+//			break;
+//		}
+//	}
+//
+//	return false;
+//}
 
-ParsePPS* ParseSlice::getpps(vector<ParsePPS*> pps)
+
+
+bool ParseSlice::slice_header(BitStream& bs, const ParsePPS ppsCache[256], const ParseSPS spsCache[32])
 {
-	return nullptr;
-}
-
-ParseSPS* ParseSlice::getsps(vector<ParseSPS*> sps)
-{
-	return nullptr;
-}
-
-
-bool ParseSlice::slice_header(BitStream& bs, vector<ParsePPS*> pps, vector<ParseSPS*> sps)
-{
-
 
 
 	//这个属性表示的是在这个 Slice 中第一个宏块的序号
@@ -38,8 +54,11 @@ bool ParseSlice::slice_header(BitStream& bs, vector<ParsePPS*> pps, vector<Parse
 	slice_type = bs.readUE(); //2 ue(v)
 	//依赖的pps id
 	pic_parameter_set_id = bs.readUE(); //2 ue(v)
+	
+	//bool flag = getppsAndSps();
 
-
+	pps = ppsCache[pic_parameter_set_id];
+	sps = spsCache[pps.seq_parameter_set_id];
 	return false;
 }
 

@@ -7,8 +7,8 @@ class ParseSlice
 {
 public:
     uint32_t naluType;
-    ParsePPS* pps;
-    ParseSPS* sps;
+    ParsePPS pps;
+    ParseSPS sps;
 
     uint32_t     first_mb_in_slice; // 2 ue(v)
     uint32_t     slice_type; // 2 ue(v)
@@ -38,10 +38,11 @@ public:
     //ParseSlice(ParsePPS* pps, ParseSPS* sps, uint32_t naluType);
     ParseSlice(uint32_t naluType);
 
-    ParsePPS* getpps(vector<ParsePPS*> pps);
-    ParseSPS* getsps(vector<ParseSPS*> sps);
+    //bool getppsAndSps();
+    //ParseSPS* getsps(vector<ParseSPS*> sps);
 
-	bool slice_header(BitStream& bs, vector<ParsePPS*> pps, vector<ParseSPS*> sps);
+	bool slice_header(BitStream& bs, const ParsePPS ppsCache[256], const ParseSPS spsCache[32]);
+
 	~ParseSlice();
 };
 
