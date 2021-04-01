@@ -38,6 +38,9 @@ public:
     //ParseSlice(ParsePPS* pps, ParseSPS* sps, uint32_t naluType);
     ParseSlice(uint32_t naluType);
 
+    ParsePPS* getpps(vector<ParsePPS*> pps);
+    ParseSPS* getsps(vector<ParseSPS*> sps);
+
 	bool slice_header(BitStream& bs, vector<ParsePPS*> pps, vector<ParseSPS*> sps);
 	~ParseSlice();
 };
