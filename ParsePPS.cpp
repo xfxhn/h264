@@ -51,7 +51,8 @@ bool ParsePPS::pic_parameter_set_rbsp(BitStream& bs)
     //等于0，那么采用语法表中左边的描述符所指定的方法
     //等于1，就采用语法表中右边的描述符所指定的方法
     entropy_coding_mode_flag = bs.readBit(); //1 u(1)
-    //表示是否在slice header存在
+    //标识位，用于表示另外条带头中的两个语法元素delta_pic_order_cnt_bottom和delta_pic_order_cn是否存在的标识。
+    //这两个语法元素表示了某一帧的底场的POC的计算方法。
     bottom_field_pic_order_in_frame_present_flag = bs.readBit(); //1 u(1)
 
 

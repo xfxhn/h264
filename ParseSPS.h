@@ -23,7 +23,7 @@ public:
     uint32_t level_idc; // 0 u(8)
     uint32_t seq_parameter_set_id; // 0 ue(v)
     uint32_t chroma_format_idc;   // 0 ue(v)
-    uint32_t separate_colour_plane_flag;  // 0 u(1)
+    bool separate_colour_plane_flag;  // 0 u(1)
     uint32_t bit_depth_luma_minus8;   // 0 ue(v)当bit_depth_luma_minus8不存在时，它将被推断为等于0。bit_depth_luma_minus8的取值范围为0到6(包括6)。
     uint32_t bit_depth_chroma_minus8;   // 0 ue(v)
     uint32_t qpprime_y_zero_transform_bypass_flag;  // 0 u(1)

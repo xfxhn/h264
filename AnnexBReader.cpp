@@ -154,19 +154,29 @@ void AnnexBReader::getNaluHeader(uint8_t* buffer,int size)
 {
 
 
-    int forbidden_zero_bit = (*buffer >> 7) & 1;
+    
+    BitStream bs(buffer, size);
+
+    ParseNalu nalu;
+
+    nalu.getH264RbspFromNalUnit(bs);
+    /*int forbidden_zero_bit = bs.readMultiBit(1);
+    int nal_ref_idc = bs.readMultiBit(2);
+    int nal_unit_type = bs.readMultiBit(5);*/
+
+
+
+    /*int forbidden_zero_bit = (*buffer >> 7) & 1;
     int nal_ref_idc = (*buffer >> 5) & 3;
-    int nal_unit_type = *buffer & 31;
+    int nal_unit_type = *buffer & 31;*/
    
-    switch ((NaluType)nal_unit_type)
+    switch ((NaluType)nalu.nal_unit_type)
     {
     case NaluType::H264_NAL_SLICE: //1
     {
         // std::cout << NaluType::PPS << std::endl;
         break;
-    }
-
-        
+    }  
     case NaluType::H264_NAL_DPA: //2
     {
         break;
@@ -186,11 +196,10 @@ void AnnexBReader::getNaluHeader(uint8_t* buffer,int size)
             delete slice;
             slice = nullptr;
         }
-
         
-        BitStream bs(buffer + 1, size);
+        //BitStream bs(buffer + 1, size);
 
-        slice = new ParseSlice(nal_unit_type);
+        slice = new ParseSlice(nalu);
         slice->slice_header(bs, ppsCache, spsCache);
        
         break;
@@ -202,7 +211,7 @@ void AnnexBReader::getNaluHeader(uint8_t* buffer,int size)
     case NaluType::H264_NAL_SPS: //7
     {
         //ParseSPS sps;
-        BitStream bs(buffer + 1, size);
+        //BitStream bs(buffer + 1, size);
         ParseSPS sps;
         bool ret = sps.seq_parameter_set_data(bs);
 
@@ -213,11 +222,9 @@ void AnnexBReader::getNaluHeader(uint8_t* buffer,int size)
     }
     case NaluType::H264_NAL_PPS: //8
     {
-        //ParsePPS pps;
-       
         ParsePPS pps;
 
-        BitStream bs(buffer + 1, size);
+        //BitStream bs(buffer + 1, size);
 
         bool ret = pps.pic_parameter_set_rbsp(bs);
 

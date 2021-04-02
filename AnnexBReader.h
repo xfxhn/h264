@@ -1,9 +1,9 @@
 #pragma once
 #include "Common.h"
-#include "NaluType.h"
 #include "ParseSPS.h"
 #include "ParsePPS.h"
 #include "ParseSlice.h"
+#include "ParseNalu.h"
 #pragma warning(disable:4996)
 
 
