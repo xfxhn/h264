@@ -35,6 +35,48 @@ public:
     int32_t     slice_alpha_c0_offset_div2; // 2 se(v)
     int32_t     slice_beta_offset_div2; // 2 se(v)
     uint32_t     slice_group_change_cycle; // 2 u(v)
+
+
+
+
+
+
+     // dec_ref_pic_marking
+    bool     no_output_of_prior_pics_flag; // 2 | 5 u(1)
+    bool     long_term_reference_flag; // 2 | 5 u(1)
+    bool     adaptive_ref_pic_marking_mode_flag; // 2 | 5 u(1)
+    //DEC_REF_PIC_MARKING    m_dec_ref_pic_marking[32];
+    //int32_t     dec_ref_pic_marking_count; //m_dec_ref_pic_marking[]数组大小
+
+
+
+
+    // ref_pic_list_modification//帧间参考作用的 参考帧列表
+    bool     ref_pic_list_modification_flag_l0; // 2 u(1)
+    uint32_t     modification_of_pic_nums_idc[2][32]; // 2 ue(v)
+    uint32_t     abs_diff_pic_num_minus1[2][32]; // 2 ue(v)
+    uint32_t     long_term_pic_num[2][32]; // 2 ue(v)
+    bool     ref_pic_list_modification_flag_l1; // 2 u(1)
+    uint32_t     ref_pic_list_modification_count_l0; //modification_of_pic_nums_idc[0]数组大小
+    uint32_t     ref_pic_list_modification_count_l1; //modification_of_pic_nums_idc[1]数组大小
+
+
+
+    // pred_weight_table
+    uint32_t     luma_log2_weight_denom; // 2 ue(v)
+    uint32_t     chroma_log2_weight_denom; // 2 ue(v)
+    bool     luma_weight_l0_flag; // 2 u(1)
+    int32_t     luma_weight_l0[32]; // 2 se(v)
+    int32_t     luma_offset_l0[32]; // 2 se(v)
+    uint32_t     chroma_weight_l0_flag; // 2 ue(v)
+    int32_t     chroma_weight_l0[32][2]; // 2 se(v)
+    int32_t     chroma_offset_l0[32][2]; // 2 se(v)
+    bool     luma_weight_l1_flag; // 2 u(1)
+    int32_t     luma_weight_l1[32]; // 2 se(v)
+    int32_t     luma_offset_l1[32]; // 2 se(v)
+    bool     chroma_weight_l1_flag; // 2 u(1)
+    int32_t     chroma_weight_l1[32][2]; // 2 se(v)
+    int32_t     chroma_offset_l1[32][2]; // 2 se(v)
 public:
     //ParseSlice(ParsePPS* pps, ParseSPS* sps, uint32_t naluType);
     ParseSlice(ParseNalu& nalu);
@@ -44,6 +86,8 @@ public:
 
 	bool slice_header(BitStream& bs, const ParsePPS ppsCache[256], const ParseSPS spsCache[32]);
     bool dec_ref_pic_marking(BitStream& bs);
+    bool pred_weight_table(BitStream& bs);
+    bool ref_pic_list_modification(BitStream& bs);
 	~ParseSlice();
 };
 

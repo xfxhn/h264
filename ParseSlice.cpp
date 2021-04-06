@@ -146,19 +146,20 @@ bool ParseSlice::slice_header(BitStream& bs, const ParsePPS ppsCache[256], const
 	}
 	else
 	{
-		printError("ref_pic_list_modification 错误");
-		return -1;
-		//ret = ref_pic_list_modification(bs);
+		
+		bool ret = ref_pic_list_modification(bs);
+		/*printError("ref_pic_list_modification 错误");
+		return -1;*/
 		//RETURN_IF_FAILED(ret != 0, ret);
 	}
 
-	/*if ((pps.weighted_pred_flag && ((SLIECETYPE)slice_type == SLIECETYPE::H264_SLIECE_TYPE_P || (SLIECETYPE)slice_type == SLIECETYPE::H264_SLIECE_TYPE_SP))
+	if ((pps.weighted_pred_flag && ((SLIECETYPE)slice_type == SLIECETYPE::H264_SLIECE_TYPE_P || (SLIECETYPE)slice_type == SLIECETYPE::H264_SLIECE_TYPE_SP))
 		|| (pps.weighted_bipred_idc == 1 && (SLIECETYPE)slice_type == SLIECETYPE::H264_SLIECE_TYPE_B)
 		)
 	{
-		ret = pred_weight_table(bs);
-		RETURN_IF_FAILED(ret != 0, ret);
-	}*/
+		bool ret = pred_weight_table(bs);
+		//RETURN_IF_FAILED(ret != 0, ret);
+	}
 
 	if (nalu.nal_ref_idc != 0)
 	{
@@ -181,6 +182,158 @@ bool ParseSlice::slice_header(BitStream& bs, const ParsePPS ppsCache[256], const
 
 bool ParseSlice::dec_ref_pic_marking(BitStream& bs)
 {
+
+	if (nalu.IdrPicFlag)
+	{
+		//帧间编码的时候作为参考帧的标记
+		no_output_of_prior_pics_flag = bs.readBit(); //2 | 5 u(1)
+		long_term_reference_flag = bs.readBit(); //2 | 5 u(1)
+	}
+	return false;
+}
+bool ParseSlice::pred_weight_table(BitStream& bs)
+{
+
+	int ret = 0;
+	int32_t i = 0;
+	int32_t j = 0;
+
+
+	luma_log2_weight_denom = bs.readUE(); //2 ue(v)
+	if (sps.ChromaArrayType != 0)
+	{
+		chroma_log2_weight_denom = bs.readUE(); //2 ue(v)
+	}
+
+	for (i = 0; i <= num_ref_idx_l0_active_minus1; i++)
+	{
+		luma_weight_l0[i] = 1 << luma_log2_weight_denom; //When luma_weight_l0_flag is equal to 0
+		luma_offset_l0[i] = 0; //When luma_weight_l0_flag is equal to 0
+
+		luma_weight_l0_flag = bs.readBit(); //2 u(1)
+		if (luma_weight_l0_flag)
+		{
+			luma_weight_l0[i] = bs.readSE(); //2 se(v)
+			luma_offset_l0[i] = bs.readSE(); //2 se(v)
+		}
+
+		if (sps.ChromaArrayType != 0)
+		{
+			chroma_weight_l0[i][0] = 1 << chroma_log2_weight_denom; //When chroma_weight_l0_flag is equal to 0
+			chroma_weight_l0[i][1] = 1 << chroma_log2_weight_denom; //When chroma_weight_l0_flag is equal to 0
+			chroma_offset_l0[i][0] = 0;
+			chroma_offset_l0[i][1] = 0;
+
+			chroma_weight_l0_flag = bs.readBit(); //2 u(1)
+			if (chroma_weight_l0_flag)
+			{
+				for (j = 0; j < 2; j++)
+				{
+					chroma_weight_l0[i][j] = bs.readSE(); //2 se(v)
+					chroma_offset_l0[i][j] = bs.readSE(); //2 se(v)
+				}
+			}
+		}
+	}
+
+	if (slice_type % 5 == 1)
+	{
+		for (i = 0; i <= num_ref_idx_l1_active_minus1; i++)
+		{
+			luma_weight_l1[i] = 1 << luma_log2_weight_denom; //When luma_weight_l1_flag is equal to 0
+			luma_offset_l1[i] = 0; //When luma_weight_l1_flag is equal to 0
+
+			luma_weight_l1_flag = bs.readBit(); //2 u(1)
+			if (luma_weight_l1_flag)
+			{
+				luma_weight_l1[i] = bs.readSE(); //2 se(v)
+				luma_offset_l1[i] = bs.readSE(); //2 se(v)
+			}
+
+			if (sps.ChromaArrayType != 0)
+			{
+				chroma_weight_l1[i][0] = 1 << chroma_log2_weight_denom; //When chroma_weight_l1_flag is equal to 0
+				chroma_weight_l1[i][1] = 1 << chroma_log2_weight_denom; //When chroma_weight_l1_flag is equal to 0
+				chroma_offset_l1[i][0] = 0;
+				chroma_offset_l1[i][1] = 0;
+
+				chroma_weight_l1_flag = bs.readBit(); //2 u(1)
+				if (chroma_weight_l1_flag)
+				{
+					for (j = 0; j < 2; j++)
+					{
+						chroma_weight_l1[i][j] = bs.readSE(); //2 se(v)
+						chroma_offset_l1[i][j] = bs.readSE(); //2 se(v)
+					}
+				}
+			}
+		}
+	}
+
+	return false;
+}
+//帧间参考作用的 参考帧列表
+bool ParseSlice::ref_pic_list_modification(BitStream& bs)
+{
+
+	if (slice_type % 5 != 2 && slice_type % 5 != 4) //H264_SLIECE_TYPE_I = 2; H264_SLIECE_TYPE_SI = 4;
+	{
+		ref_pic_list_modification_flag_l0 = bs.readBit(); //2 u(1)
+		if (ref_pic_list_modification_flag_l0)
+		{
+			int32_t i = 0;
+			do
+			{
+				if (i >= 32)
+				{
+					//LOG_ERROR("modification_of_pic_nums_idc[0][i]: i=%d, must be in [0,31]\n", i);
+					printError("i必须在0-31");
+					return -1;
+				}
+
+				modification_of_pic_nums_idc[0][i] = bs.readUE(); //2 ue(v)
+				if (modification_of_pic_nums_idc[0][i] == 0 || modification_of_pic_nums_idc[0][i] == 1)
+				{
+					abs_diff_pic_num_minus1[0][i] = bs.readUE(); //2 ue(v)
+				}
+				else if (modification_of_pic_nums_idc[0][i] == 2)
+				{
+					long_term_pic_num[0][i] = bs.readUE(); //2 ue(v)
+				}
+				i++;
+			} while (modification_of_pic_nums_idc[0][i - 1] != 3);
+			ref_pic_list_modification_count_l0 = i;
+		}
+	}
+
+	if (slice_type % 5 == 1) //H264_SLIECE_TYPE_B = 1;
+	{
+		ref_pic_list_modification_flag_l1 = bs.readBit(); //2 u(1)
+		if (ref_pic_list_modification_flag_l1)
+		{
+			int32_t i = 0;
+			do
+			{
+				if (i >= 32)
+				{
+					printError("i必须在0-31");
+					return -1;
+				}
+
+				modification_of_pic_nums_idc[1][i] = bs.readUE(); //2 ue(v)
+				if (modification_of_pic_nums_idc[1][i] == 0 || modification_of_pic_nums_idc[1][i] == 1)
+				{
+					abs_diff_pic_num_minus1[1][i] = bs.readUE(); //2 ue(v)
+				}
+				else if (modification_of_pic_nums_idc[1][i] == 2)
+				{
+					long_term_pic_num[1][i] = bs.readUE(); //2 ue(v)
+				}
+				i++;
+			} while (modification_of_pic_nums_idc[1][i - 1] != 3);
+			ref_pic_list_modification_count_l1 = i;
+		}
+	}
 
 
 	return false;
