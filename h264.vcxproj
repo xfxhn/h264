@@ -22,22 +22,26 @@
     <ClCompile Include="AnnexBReader.cpp" />
     <ClCompile Include="BitStream.cpp" />
     <ClCompile Include="Common.cpp" />
+    <ClCompile Include="Macroblock.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="ParseNalu.cpp" />
     <ClCompile Include="ParsePPS.cpp" />
     <ClCompile Include="ParseSlice.cpp" />
     <ClCompile Include="ParseSPS.cpp" />
+    <ClCompile Include="SliceData.cpp" />
     <ClCompile Include="SliceHeader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AnnexBReader.h" />
     <ClInclude Include="BitStream.h" />
     <ClInclude Include="Common.h" />
+    <ClInclude Include="Macroblock.h" />
     <ClInclude Include="NaluType.h" />
     <ClInclude Include="ParseNalu.h" />
     <ClInclude Include="ParsePPS.h" />
     <ClInclude Include="ParseSlice.h" />
     <ClInclude Include="ParseSPS.h" />
+    <ClInclude Include="SliceData.h" />
     <ClInclude Include="SliceHeader.h" />
   </ItemGroup>
   <ItemGroup>

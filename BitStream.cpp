@@ -49,17 +49,17 @@ int BitStream::readUE()
 
 int BitStream::readSE()
 {
-	/*int r = readUE();
+	int r = readUE();
 	if (r & 0x01) {
 		r = (r + 1) / 2;
 	}
 	else {
 		r = -(r / 2);
 	}
-	return r;*/
-	int k = readUE();
+	return r;
+	/*int k = readUE();
 
-	return (pow(-1, k + 1) * ceil((double)(k / 2)));
+	return (pow(-1, k + 1) * ceil((double)(k / 2)));*/
 }
 
 BitStream::~BitStream()

@@ -42,6 +42,12 @@
     <ClCompile Include="ParseNalu.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="SliceData.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Macroblock.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AnnexBReader.h">
@@ -69,6 +75,12 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="ParseNalu.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="SliceData.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Macroblock.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

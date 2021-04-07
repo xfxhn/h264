@@ -21,7 +21,7 @@ public:
 
 	~BitStream();
 
-private:
+public:
 	//指向开始的位置
 	uint8_t* start = nullptr;
 
