@@ -12,7 +12,7 @@ bool AnnexBReader::open(const char *filePath)
 {
 	f = fopen(filePath, "rb");
     if (f == nullptr) {
-        cout << "打开失败" << endl;
+        cout << "fopen打开失败" << endl;
         return false;
     }
 

@@ -1,6 +1,7 @@
 #pragma once
 #include "Common.h"
 #include "SliceHeader.h"
+#include "SliceData.h"
 #include "ParsePPS.h"
 #include "ParseSPS.h"
 #include "ParseNalu.h"

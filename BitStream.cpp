@@ -3,13 +3,12 @@
 
 
 
-
-
 BitStream::BitStream(uint8_t* buf, int _size)
 {
 	start = buf;
 	currentPtr = buf;
 	size = _size;
+	postion = 0;
 }
 
 uint16_t BitStream::readBit()
@@ -19,6 +18,7 @@ uint16_t BitStream::readBit()
 
 	if (bitsLeft == 0) {
 		currentPtr++;
+		postion++;
 		bitsLeft = 8;
 	}
 	return result;

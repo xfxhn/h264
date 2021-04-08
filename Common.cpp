@@ -38,4 +38,22 @@ int scaling_list(BitStream& bs, int32_t* scalingList, int sizeOfScalingList, int
 	return 0;
 }
 
+bool byte_aligned(BitStream& bs)
+{
+    if (bs.bitsLeft % 8 == 0)
+    {
+        return true;
+    }
+    return false;
+}
+
+bool more_rbsp_data(BitStream& bs)
+{
+
+    cout << bs.currentPtr << endl;
+
+
+    return false;
+}
+
 

@@ -21,8 +21,15 @@ bool ParseSlice::parse(BitStream& bs, const ParsePPS ppsCache[256], const ParseS
 	size_t bitOffset = (8 - bs.bitsLeft);
 	//读取到第几字节
 	uint8_t* data = bs.currentPtr;
-	//一帧有多少个红快
-	mbNum = sHeader.sps.pic_width_in_mbs_minus1 * sHeader.sps.pic_height_in_map_units_minus1;
+
+
+
+	SliceData sData;
+
+
+	sData.slice_data(bs, sHeader);
+
+	/*mbNum = sHeader.sps.pic_width_in_mbs_minus1 * sHeader.sps.pic_height_in_map_units_minus1;
 
 	macroblock = new Macroblock * [mbNum];
 
@@ -31,7 +38,8 @@ bool ParseSlice::parse(BitStream& bs, const ParsePPS ppsCache[256], const ParseS
 	for (size_t i = 0; i < mbNum; i++)
 	{
 		macroblock[i] = new Macroblock(data, bitOffset, sHeader.pps);
-	}
+		break;
+	}*/
 
 	return false;
 }
