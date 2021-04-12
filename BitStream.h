@@ -19,6 +19,8 @@ public:
 	int readUE();
 	int readSE();
 
+	bool isEmpty();
+
 	~BitStream();
 
 public:

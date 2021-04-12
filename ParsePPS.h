@@ -18,6 +18,7 @@ public:
     uint32_t     top_left[8]; //[ iGroup ] 1 ue(v)
     uint32_t     bottom_right[8]; //[ iGroup ] 1 ue(v)
     bool     slice_group_change_direction_flag; // 1 u(1)
+    //用以指明变量 SliceGroupChangeRAte 
     uint32_t     slice_group_change_rate_minus1; // 1 ue(v)
     uint32_t     pic_size_in_map_units_minus1; // 1 ue(v)
     uint32_t*    slice_group_id; //[ i ] 1 u(v)
@@ -28,6 +29,7 @@ public:
     int32_t     pic_init_qp_minus26; // /* relative to 26 */ 1 se(v)
     int32_t     pic_init_qs_minus26; // /* relative to 26 */ 1 se(v)
     int32_t     chroma_qp_index_offset; // 1 se(v)
+    //slice header中是否存在去块滤波器控制相关信息 =1存在响应去块滤波器 =0没有相应信息
     bool     deblocking_filter_control_present_flag; // 1 u(1)
     bool     constrained_intra_pred_flag; // 1 u(1)
     bool     redundant_pic_cnt_present_flag; // 1 u(1)

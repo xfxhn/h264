@@ -24,7 +24,7 @@ SliceHeader::SliceHeader(ParseNalu& nalu) :nalu(nalu)
 	sp_for_switch_flag = 0;
 	slice_qs_delta = 0;
 	disable_deblocking_filter_idc = 0;
-	slice_alpha_c0_offset_div2 = 0;
+	slice_group_change_cycle = 0;
 	slice_beta_offset_div2 = 0;
 	slice_group_change_cycle = 0;
 
@@ -54,6 +54,18 @@ SliceHeader::SliceHeader(ParseNalu& nalu) :nalu(nalu)
 	no_output_of_prior_pics_flag = 0;
 	long_term_reference_flag = 0;
 	adaptive_ref_pic_marking_mode_flag = 0;
+
+
+
+	MbaffFrameFlag = 0;
+	SliceGroupChangeRate = 0;
+	SliceQPY = 0;
+	QPY_prev = 0;
+
+	PicHeightInMbs = 0;
+	PicSizeInMbs = 0;
+	mapUnitToSliceGroupMap = nullptr;
+	MbToSliceGroupMap = nullptr;
 	/*memset(m_dec_ref_pic_marking, 0, sizeof(DEC_REF_PIC_MARKING) * 32);
 	dec_ref_pic_marking_count = 0;
 
@@ -249,7 +261,90 @@ bool SliceHeader::slice_header(BitStream& bs, const ParsePPS ppsCache[256], cons
 	//表示用于条带中的所有宏块的 QPY  的初始值，该值在宏块层将被 mb_qp_delta 的值修改。该 条带初始  QPY 量化参数按下面的公式计算：
 	//SliceQPY = 26 + pic_init_qp_minus26 + slice_qp_delta
 	slice_qp_delta = bs.readSE();
-    return false;
+
+
+	if ((SLIECETYPE)slice_type == SLIECETYPE::H264_SLIECE_TYPE_SP || (SLIECETYPE)slice_type == SLIECETYPE::H264_SLIECE_TYPE_SI)
+	{
+		if ((SLIECETYPE)slice_type == SLIECETYPE::H264_SLIECE_TYPE_SP)
+		{
+			sp_for_switch_flag = bs.readBit(); //2 u(1)
+		}
+		slice_qs_delta = bs.readSE(); //2 se(v)
+	}
+
+	//是否存在去块滤波器控制相关信息 =1存在响应去块滤波器 =0没有相应信息
+	if (pps.deblocking_filter_control_present_flag)
+	{
+		disable_deblocking_filter_idc = bs.readUE(); //2 ue(v)
+
+		if (disable_deblocking_filter_idc != 1)
+		{
+			slice_group_change_cycle = bs.readSE(); //2 se(v)
+			slice_beta_offset_div2 = bs.readSE(); //2 se(v)
+		}
+	}
+	//指出当切片组的大小对于每个图像来说都不同的时候,对切片组数目的运算的乘数.slice_group_change_rate_minus1取值范围为0到PicSizeInMapUnits-1:
+	SliceGroupChangeRate = pps.slice_group_change_rate_minus1 + 1;
+
+
+	if (pps.num_slice_groups_minus1 > 0 && pps.slice_group_map_type >= 3 && pps.slice_group_map_type <= 5)
+	{
+		int32_t temp = sps.PicSizeInMapUnits / SliceGroupChangeRate + 1;
+		int32_t v = h264_log2(temp); // Ceil( Log2( PicSizeInMapUnits ÷ SliceGroupChangeRate + 1 ) );
+		/* 片组类型是3.4.5时，由该元素可以获取片组中映射单元的数目 */
+		slice_group_change_cycle = bs.readMultiBit(v); //2 u(v)
+	}
+
+
+	SliceQPY = 26 + pps.pic_init_qp_minus26 + slice_qp_delta;
+	QPY_prev = SliceQPY;
+	//是否是帧场自适应编码
+	MbaffFrameFlag = (sps.mb_adaptive_frame_field_flag && !field_pic_flag);
+
+	//高有多少宏块
+	PicHeightInMbs = sps.FrameHeightInMbs / (1 + field_pic_flag);
+	//总共有多少宏块
+	PicSizeInMbs = sps.PicWidthInMbs * PicHeightInMbs;
+	/*
+	PicHeightInSamplesL = PicHeightInMbs * 16;
+	PicHeightInSamplesC = PicHeightInMbs * m_sps.MbHeightC;
+
+	MaxPicNum = (field_pic_flag == 0) ? m_sps.MaxFrameNum : (2 * m_sps.MaxFrameNum);
+	CurrPicNum = (field_pic_flag == 0) ? frame_num : (2 * frame_num + 1);
+	MapUnitsInSliceGroup0 = MIN(slice_group_change_cycle * SliceGroupChangeRate, m_sps.PicSizeInMapUnits);
+	QSY = 26 + m_pps.pic_init_qs_minus26 + slice_qs_delta;
+
+	FilterOffsetA = slice_alpha_c0_offset_div2 << 1;
+	FilterOffsetB = slice_beta_offset_div2 << 1;*/
+
+
+	if (mapUnitToSliceGroupMap == nullptr)
+	{
+		//pic_width_in_mbs_minus1 + 1 * pic_height_in_map_units_minus1 + 1  --- PicSizeInMapUnits 总共有多少宏块
+		mapUnitToSliceGroupMap = new uint32_t[sps.PicSizeInMapUnits]();
+		//mapUnitToSliceGroupMap = (int32_t*)my_malloc(sizeof(int32_t) * m_sps.PicSizeInMapUnits);
+		/*RETURN_IF_FAILED(mapUnitToSliceGroupMap == NULL, -1);*/
+		if (mapUnitToSliceGroupMap == nullptr)
+		{
+			printError("分配失败 mapUnitToSliceGroupMap");
+			return -1;
+		}
+		setMapUnitToSliceGroupMap();
+	}
+
+	if (MbToSliceGroupMap == nullptr)
+	{
+		//MbToSliceGroupMap = (int32_t*)my_malloc(sizeof(int32_t) * PicSizeInMbs);
+		MbToSliceGroupMap = new uint32_t[PicSizeInMbs]();
+		if (MbToSliceGroupMap == nullptr)
+		{
+			printError("分配失败 MbToSliceGroupMap");
+			return -1;
+		}
+		setMbToSliceGroupMap();
+
+	}
+	return false;
 }
 
 bool SliceHeader::dec_ref_pic_marking(BitStream& bs)
@@ -260,7 +355,7 @@ bool SliceHeader::dec_ref_pic_marking(BitStream& bs)
 		no_output_of_prior_pics_flag = bs.readBit(); //2 | 5 u(1)
 		long_term_reference_flag = bs.readBit(); //2 | 5 u(1)
 	}
-    return false;
+	return false;
 }
 
 bool SliceHeader::pred_weight_table(BitStream& bs)
@@ -340,7 +435,7 @@ bool SliceHeader::pred_weight_table(BitStream& bs)
 			}
 		}
 	}
-    return false;
+	return false;
 }
 
 bool SliceHeader::ref_pic_list_modification(BitStream& bs)
@@ -403,7 +498,26 @@ bool SliceHeader::ref_pic_list_modification(BitStream& bs)
 			ref_pic_list_modification_count_l1 = i;
 		}
 	}
-    return false;
+	return false;
+}
+
+bool SliceHeader::setMapUnitToSliceGroupMap()
+{
+	if (pps.num_slice_groups_minus1 == 0)
+	{
+		for (size_t i = 0; i < sps.PicSizeInMapUnits; i++)
+		{
+			mapUnitToSliceGroupMap[i] = 0;
+		}
+	}
+
+
+	//  FMO  纠错映射
+	return true;
+}
+bool SliceHeader::setMbToSliceGroupMap()
+{
+	return false;
 }
 SliceHeader::~SliceHeader()
 {

@@ -62,6 +62,23 @@ int BitStream::readSE()
 	return (pow(-1, k + 1) * ceil((double)(k / 2)));*/
 }
 
+bool BitStream::isEmpty()
+{
+	bool flag = true;
+	if (postion == size)
+	{
+		for (size_t i = 0; i < 8; i++)
+		{
+			if (((*currentPtr >> i) & 1) != 0)
+			{
+				flag = (i != 7);
+			}
+		}
+	}
+
+	return flag;
+}
+
 BitStream::~BitStream()
 {
 }

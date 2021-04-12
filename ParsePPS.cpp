@@ -63,6 +63,7 @@ bool ParsePPS::pic_parameter_set_rbsp(BitStream& bs)
     num_slice_groups_minus1 = bs.readUE(); //1 ue(v)
 
     //图像参数集应包括取值范围0-7的num_slice_groups_minus1参数，包括0与7；
+    //片组模式
     if (num_slice_groups_minus1 > 0)
     {
         //MFO前面的slice内部宏块总是连续的。FMO技术通过映射表（macroblock to slice group map）决定具体每个宏块属于哪个slice groups，突破了宏块连续的限制。
@@ -99,6 +100,7 @@ bool ParsePPS::pic_parameter_set_rbsp(BitStream& bs)
         else if (slice_group_map_type == 3 || slice_group_map_type == 4 || slice_group_map_type == 5)
         {
             slice_group_change_direction_flag = bs.readBit(); //1 u(1)
+            //用以指明变量 SliceGroupChangeRAte 
             slice_group_change_rate_minus1 = bs.readUE(); //1 ue(v)
         }
         else if (slice_group_map_type == 6)
