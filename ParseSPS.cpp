@@ -53,6 +53,9 @@ ParseSPS::ParseSPS()
 	PicHeightInMapUnits = 0;
 	PicSizeInMapUnits = 0;
 	ChromaArrayType = 0;
+
+	SubWidthC = 0;
+	SubHeightC = 0;
 }
 
 
@@ -123,7 +126,7 @@ bool ParseSPS::seq_parameter_set_data(BitStream& bs)
 			而对于分开编码的模式，我们采用和单色模式一样的规则。*/
 			separate_colour_plane_flag = bs.readBit();
 		}
-		//指定了亮度矩阵的比特深度以及亮度量化参数范围偏移量；此处取0，表示每个亮度像素用8为表示，QpBdOffset参数为0；
+		//是指亮度队列样值的比特深度以及亮度量化参数范围的取值偏移    QpBdOffsetY
 		bit_depth_luma_minus8 = bs.readUE();
 		//与bit_depth_luma_minus8类似，只不过是针对色度的
 		bit_depth_chroma_minus8 = bs.readUE();
@@ -234,9 +237,45 @@ bool ParseSPS::seq_parameter_set_data(BitStream& bs)
 	else {
 		ChromaArrayType = 0;
 	}
+	//亮度深度，偏移
+	BitDepthY = 8 + bit_depth_luma_minus8;
+	QpBdOffsetY = 6 * bit_depth_luma_minus8;
+	//色度深度，偏移
+	BitDepthC = 8 + bit_depth_chroma_minus8;
+	QpBdOffsetC = 6 * bit_depth_chroma_minus8;
 
 
+	/*如果chroma_format_idc的值等于0（单色），则MbWidthC和MbHeightC均为0（单色视频没有色度 阵列）。
+	否则，MbWidthC和MbHeightC按下式得到：
+	MbWidthC = 16 / SubWidthC
+	MbHeightC = 16 / SubHeightC*/
+	if (chroma_format_idc == 0 || separate_colour_plane_flag == 1)
+	{
+		MbWidthC = 0;
+		MbHeightC = 0;
+	}
+	else
+	{
 
+		int index = chroma_format_idc;
+		//separate_colour_plane_flag=0一起编码，=1分开编码
+		if (chroma_format_idc == 3 && separate_colour_plane_flag == 1)
+		{
+			index = 4;
+		}
+		//变量 SubWidthC 和 SubHeightC 在表 6-1 中规定
+		/*在4 : 2 : 0 样点中，两个色度阵列的高度和宽度均为亮度阵列的一半。
+		  在4 : 2 : 2 样点中，两个色度阵列的高度等于亮度阵列的高度，宽度为亮度阵列的一半。
+		  在4 : 4 : 4 样点中，两个色度阵列的高度和宽度与亮度阵列的相等。*/
+
+		SubWidthC = chroma_format_idcs[index].SubWidthC;
+		SubHeightC = chroma_format_idcs[index].SubHeightC;
+		/*样点是以宏块为单元进行处理的。每个宏块中的样点阵列的高和宽均为 16 个样点。
+		变量 MbWidthC 和 MbHeightC 分别规定了每个宏块中色度阵列的宽度和高度*/
+		MbWidthC = 16 / SubWidthC;
+		MbHeightC = 16 / SubHeightC;
+
+	}
 
 
 	getWidthAndHeight();

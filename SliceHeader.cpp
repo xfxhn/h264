@@ -517,7 +517,24 @@ bool SliceHeader::setMapUnitToSliceGroupMap()
 }
 bool SliceHeader::setMbToSliceGroupMap()
 {
-	return false;
+	int32_t i = 0;
+
+	for (i = 0; i < PicSizeInMbs; i++)
+	{
+		if (sps.frame_mbs_only_flag == 1 || field_pic_flag == 1)//³¡±àÂë
+		{
+			MbToSliceGroupMap[i] = mapUnitToSliceGroupMap[i];
+		}
+		else if (MbaffFrameFlag == 1)//Ö¡³¡×ÔÊÊÓ¦
+		{
+			MbToSliceGroupMap[i] = mapUnitToSliceGroupMap[i / 2];
+		}
+		else//Ö¡±àÂë
+		{
+			MbToSliceGroupMap[i] = mapUnitToSliceGroupMap[(i / (2 * sps.PicWidthInMbs)) * sps.PicWidthInMbs + (i % sps.PicWidthInMbs)];
+		}
+	}
+	return true;
 }
 SliceHeader::~SliceHeader()
 {

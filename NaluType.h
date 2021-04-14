@@ -27,52 +27,248 @@
 //19	未分割的辅助编码图像的编码条带	slice_layer_without_partitioning_rbsp()
 //20~23	保留
 //24~31	未指定
-enum class NaluType:int
+
+
+
+
+enum class NaluType :int
 {
-    H264_NAL_UNSPECIFIED = 0,
-    H264_NAL_SLICE = 1,
-    H264_NAL_DPA = 2,
-    H264_NAL_DPB = 3,
-    H264_NAL_DPC = 4,
-    H264_NAL_IDR_SLICE = 5,
-    H264_NAL_SEI = 6,
-    H264_NAL_SPS = 7,
-    H264_NAL_PPS = 8,
-    H264_NAL_AUD = 9,
-    H264_NAL_END_SEQUENCE = 10,
-    H264_NAL_END_STREAM = 11,
-    H264_NAL_FILLER_DATA = 12,
-    H264_NAL_SPS_EXT = 13,
-    H264_NAL_PREFIX = 14,
-    H264_NAL_SUB_SPS = 15,
-    H264_NAL_DPS = 16,
-    H264_NAL_RESERVED17 = 17,
-    H264_NAL_RESERVED18 = 18,
-    H264_NAL_AUXILIARY_SLICE = 19,
-    H264_NAL_EXTEN_SLICE = 20,
-    H264_NAL_DEPTH_EXTEN_SLICE = 21,
-    H264_NAL_RESERVED22 = 22,
-    H264_NAL_RESERVED23 = 23,
-    H264_NAL_UNSPECIFIED24 = 24,
-    H264_NAL_UNSPECIFIED25 = 25,
-    H264_NAL_UNSPECIFIED26 = 26,
-    H264_NAL_UNSPECIFIED27 = 27,
-    H264_NAL_UNSPECIFIED28 = 28,
-    H264_NAL_UNSPECIFIED29 = 29,
-    H264_NAL_UNSPECIFIED30 = 30,
-    H264_NAL_UNSPECIFIED31 = 31,
+	H264_NAL_UNSPECIFIED = 0,
+	H264_NAL_SLICE = 1,
+	H264_NAL_DPA = 2,
+	H264_NAL_DPB = 3,
+	H264_NAL_DPC = 4,
+	H264_NAL_IDR_SLICE = 5,
+	H264_NAL_SEI = 6,
+	H264_NAL_SPS = 7,
+	H264_NAL_PPS = 8,
+	H264_NAL_AUD = 9,
+	H264_NAL_END_SEQUENCE = 10,
+	H264_NAL_END_STREAM = 11,
+	H264_NAL_FILLER_DATA = 12,
+	H264_NAL_SPS_EXT = 13,
+	H264_NAL_PREFIX = 14,
+	H264_NAL_SUB_SPS = 15,
+	H264_NAL_DPS = 16,
+	H264_NAL_RESERVED17 = 17,
+	H264_NAL_RESERVED18 = 18,
+	H264_NAL_AUXILIARY_SLICE = 19,
+	H264_NAL_EXTEN_SLICE = 20,
+	H264_NAL_DEPTH_EXTEN_SLICE = 21,
+	H264_NAL_RESERVED22 = 22,
+	H264_NAL_RESERVED23 = 23,
+	H264_NAL_UNSPECIFIED24 = 24,
+	H264_NAL_UNSPECIFIED25 = 25,
+	H264_NAL_UNSPECIFIED26 = 26,
+	H264_NAL_UNSPECIFIED27 = 27,
+	H264_NAL_UNSPECIFIED28 = 28,
+	H264_NAL_UNSPECIFIED29 = 29,
+	H264_NAL_UNSPECIFIED30 = 30,
+	H264_NAL_UNSPECIFIED31 = 31,
 };
-//typedef enum _H264_SLIECE_TYPE_
+//slice type
 enum class SLIECETYPE :int
 {
-    H264_SLIECE_TYPE_P = 0,
-    H264_SLIECE_TYPE_B = 1,
-    H264_SLIECE_TYPE_I = 2,
-    H264_SLIECE_TYPE_SP = 3,
-    H264_SLIECE_TYPE_SI = 4,
-    H264_SLIECE_TYPE_P2 = 5,
-    H264_SLIECE_TYPE_B2 = 6,
-    H264_SLIECE_TYPE_I2 = 7,
-    H264_SLIECE_TYPE_SP2 = 8,
-    H264_SLIECE_TYPE_SI2 = 9,
+	H264_SLIECE_TYPE_P = 0,
+	H264_SLIECE_TYPE_B = 1,
+	H264_SLIECE_TYPE_I = 2,
+	H264_SLIECE_TYPE_SP = 3,
+	H264_SLIECE_TYPE_SI = 4,
+	H264_SLIECE_TYPE_P2 = 5,
+	H264_SLIECE_TYPE_B2 = 6,
+	H264_SLIECE_TYPE_I2 = 7,
+	H264_SLIECE_TYPE_SP2 = 8,
+	H264_SLIECE_TYPE_SI2 = 9,
+};
+
+
+enum class H264_MB_TYPE :int
+{
+	//表7 - 11－I 条带的宏块类型
+	I_NxN,         //    0
+	I_16x16_0_0_0, //    1
+	I_16x16_1_0_0, //    2
+	I_16x16_2_0_0, //    3
+	I_16x16_3_0_0, //    4
+	I_16x16_0_1_0, //    5
+	I_16x16_1_1_0, //    6
+	I_16x16_2_1_0, //    7
+	I_16x16_3_1_0, //    8
+	I_16x16_0_2_0, //    9
+	I_16x16_1_2_0, //    10
+	I_16x16_2_2_0, //    11
+	I_16x16_3_2_0, //    12
+	I_16x16_0_0_1, //    13
+	I_16x16_1_0_1, //    14
+	I_16x16_2_0_1, //    15
+	I_16x16_3_0_1, //    16
+	I_16x16_0_1_1, //    17
+	I_16x16_1_1_1, //    18
+	I_16x16_2_1_1, //    19
+	I_16x16_3_1_1, //    20
+	I_16x16_0_2_1, //    21
+	I_16x16_1_2_1, //    22
+	I_16x16_2_2_1, //    23
+	I_16x16_3_2_1, //    24
+	I_PCM,		   //    25
+
+	//表7-13－P和SP条带的值为0到4的宏块类型
+	P_L0_16x16,
+	P_L0_L0_16x8,
+	P_L0_L0_8x16,
+	P_8x8,
+	P_8x8ref0,
+	P_Skip,
+
+	//表7 - 12－SI条带的值为0的宏块类型
+	Intra_4x4,
+
+	//表7-14－B条带中值为0到22的宏块类型
+	B_Direct_16x16, //  0
+	B_L0_16x16, //      1
+	B_L1_16x16, //      2
+	B_Bi_16x16, //      3
+	B_L0_L0_16x8, //    4
+	B_L0_L0_8x16, //    5
+	B_L1_L1_16x8, //    6
+	B_L1_L1_8x16, //    7
+	B_L0_L1_16x8, //    8
+	B_L0_L1_8x16, //    9
+	B_L1_L0_16x8, //    10
+	B_L1_L0_8x16, //    11
+	B_L0_Bi_16x8, //    12
+	B_L0_Bi_8x16, //    13
+	B_L1_Bi_16x8, //    14
+	B_L1_Bi_8x16, //    15
+	B_Bi_L0_16x8, //    16
+	B_Bi_L0_8x16, //    17
+	B_Bi_L1_16x8, //    18
+	B_Bi_L1_8x16, //    19
+	B_Bi_Bi_16x8, //    20
+	B_Bi_Bi_8x16, //    21
+	B_8x8, //           22
+	B_Skip, //          -1  P_Skip表示该宏块在码流中没有更多的数据了
+};
+
+enum class H264_MB_TYPE_I :int
+{
+	
+	I_NxN,         //    0
+	I_16x16_0_0_0, //    1
+	I_16x16_1_0_0, //    2
+	I_16x16_2_0_0, //    3
+	I_16x16_3_0_0, //    4
+	I_16x16_0_1_0, //    5
+	I_16x16_1_1_0, //    6
+	I_16x16_2_1_0, //    7
+	I_16x16_3_1_0, //    8
+	I_16x16_0_2_0, //    9
+	I_16x16_1_2_0, //    10
+	I_16x16_2_2_0, //    11
+	I_16x16_3_2_0, //    12
+	I_16x16_0_0_1, //    13
+	I_16x16_1_0_1, //    14
+	I_16x16_2_0_1, //    15
+	I_16x16_3_0_1, //    16
+	I_16x16_0_1_1, //    17
+	I_16x16_1_1_1, //    18
+	I_16x16_2_1_1, //    19
+	I_16x16_3_1_1, //    20
+	I_16x16_0_2_1, //    21
+	I_16x16_1_2_1, //    22
+	I_16x16_2_2_1, //    23
+	I_16x16_3_2_1, //    24
+	I_PCM,		   //    25
+
+	
+};
+
+
+//表7-13－P和SP条带的值为0到4的宏块类型
+enum class H264_MB_TYPE_P_SP :int
+{
+	P_L0_16x16,
+	P_L0_L0_16x8,
+	P_L0_L0_8x16,
+	P_8x8,
+	P_8x8ref0,
+	P_Skip
+};
+
+
+//表7 - 12－SI条带的值为0的宏块类型
+enum class H264_MB_TYPE_SI :int
+{
+	Intra_4x4
+};
+//表7-14－B条带中值为0到22的宏块类型
+enum class H264_MB_TYPE_B :int
+{
+	B_Direct_16x16, //  0
+	B_L0_16x16, //      1
+	B_L1_16x16, //      2
+	B_Bi_16x16, //      3
+	B_L0_L0_16x8, //    4
+	B_L0_L0_8x16, //    5
+	B_L1_L1_16x8, //    6
+	B_L1_L1_8x16, //    7
+	B_L0_L1_16x8, //    8
+	B_L0_L1_8x16, //    9
+	B_L1_L0_16x8, //    10
+	B_L1_L0_8x16, //    11
+	B_L0_Bi_16x8, //    12
+	B_L0_Bi_8x16, //    13
+	B_L1_Bi_16x8, //    14
+	B_L1_Bi_8x16, //    15
+	B_Bi_L0_16x8, //    16
+	B_Bi_L0_8x16, //    17
+	B_Bi_L1_16x8, //    18
+	B_Bi_L1_8x16, //    19
+	B_Bi_Bi_16x8, //    20
+	B_Bi_Bi_8x16, //    21
+	B_8x8, //           22
+	B_Skip, //          -1
+};
+
+
+
+
+
+
+//预测模式
+enum class H264_MB_PART_PRED_MODE :int
+{
+	Intra_4x4,
+	Intra_8x8,
+	Intra_16x16,
+	Pred_L0,
+	Pred_L1,
+	Direct,
+	BiPred,
+	NA
+};
+
+
+//P slice：i宏块,表明当前宏块类型所采用的Intra预测方式
+enum class H264_MB_PART_PRED_MODE_I
+{
+	Intra_4x4,
+	Intra_8x8,
+	Intra_16x16,
+	
+};
+//P slice：i宏块和p宏块,表明当前宏块类型所采用的Intra预测方式
+enum class H264_MB_PART_PRED_MODE_P
+{
+	Pred_L0,
+	NA
+};
+//B slice：i宏块和b宏块,表明当前宏块类型所采用的Intra预测方式
+enum class H264_MB_PART_PRED_MODE_B
+{
+	Direct,
+	Pred_L0,
+	Pred_L1,
+	BiPred,
+	NA
 };

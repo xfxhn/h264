@@ -88,7 +88,11 @@ public:
 
 	uint32_t  PicHeightInMbs;
 	uint32_t  PicSizeInMbs;
+
+	/*图像中每个“mapUnit(映射单元)”属于哪个组号，需要一个数组来记录，将这个数据定义为mapUnitToSliceGroupMap[]，
+	数组中的第i个元素表示以光栅顺序扫描时，第i个“mapUnit(映射单元)”对应哪个组（组号）。*/
 	uint32_t* mapUnitToSliceGroupMap; //MbToSliceGroupMap[PicSizeInMapUnits];
+	//当我们得到mapUnitToSliceGroupMap[]后，就可以根据宏块与“mapUnit(映射单元)”的对应关系
 	uint32_t* MbToSliceGroupMap; //MbToSliceGroupMap[PicSizeInMbs];
 public:
 

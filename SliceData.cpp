@@ -2,33 +2,36 @@
 
 SliceData::SliceData()
 {
+	mb_field_decoding_flag = 0;
+	mb_skip_flag = 0;
 }
 
+//跳过宏块
 int SliceData::NextMbAddress(const SliceHeader& sHeader, uint32_t n)
 {
 	int32_t i = n + 1;
-
-	/*if (sHeader.MbToSliceGroupMap == NULL)
+	if (sHeader.MbToSliceGroupMap == NULL)
 	{
-		LOG_ERROR("slice_header.MbToSliceGroupMap == NULL\n");
+		printError("sHeader.MbToSliceGroupMap=null");
 		return -1;
 	}
 
-	if (i >= slice_header.PicSizeInMbs)
+
+	if (i >= sHeader.PicSizeInMbs)
 	{
-		LOG_ERROR("i(%d) >= slice_header.PicSizeInMbs(%d);\n", i, slice_header.PicSizeInMbs);
-		return -2;
+		printError("i >= slice_header.PicSizeInMbs(%d);");
+		return -1;
 	}
 
-	while (i < slice_header.PicSizeInMbs && slice_header.MbToSliceGroupMap[i] != slice_header.MbToSliceGroupMap[n])
+	while (i < sHeader.PicSizeInMbs && sHeader.MbToSliceGroupMap[i] != sHeader.MbToSliceGroupMap[n])
 	{
 		i++;
-		if (i >= slice_header.PicSizeInMbs)
+		if (i >= sHeader.PicSizeInMbs)
 		{
-			LOG_ERROR("i(%d) >= slice_header.PicSizeInMbs(%d);\n", i, slice_header.PicSizeInMbs);
+			printError("i(%d) >= slice_header.PicSizeInMbs(%d);\n");
 			return -3;
 		}
-	}*/
+	}
 
 	return i;
 }
@@ -58,6 +61,7 @@ bool SliceData::slice_data(BitStream& bs, SliceHeader& sHeader)
 	CurrMbAddr = sHeader.first_mb_in_slice * (1 + sHeader.MbaffFrameFlag);
 
 	bool moreDataFlag = true;
+	bool prevMbSkipped = false;
 	do
 	{
 		if ((SLIECETYPE)sHeader.slice_type != SLIECETYPE::H264_SLIECE_TYPE_I && (SLIECETYPE)sHeader.slice_type != SLIECETYPE::H264_SLIECE_TYPE_SI)
@@ -74,12 +78,12 @@ bool SliceData::slice_data(BitStream& bs, SliceHeader& sHeader)
 				/*当图像采用帧间预测编码时，H.264 允许在图像平坦的区域使用“跳跃”块，“跳跃”块本身不携带任何数据，
 				  解码器通过周围已重建的宏块的数据来恢复“跳跃”块。当熵编码为 CAVLC 或 CABAC 时，“跳跃”块的表示方法不同。*/
 				mb_skip_run = bs.readUE();
+				prevMbSkipped = (mb_skip_run > 0);
 
-				bool prevMbSkipped = (mb_skip_run > 0);
 
 				for (size_t i = 0; i < mb_skip_run; i++)
 				{
-					//CurrMbAddr = NextMbAddress(CurrMbAddr)
+					CurrMbAddr = NextMbAddress(sHeader, CurrMbAddr);
 				}
 
 				if (mb_skip_run > 0)
@@ -100,14 +104,46 @@ bool SliceData::slice_data(BitStream& bs, SliceHeader& sHeader)
 
 		if (moreDataFlag)
 		{
-			/*if (sHeader.MbaffFrameFlag && (CurrMbAddr % 2 == 0 || (CurrMbAddr % 2 == 1 && prevMbSkipped))) {
+			if (sHeader.MbaffFrameFlag && (CurrMbAddr % 2 == 0 || (CurrMbAddr % 2 == 1 && prevMbSkipped))) {
+				return -1;
+			}
+			//macroblock_layer
 
-			}*/
+			Macroblock mb;
+			mb.macroblock_layer(bs, sHeader);
+
+
+		}
+		if (!sHeader.pps.entropy_coding_mode_flag)
+		{
+			moreDataFlag = bs.isEmpty();
+		}
+		else
+		{
+			if ((SLIECETYPE)sHeader.slice_type != SLIECETYPE::H264_SLIECE_TYPE_I && (SLIECETYPE)sHeader.slice_type != SLIECETYPE::H264_SLIECE_TYPE_SI)
+			{
+				prevMbSkipped = mb_skip_flag;
+			}
+
+
+
+			if (sHeader.MbaffFrameFlag && CurrMbAddr % 2 == 0)
+			{
+				moreDataFlag = true;
+			}
+			else
+			{
+				//ret = cabac.CABAC_decode_end_of_slice_flag(picture, bs, end_of_slice_flag); //2 ae(v)
+				//RETURN_IF_FAILED(ret != 0, ret);
+
+				//moreDataFlag = !end_of_slice_flag;
+
+
+			}
 		}
 
 
-
-	} while (false);
+	} while (moreDataFlag);
 	return false;
 }
 
