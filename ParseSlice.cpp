@@ -26,7 +26,6 @@ bool ParseSlice::parse(BitStream& bs, const ParsePPS ppsCache[256], const ParseS
 
 	SliceData sData;
 
-
 	sData.slice_data(bs, sHeader);
 
 	/*mbNum = sHeader.sps.pic_width_in_mbs_minus1 * sHeader.sps.pic_height_in_map_units_minus1;

@@ -20,13 +20,7 @@ struct CHROMA_FORMAT_IDC_T
 	int32_t     SubWidthC;
 	int32_t     SubHeightC;
 };
-CHROMA_FORMAT_IDC_T chroma_format_idcs[5] = {
-			{0,0,-1,-1},    //单色
-			{1,0,2,2},      //420
-			{2,0,2,1},		//422
-			{3,0,1,1},		//444
-			{3,1,-1,-1},	//444   分开编码
-};
+
 
 
 class ParseSPS

@@ -217,7 +217,7 @@ void AnnexBReader::getNaluHeader(uint8_t* buffer,int size)
 
         //BitStream bs(buffer + 1, size);
 
-        bool ret = pps.pic_parameter_set_rbsp(bs);
+        bool ret = pps.pic_parameter_set_rbsp(bs, spsCache);
 
         ppsCache[pps.pic_parameter_set_id] = pps;
         //ppsCache.push_back(pps);

@@ -4,6 +4,20 @@
 //u(n) : 无符号整数，n bit 长度
 //ue(v) : 无符号指数哥伦布熵编码
 //se(v) : 有符号指数哥伦布熵编码
+
+
+
+
+CHROMA_FORMAT_IDC_T chroma_format_idcs[5] = {
+			{0, 0, -1, -1},		//单色
+			{1, 0,  2,  2},     //420
+			{2, 0,  2,  1},		//422
+			{3, 0,  1,  1},		//444
+			{3, 1, -1, -1},		//444   分开编码
+};
+
+
+
 ParseSPS::ParseSPS()
 {
 	profile_idc = 0;
@@ -201,7 +215,7 @@ bool ParseSPS::seq_parameter_set_data(BitStream& bs)
 		mb_adaptive_frame_field_flag = bs.readBit();
 	}
 
-	//推导亮度矢量的方法
+	//B_Skip、B_Direct_16x16 和 B_Direct_8x8 亮度运动矢量 的计算过程使用的方法
 
 	direct_8x8_inference_flag = bs.readBit();
 	//图片进行裁剪的偏移量 如果为0那么就不需要裁剪
@@ -231,6 +245,7 @@ bool ParseSPS::seq_parameter_set_data(BitStream& bs)
 	//如果是场编码要*2
 	FrameHeightInMbs = (2 - frame_mbs_only_flag) * PicHeightInMapUnits;
 
+	//表示UV依附于Y 和Y一起编码，
 	if (separate_colour_plane_flag == 0) {
 		ChromaArrayType = chroma_format_idc;
 	}

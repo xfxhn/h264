@@ -2,6 +2,15 @@
 #include <cstdint>
 #include <cmath>
 //#include "Common.h"
+#include "NaluType.h"
+
+
+struct maping_coded_block_pattern
+{
+	int32_t code_num;
+	int32_t Intra_4x4_or_Intra_8x8;
+	int32_t Inter;
+};
 
 class BitStream
 {
@@ -18,6 +27,7 @@ public:
 	//读取一个无符号指数哥伦布熵编码的数据
 	int readUE();
 	int readSE();
+	int readME(int ChromaArrayType, H264_MB_PART_PRED_MODE mode);
 
 	bool isEmpty();
 
