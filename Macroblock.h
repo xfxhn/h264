@@ -90,5 +90,6 @@ private:
 	bool is_I_NxN(uint32_t mb_type, SLIECETYPE slice_type);
 	bool mb_pred(uint32_t mb_type);
 	bool residual(int startIdx, int endIdx);
+	bool sub_mb_pred(uint32_t mb_type);
 };
 

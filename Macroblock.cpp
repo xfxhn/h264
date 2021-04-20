@@ -177,6 +177,17 @@ bool Macroblock::macroblock_layer(BitStream& bs, const SliceHeader& sHeader)
 			mode != H264_MB_PART_PRED_MODE::Intra_16x16 &&
 			NumMbPart(fix_mb_type, fix_slice_type) == 4)
 		{
+
+			sub_mb_pred(fix_mb_type);
+			for (int mbPartIdx = 0; mbPartIdx < 4; mbPartIdx++)
+			{
+				/*if (sub_mb_type[mbPartIdx] != B_Direct_8x8) {
+					if (NumSubMbPart(sub_mb_type[mbPartIdx]) > 1)
+						noSubMbPartSizeLessThan8x8Flag = 0
+				}
+				else if (!direct_8x8_inference_flag)
+					noSubMbPartSizeLessThan8x8Flag = 0*/
+			}
 			//........
 		}
 		else
@@ -382,6 +393,11 @@ bool Macroblock::mb_pred(uint32_t mb_type)
 }
 //¼ÆËã²Ð²îÊý¾Ý
 bool Macroblock::residual(int startIdx, int endIdx)
+{
+	return false;
+}
+
+bool Macroblock::sub_mb_pred(uint32_t mb_type)
 {
 	return false;
 }
