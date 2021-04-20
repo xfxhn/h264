@@ -20,15 +20,16 @@ public:
 	size_t unescape(uint8_t* src, uint32_t src_len);
 	~AnnexBReader();
 private:
-	/*ParsePPS* pps;
-	ParseSPS* sps;*/
+
 	ParseSlice* slice;
 
 
 	//标识在条带头中提到的图像参数集。变量 pic_parameter_set_id 的值应该在 0 到  255 的 范围内（包括0 和255）。
-	ParsePPS ppsCache[256];
+	//ParsePPS ppsCache[256];
+	ParsePPS* ppsCache;
 	//用于识别图像参数集所指的序列参数集。seq_parameter_set_id 的值应在 0-31 的范围 内，包括0 和31。
-	ParseSPS spsCache[32];
+	//ParseSPS spsCache[32];
+	ParseSPS* spsCache;
 
 	/*vector<ParsePPS*> ppsCache;
 	

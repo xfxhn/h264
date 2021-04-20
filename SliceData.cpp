@@ -91,7 +91,7 @@ bool SliceData::slice_data(BitStream& bs, SliceHeader& sHeader)
 					//这个是循环读这个数据，读到最后那个填充字节之前没有数据了就终止这个循环。。
 					//如果在rbsp_trailing_bits( )之前的RBSP中有更多数据，more_rbsp_data( ) 的返回值为TRUE,否则返回false
 					//moreDataFlag = more_rbsp_data(bs);
-					moreDataFlag = bs.isEmpty();
+					moreDataFlag = bs.more_rbsp_data();
 				}
 			}
 			else  //ae(v)表示CABAC编码
@@ -116,7 +116,7 @@ bool SliceData::slice_data(BitStream& bs, SliceHeader& sHeader)
 		}
 		if (!sHeader.pps.entropy_coding_mode_flag)
 		{
-			moreDataFlag = bs.isEmpty();
+			moreDataFlag = bs.more_rbsp_data();
 		}
 		else
 		{

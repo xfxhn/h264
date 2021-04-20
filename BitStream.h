@@ -1,7 +1,6 @@
 #pragma once
 #include <cstdint>
 #include <cmath>
-//#include "Common.h"
 #include "NaluType.h"
 
 
@@ -29,7 +28,7 @@ public:
 	int readSE();
 	int readME(int ChromaArrayType, H264_MB_PART_PRED_MODE mode);
 
-	bool isEmpty();
+	bool more_rbsp_data();
 
 	~BitStream();
 

@@ -11,7 +11,7 @@ ParseNalu::ParseNalu()
    /* NumBytesInNALunit = numBytesInNALunit;
     NumBytesInRBSP = 0;*/
     rbsp_byte = NULL;
-    IdrPicFlag = 0;
+    IdrPicFlag = false;
     //m_is_malloc_mem_self = 0;
 
    /* if (NumBytesInNALunit > 0)

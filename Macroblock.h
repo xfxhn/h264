@@ -72,6 +72,7 @@ public:
 	uint8_t		coded_block_pattern;
 	uint8_t		CodedBlockPatternLuma;
 	uint8_t		CodedBlockPatternChroma;
+	uint8_t		mb_qp_delta;
 
 
 
@@ -88,5 +89,6 @@ private:
 	int fixed_mb_type(uint32_t slice_type, uint32_t& fix_mb_type, SLIECETYPE& fix_slice_type);
 	bool is_I_NxN(uint32_t mb_type, SLIECETYPE slice_type);
 	bool mb_pred(uint32_t mb_type);
+	bool residual(int startIdx, int endIdx);
 };
 

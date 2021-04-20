@@ -17,7 +17,7 @@ public:
 public:
     ParseSlice(ParseNalu& nalu);
 
-    bool parse(BitStream& bs, const ParsePPS ppsCache[256], const ParseSPS spsCache[32]);
+    bool parse(BitStream& bs, const ParsePPS* ppsCache, const ParseSPS* spsCache);
 
 	~ParseSlice();
 };

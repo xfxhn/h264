@@ -1,5 +1,7 @@
 #include "BitStream.h"
+#include <iostream>
 
+using namespace std;
 
 
 maping_coded_block_pattern intra_cbp[48] =
@@ -53,6 +55,8 @@ maping_coded_block_pattern intra_cbp[48] =
 	{46,  38,   38},
 	{47,  41,   41}
 };
+
+
 
 BitStream::BitStream(uint8_t* buf, int _size)
 {
@@ -121,30 +125,33 @@ int BitStream::readME(int ChromaArrayType, H264_MB_PART_PRED_MODE mode)
 		{
 			return intra_cbp[uev].Intra_4x4_or_Intra_8x8;
 		}
-		else 
+		else
 		{
 			return intra_cbp[uev].Inter;
 		}
-		
+
 	}
 
-
-
 }
-//是否有数据，有返回true，否则返回false
-bool BitStream::isEmpty()
+//是否还有数据，有返回true，否则返回false
+bool BitStream::more_rbsp_data()
 {
 	bool flag = true;
-	if (postion == size)
+
+	if (postion + 1 == size)
 	{
-		for (size_t i = 0; i < 8; i++)
+		size_t i = 0;
+		for (; i < 8; i++)
 		{
 			if (((*currentPtr >> i) & 1) != 0)
 			{
 				flag = (i != 7);
+				++i;
 				break;
 			}
 		}
+		flag = (flag && (bitsLeft > i));
+
 	}
 
 	return flag;

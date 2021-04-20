@@ -3,13 +3,13 @@
 
 
 
-ParseSlice::ParseSlice(ParseNalu& nalu):nalu(nalu)
+ParseSlice::ParseSlice(ParseNalu& nalu) :nalu(nalu)
 {
 	mbNum = 0;
 	macroblock = nullptr;
 }
 
-bool ParseSlice::parse(BitStream& bs, const ParsePPS ppsCache[256], const ParseSPS spsCache[32])
+bool ParseSlice::parse(BitStream& bs, const ParsePPS* ppsCache, const ParseSPS* spsCache)
 {
 
 	SliceHeader sHeader(nalu);

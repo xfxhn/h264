@@ -86,6 +86,7 @@ Macroblock::Macroblock()
 
 	CodedBlockPatternChroma = -1;
 	CodedBlockPatternLuma = -1;
+	mb_qp_delta = 0;
 }
 //slice type 五种类型
 //I slice中的宏块类型只能是I宏块类型
@@ -213,33 +214,52 @@ bool Macroblock::macroblock_layer(BitStream& bs, const SliceHeader& sHeader)
 			{
 				//表示六个亮度和色度8x8块可能含有非零的变换系数幅值。对预测模式不等于 Intra_16x16 的 宏块
 				coded_block_pattern = bs.readME(sHeader.sps.ChromaArrayType, mode);
-				//一个宏块的亮度分量的coded_block_pattern
-				CodedBlockPatternLuma = coded_block_pattern % 16;
 
-				/*CodedBlockPatternChroma
-					描述
-					0		所有色度变换系数幅值都等于 0。
-					1		一个或多个色度   DC 变换系数幅值不为0。所有色度   AC 变换系数幅值都等 于 0。
-					2		零个或多个色度   DC 变换系数幅值不为0。一个或多个色度   AC 变换系数幅 值不为 0。*/
-				CodedBlockPatternChroma = coded_block_pattern / 16;
 			}
-			//slice_type == SLIECETYPE::H264_SLIECE_TYPE_B && mb_type == 0
+			//一个宏块的亮度分量的coded_block_pattern
+			CodedBlockPatternLuma = coded_block_pattern % 16;
+
+			/*CodedBlockPatternChroma
+				描述
+				0		所有色度变换系数幅值都等于 0。
+				1		一个或多个色度   DC 变换系数幅值不为0。所有色度   AC 变换系数幅值都等 于 0。
+				2		零个或多个色度   DC 变换系数幅值不为0。一个或多个色度   AC 变换系数幅 值不为 0。*/
+			CodedBlockPatternChroma = coded_block_pattern / 16;
 
 			if (
-				CodedBlockPatternLuma > 0 && 
-				sHeader.pps.transform_8x8_mode_flag && 
-				!is_I_NxN(fix_mb_type, fix_slice_type) && 
-				noSubMbPartSizeLessThan8x8Flag && 
+				CodedBlockPatternLuma > 0 &&
+				sHeader.pps.transform_8x8_mode_flag &&
+				!is_I_NxN(fix_mb_type, fix_slice_type) &&
+				noSubMbPartSizeLessThan8x8Flag &&
 				(!(fix_slice_type == SLIECETYPE::H264_SLIECE_TYPE_B && mb_type == 0) || sHeader.sps.direct_8x8_inference_flag)
 				)
 			{
-				//transform_size_8x8_flag
+
+				if (isAe)
+				{
+					//transform_size_8x8_flag
+				}
+				else
+				{
+					transform_size_8x8_flag = bs.readBit();
+				}
+
 			}
 		}
 
-		if (CodedBlockPatternLuma>0 || CodedBlockPatternChroma>0 || mode == H264_MB_PART_PRED_MODE::Intra_16x16)
+		if (CodedBlockPatternLuma > 0 || CodedBlockPatternChroma > 0 || mode == H264_MB_PART_PRED_MODE::Intra_16x16)
 		{
-
+			if (isAe)
+			{
+				//mb_qp_delta
+			}
+			else
+			{
+				//能改变宏块层 中 QPY 的值 。mb_qp_delta 解码后的值应包含在–( 26 + QpBdOffsetY / 2) 到 +( 25 + QpBdOffsetY / 2 )范围内。
+				//当任何宏块（包括 P_Skip 和 B_Skip 宏块类型）中都不存在 mb_qp_delta 时， mb_qp_delta 默认为0。
+				mb_qp_delta = bs.readSE();
+			}
+			residual(0, 15);
 		}
 	}
 
@@ -357,6 +377,11 @@ bool Macroblock::is_I_NxN(uint32_t mb_type, SLIECETYPE slice_type)
 
 //宏块预测语法
 bool Macroblock::mb_pred(uint32_t mb_type)
+{
+	return false;
+}
+//计算残差数据
+bool Macroblock::residual(int startIdx, int endIdx)
 {
 	return false;
 }

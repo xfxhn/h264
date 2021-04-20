@@ -16,8 +16,6 @@ string printHex(unsigned char* data,int len)
 	}
 	cout << endl;
 
-
-
 	return "";
 }
 

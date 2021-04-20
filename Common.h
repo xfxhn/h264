@@ -3,7 +3,6 @@
 #include <iostream>
 #include "BitStream.h"
 #include <cassert>
-#include <vector>
 #include "NaluType.h" 
 
 //无效的值用”na”表示
@@ -15,7 +14,6 @@ using namespace std;
 
 
 inline void printError(const char* err) {
-
 
     cout << err << endl;
 }

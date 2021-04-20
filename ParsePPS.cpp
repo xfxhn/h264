@@ -154,7 +154,7 @@ bool ParsePPS::pic_parameter_set_rbsp(BitStream& bs, const ParseSPS spsCache[32]
 	//图像参数集中指明（直接或与相应的数据分割块 A 关联的数据分割块 B 和数据分割块 C 中。
 	redundant_pic_cnt_present_flag = bs.readBit(); //1 u(1)
 	
-	if (bs.isEmpty())
+	if (bs.more_rbsp_data())
 	{
 		//等于1表示8x8变换解码过程可能正在使用（参见 8.5 节）。transform_8x8_mode_flag 等于 0 表示未使用 8x8 变换解码过程。
 		//当 transform_8x8_mode_flag 不存在时，默认其值 为0。
