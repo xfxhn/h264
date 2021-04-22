@@ -62,17 +62,25 @@ public:
 	ParsePPS& pps;*/
 
 
-	uint8_t		pcm_alignment_zero_bit; // 3 f(1)
-	uint8_t		pcm_sample_luma[256]; //3 u(v)
-	uint8_t*	pcm_sample_chroma;
+	uint32_t		pcm_alignment_zero_bit; // 3 f(1)
+	uint32_t		pcm_sample_luma[256]; //3 u(v)
+	uint32_t* pcm_sample_chroma;
 	bool		transform_size_8x8_flag;
-	uint8_t		mb_type;
+	uint32_t		mb_type;
 
 
-	uint8_t		coded_block_pattern;
-	uint8_t		CodedBlockPatternLuma;
-	uint8_t		CodedBlockPatternChroma;
-	uint8_t		mb_qp_delta;
+	uint32_t		coded_block_pattern;
+	uint32_t		CodedBlockPatternLuma;
+	uint32_t		CodedBlockPatternChroma;
+	uint32_t		mb_qp_delta;
+
+	uint32_t     prev_intra4x4_pred_mode_flag[16];
+	uint32_t     rem_intra4x4_pred_mode[16];
+
+	uint32_t     prev_intra8x8_pred_mode_flag[4];
+	uint32_t     rem_intra8x8_pred_mode[4];
+
+	uint32_t     intra_chroma_pred_mode;
 
 
 
@@ -80,16 +88,20 @@ public:
 	Macroblock();
 	bool macroblock_layer(BitStream& bs, const SliceHeader& sHeader);
 
-	H264_MB_PART_PRED_MODE MbPartPredMode(uint32_t mb_type, int transform_size_8x8_flag, SLIECETYPE slice_type, bool flag);
 
-	int NumMbPart(uint32_t mb_type, SLIECETYPE slice_type);
+
+
 
 	~Macroblock();
 private:
+	H264_MB_PART_PRED_MODE MbPartPredMode(uint32_t mb_type, SLIECETYPE slice_type, uint32_t mbPartIdx);
 	int fixed_mb_type(uint32_t slice_type, uint32_t& fix_mb_type, SLIECETYPE& fix_slice_type);
 	bool is_I_NxN(uint32_t mb_type, SLIECETYPE slice_type);
-	bool mb_pred(uint32_t mb_type);
+	bool mb_pred(BitStream& bs, const SliceHeader& sHeader, uint32_t mb_type, H264_MB_PART_PRED_MODE mode, uint32_t numMbPart);
 	bool residual(int startIdx, int endIdx);
 	bool sub_mb_pred(uint32_t mb_type);
+	uint32_t NumMbPart(uint32_t mb_type, SLIECETYPE slice_type);
+private:
+	bool isAe;
 };
 

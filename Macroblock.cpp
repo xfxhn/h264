@@ -87,6 +87,17 @@ Macroblock::Macroblock()
 	CodedBlockPatternChroma = -1;
 	CodedBlockPatternLuma = -1;
 	mb_qp_delta = 0;
+
+
+	isAe = false;
+
+
+	memset(prev_intra4x4_pred_mode_flag, 0, sizeof(uint8_t) * 16);
+	memset(rem_intra4x4_pred_mode, 0, sizeof(uint8_t) * 16);
+	memset(prev_intra8x8_pred_mode_flag, 0, sizeof(uint8_t) * 4);
+	memset(rem_intra8x8_pred_mode, 0, sizeof(uint8_t) * 4);
+
+	intra_chroma_pred_mode = 0;
 }
 //slice type 五种类型
 //I slice中的宏块类型只能是I宏块类型
@@ -108,7 +119,7 @@ Macroblock::Macroblock()
 //一个宏块的色度分量的coded_block_pattern，Cb、Cr的CodedBlockPatternChroma相同。
 bool Macroblock::macroblock_layer(BitStream& bs, const SliceHeader& sHeader)
 {
-	bool isAe = sHeader.pps.entropy_coding_mode_flag;  //ae(v)表示CABAC编码
+	isAe = sHeader.pps.entropy_coding_mode_flag;  //ae(v)表示CABAC编码
 
 
 
@@ -135,8 +146,8 @@ bool Macroblock::macroblock_layer(BitStream& bs, const SliceHeader& sHeader)
 
 
 	//获取当前宏块的预测模式
-	H264_MB_PART_PRED_MODE mode = MbPartPredMode(fix_mb_type, transform_size_8x8_flag, fix_slice_type, false);
-
+	H264_MB_PART_PRED_MODE mode = MbPartPredMode(fix_mb_type, fix_slice_type, false);
+	uint32_t  numMbPart = NumMbPart(fix_mb_type, fix_slice_type);
 
 	if (fix_slice_type == SLIECETYPE::H264_SLIECE_TYPE_I && fix_mb_type == 25)  //I_PCM 不经过预测，变换，量化
 	{
@@ -175,7 +186,7 @@ bool Macroblock::macroblock_layer(BitStream& bs, const SliceHeader& sHeader)
 
 		if (!is_I_NxN(fix_mb_type, fix_slice_type) &&
 			mode != H264_MB_PART_PRED_MODE::Intra_16x16 &&
-			NumMbPart(fix_mb_type, fix_slice_type) == 4)
+			numMbPart == 4)
 		{
 
 			sub_mb_pred(fix_mb_type);
@@ -211,7 +222,7 @@ bool Macroblock::macroblock_layer(BitStream& bs, const SliceHeader& sHeader)
 				//........
 			}
 
-			mb_pred(fix_mb_type);
+			mb_pred(bs, sHeader, fix_mb_type, mode, numMbPart);
 		}
 
 		if (mode != H264_MB_PART_PRED_MODE::Intra_16x16)
@@ -277,8 +288,102 @@ bool Macroblock::macroblock_layer(BitStream& bs, const SliceHeader& sHeader)
 
 	return false;
 }
+
+//宏块预测语法
+bool Macroblock::mb_pred(BitStream& bs, const SliceHeader& sHeader, uint32_t mb_type, H264_MB_PART_PRED_MODE mode,uint32_t numMbPart)
+{
+
+	if (mode == H264_MB_PART_PRED_MODE::Intra_4x4 || mode == H264_MB_PART_PRED_MODE::Intra_8x8 || mode == H264_MB_PART_PRED_MODE::Intra_16x16)
+	{
+		if (mode == H264_MB_PART_PRED_MODE::Intra_4x4)
+		{
+			for (size_t luma4x4BlkIdx = 0; luma4x4BlkIdx < 16; luma4x4BlkIdx++)
+			{
+
+				//表示序号为 luma4x4BlkIdx = 0到15 的4x4 亮度块的Intra_4x4 预测。
+				if (isAe) // ae(v) 表示CABAC编码
+				{
+
+				}
+				else
+				{
+					prev_intra4x4_pred_mode_flag[luma4x4BlkIdx] = bs.readBit();
+				}
+
+
+				if (!prev_intra4x4_pred_mode_flag[luma4x4BlkIdx]) {
+					if (isAe) // ae(v) 表示CABAC编码
+					{
+
+					}
+					else
+					{
+						rem_intra4x4_pred_mode[luma4x4BlkIdx] = bs.readMultiBit(3);
+					}
+
+				}
+			}
+		}
+
+
+		if (mode == H264_MB_PART_PRED_MODE::Intra_8x8)
+		{
+			for (size_t luma8x8BlkIdx = 0; luma8x8BlkIdx < 4; luma8x8BlkIdx++) {
+				//表示序号为 luma8x8BlkIdx = 0到3 的8x8 亮度块的Intra_8x8 预测
+				if (isAe) // ae(v) 表示CABAC编码
+				{
+
+				}
+				else
+				{
+					prev_intra8x8_pred_mode_flag[luma8x8BlkIdx] = bs.readBit();
+				}
+
+				if (!prev_intra8x8_pred_mode_flag[luma8x8BlkIdx]) {
+					if (isAe) // ae(v) 表示CABAC编码
+					{
+
+					}
+					else
+					{
+						rem_intra8x8_pred_mode[luma8x8BlkIdx] = bs.readMultiBit(3);
+					}
+
+				}
+			}
+		}
+
+		if (sHeader.sps.ChromaArrayType == 1 || sHeader.sps.ChromaArrayType == 2)
+		{
+			//宏块中用于色度的空间预测类型使用Intra_4x4 或 Intra_16x16 预测。intra_chroma_pred_mode 的取值范围为0 到  3。
+			//  0 = DC
+			//	1 = 水平的
+			//	2 = 垂直的
+			//	3 = 平面的
+			if (isAe) // ae(v) 表示CABAC编码
+			{
+
+			}
+			else
+			{
+				intra_chroma_pred_mode = bs.readUE();
+			}
+		}
+	}
+	else if (mode == H264_MB_PART_PRED_MODE::Direct) {
+		for (size_t mbPartIdx = 0; mbPartIdx < numMbPart; mbPartIdx++)
+		{
+			/*if ((sHeader.num_ref_idx_l0_active_minus1 > 0  ||
+				slice_data.mb_field_decoding_flag != field_pic_flag) && MbPartPredMode(mb_type, mbPartIdx) != Pred_L1)
+			{
+
+			}*/
+		}
+	}
+	return false;
+}
 //获得当前宏块类型所采用的Intra预测方式
-H264_MB_PART_PRED_MODE Macroblock::MbPartPredMode(uint32_t mb_type, int transform_size_8x8_flag, SLIECETYPE slice_type, bool flag)
+H264_MB_PART_PRED_MODE Macroblock::MbPartPredMode(uint32_t mb_type, SLIECETYPE slice_type, uint32_t mbPartIdx)
 {
 	H264_MB_PART_PRED_MODE mode;
 
@@ -302,7 +407,7 @@ H264_MB_PART_PRED_MODE Macroblock::MbPartPredMode(uint32_t mb_type, int transfor
 	}
 	else if (slice_type == SLIECETYPE::H264_SLIECE_TYPE_P || slice_type == SLIECETYPE::H264_SLIECE_TYPE_SP)
 	{
-		if (flag)
+		if (mbPartIdx)
 		{
 			mode = mb_type_sleces_sp_p[mb_type].MbPartPredMode1;
 		}
@@ -312,7 +417,7 @@ H264_MB_PART_PRED_MODE Macroblock::MbPartPredMode(uint32_t mb_type, int transfor
 	}
 	else if (slice_type == SLIECETYPE::H264_SLIECE_TYPE_B)
 	{
-		if (flag)
+		if (mbPartIdx)
 		{
 			mode = mb_type_sleces_b[mb_type].MbPartPredMode1;
 		}
@@ -328,7 +433,7 @@ H264_MB_PART_PRED_MODE Macroblock::MbPartPredMode(uint32_t mb_type, int transfor
 }
 
 //宏块被分割成多少部分
-int Macroblock::NumMbPart(uint32_t mb_type, SLIECETYPE slice_type)
+uint32_t Macroblock::NumMbPart(uint32_t mb_type, SLIECETYPE slice_type)
 {
 	int ret = 0;
 	if (slice_type == SLIECETYPE::H264_SLIECE_TYPE_P || slice_type == SLIECETYPE::H264_SLIECE_TYPE_SP)
@@ -386,11 +491,7 @@ bool Macroblock::is_I_NxN(uint32_t mb_type, SLIECETYPE slice_type)
 	return false;
 }
 
-//宏块预测语法
-bool Macroblock::mb_pred(uint32_t mb_type)
-{
-	return false;
-}
+
 //计算残差数据
 bool Macroblock::residual(int startIdx, int endIdx)
 {
