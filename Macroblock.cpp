@@ -146,7 +146,7 @@ bool Macroblock::macroblock_layer(BitStream& bs, const SliceHeader& sHeader)
 
 
 	//获取当前宏块的预测模式
-	H264_MB_PART_PRED_MODE mode = MbPartPredMode(fix_mb_type, fix_slice_type, false);
+	H264_MB_PART_PRED_MODE mode = MbPartPredMode(fix_mb_type, fix_slice_type, 0);
 	uint32_t  numMbPart = NumMbPart(fix_mb_type, fix_slice_type);
 
 	if (fix_slice_type == SLIECETYPE::H264_SLIECE_TYPE_I && fix_mb_type == 25)  //I_PCM 不经过预测，变换，量化
@@ -169,7 +169,7 @@ bool Macroblock::macroblock_layer(BitStream& bs, const SliceHeader& sHeader)
 		}
 
 		//MbWidthC   MbHeightC色度阵列的宽度和高度
-		pcm_sample_chroma = new uint8_t[2 * sHeader.sps.MbWidthC * sHeader.sps.MbHeightC]();
+		pcm_sample_chroma = new uint32_t[2 * sHeader.sps.MbWidthC * sHeader.sps.MbHeightC]();
 		for (size_t i = 0; i < 2 * sHeader.sps.MbWidthC * sHeader.sps.MbHeightC; i++)
 		{
 			int32_t v = sHeader.sps.BitDepthC;
@@ -281,7 +281,7 @@ bool Macroblock::macroblock_layer(BitStream& bs, const SliceHeader& sHeader)
 				//当任何宏块（包括 P_Skip 和 B_Skip 宏块类型）中都不存在 mb_qp_delta 时， mb_qp_delta 默认为0。
 				mb_qp_delta = bs.readSE();
 			}
-			residual(0, 15);
+			residual(bs, sHeader, 0, 15);
 		}
 	}
 
@@ -290,7 +290,7 @@ bool Macroblock::macroblock_layer(BitStream& bs, const SliceHeader& sHeader)
 }
 
 //宏块预测语法
-bool Macroblock::mb_pred(BitStream& bs, const SliceHeader& sHeader, uint32_t mb_type, H264_MB_PART_PRED_MODE mode,uint32_t numMbPart)
+bool Macroblock::mb_pred(BitStream& bs, const SliceHeader& sHeader, uint32_t mb_type, H264_MB_PART_PRED_MODE mode, uint32_t numMbPart)
 {
 
 	if (mode == H264_MB_PART_PRED_MODE::Intra_4x4 || mode == H264_MB_PART_PRED_MODE::Intra_8x8 || mode == H264_MB_PART_PRED_MODE::Intra_16x16)
@@ -300,16 +300,16 @@ bool Macroblock::mb_pred(BitStream& bs, const SliceHeader& sHeader, uint32_t mb_
 			for (size_t luma4x4BlkIdx = 0; luma4x4BlkIdx < 16; luma4x4BlkIdx++)
 			{
 
-				//表示序号为 luma4x4BlkIdx = 0到15 的4x4 亮度块的Intra_4x4 预测。
+				//表示序号为 luma4x4BlkIdx = 0到15 的4x4 亮度块的帧内Intra_4x4 预测。
 				if (isAe) // ae(v) 表示CABAC编码
 				{
 
 				}
 				else
 				{
+					//用来表示我当前用的模式和前面的是不是一样的
 					prev_intra4x4_pred_mode_flag[luma4x4BlkIdx] = bs.readBit();
 				}
-
 
 				if (!prev_intra4x4_pred_mode_flag[luma4x4BlkIdx]) {
 					if (isAe) // ae(v) 表示CABAC编码
@@ -318,6 +318,11 @@ bool Macroblock::mb_pred(BitStream& bs, const SliceHeader& sHeader, uint32_t mb_
 					}
 					else
 					{
+						//有9种预测模式
+						/*模式0：垂直模式，条件：A~D可用。
+						  模式1：水平模式，条件：I~L可用。
+						  模式2：DC模式，条件：A~D或I~L可用。
+						  模式3~8：方向模式，各个像素是由A到L像素通过权重不等的公式加权计算的。*/
 						rem_intra4x4_pred_mode[luma4x4BlkIdx] = bs.readMultiBit(3);
 					}
 
@@ -352,11 +357,13 @@ bool Macroblock::mb_pred(BitStream& bs, const SliceHeader& sHeader, uint32_t mb_
 				}
 			}
 		}
-
+		// YUV 4 : 2 : 0 || YUV 4 : 2 : 2，yuv一起编码
 		if (sHeader.sps.ChromaArrayType == 1 || sHeader.sps.ChromaArrayType == 2)
 		{
-			//宏块中用于色度的空间预测类型使用Intra_4x4 或 Intra_16x16 预测。intra_chroma_pred_mode 的取值范围为0 到  3。
-			//  0 = DC
+			//宏块中用于色度的空间预测类型使用Intra_4x4 或 Intra_16x16 预测
+			//intra_chroma_pred_mode 的取值范围为0 到  3。
+			//  0 = DC 又被称之为均值模式。均值模式下，4 x 4 子块中 16 个像素都是相同的值，
+			//         是上方的四个像素 A B C D 和左边四个像素 I J K L 的均值。
 			//	1 = 水平的
 			//	2 = 垂直的
 			//	3 = 平面的
@@ -370,9 +377,12 @@ bool Macroblock::mb_pred(BitStream& bs, const SliceHeader& sHeader, uint32_t mb_
 			}
 		}
 	}
-	else if (mode == H264_MB_PART_PRED_MODE::Direct) {
+	else if (mode != H264_MB_PART_PRED_MODE::Direct)
+	{
 		for (size_t mbPartIdx = 0; mbPartIdx < numMbPart; mbPartIdx++)
 		{
+			//当ref_idx_l0[mbPartIdx] 存在时, 它表示参考图像列表序号为0 的参考图像被用于预测
+
 			/*if ((sHeader.num_ref_idx_l0_active_minus1 > 0  ||
 				slice_data.mb_field_decoding_flag != field_pic_flag) && MbPartPredMode(mb_type, mbPartIdx) != Pred_L1)
 			{
@@ -385,29 +395,40 @@ bool Macroblock::mb_pred(BitStream& bs, const SliceHeader& sHeader, uint32_t mb_
 //获得当前宏块类型所采用的Intra预测方式
 H264_MB_PART_PRED_MODE Macroblock::MbPartPredMode(uint32_t mb_type, SLIECETYPE slice_type, uint32_t mbPartIdx)
 {
-	H264_MB_PART_PRED_MODE mode;
+	H264_MB_PART_PRED_MODE mode = H264_MB_PART_PRED_MODE::NA;
 
 	if (slice_type == SLIECETYPE::H264_SLIECE_TYPE_I)
 	{
-		if (mb_type == 0) {
-			if (transform_size_8x8_flag) {
-				mode = mb_type_slices_I[1].MbPartPredMode;
+		if (mbPartIdx == 0)
+		{
+			//mb_type == I_NxN
+			if (mb_type == 0) {
+				if (transform_size_8x8_flag) {
+					mode = mb_type_slices_I[1].MbPartPredMode;
+				}
+				else {
+					mode = mb_type_slices_I[0].MbPartPredMode;
+				}
+			}
+			else if (mb_type == 25)
+			{
+				mode = mb_type_slices_I[mb_type].MbPartPredMode;  //na 
 			}
 			else {
-				mode = mb_type_slices_I[0].MbPartPredMode;
+				mode = mb_type_slices_I[mb_type + 1].MbPartPredMode;
 			}
 		}
-		else if (mb_type == 25)
+		else
 		{
-			mode = mb_type_slices_I[mb_type].MbPartPredMode;
+			printError("i宏块mbPartIdx必须是0");
+			exit(1);
 		}
-		else {
-			mode = mb_type_slices_I[mb_type + 1].MbPartPredMode;
-		}
+
 	}
 	else if (slice_type == SLIECETYPE::H264_SLIECE_TYPE_P || slice_type == SLIECETYPE::H264_SLIECE_TYPE_SP)
 	{
-		if (mbPartIdx)
+
+		if (mbPartIdx == 1)
 		{
 			mode = mb_type_sleces_sp_p[mb_type].MbPartPredMode1;
 		}
@@ -427,9 +448,25 @@ H264_MB_PART_PRED_MODE Macroblock::MbPartPredMode(uint32_t mb_type, SLIECETYPE s
 	}
 	else if (slice_type == SLIECETYPE::H264_SLIECE_TYPE_SI)
 	{
-		mode = mb_type_sleces_si[mb_type].MbPartPredMode;
+		if (mb_type == 0)
+		{
+			mode = mb_type_sleces_si[mb_type].MbPartPredMode;
+		}
+		else
+		{
+			printError("SImbPartIdx必须是0");
+			exit(1);
+		}
+
 	}
 	return mode;
+}
+
+H264_MB_PART_PRED_MODE Macroblock::MbPartPredMode2(uint32_t mb_type, SLIECETYPE slice_type, uint32_t mbPartIdx)
+{
+
+	H264_MB_PART_PRED_MODE mode = H264_MB_PART_PRED_MODE::NA;
+	return H264_MB_PART_PRED_MODE();
 }
 
 //宏块被分割成多少部分
@@ -446,6 +483,8 @@ uint32_t Macroblock::NumMbPart(uint32_t mb_type, SLIECETYPE slice_type)
 	}
 	return ret;
 }
+
+
 
 //修正slice_type和mb_type
 int Macroblock::fixed_mb_type(uint32_t slice_type, uint32_t& fix_mb_type, SLIECETYPE& fix_slice_type)
@@ -493,11 +532,26 @@ bool Macroblock::is_I_NxN(uint32_t mb_type, SLIECETYPE slice_type)
 
 
 //计算残差数据
-bool Macroblock::residual(int startIdx, int endIdx)
+bool Macroblock::residual(BitStream& bs, const SliceHeader& sHeader, int startIdx, int endIdx)
 {
+
+	bool isAe = sHeader.pps.entropy_coding_mode_flag;
+	if (isAe)
+	{
+		//residual_block = residual_block_cabac
+	}
+	else
+	{
+		ResidualBlockCavlc residual_block;
+	}
+
+	residual_luma(bs, sHeader, i16x16DClevel, i16x16AClevel, level4x4, level8x8, startIdx, endIdx);
 	return false;
 }
-
+int Macroblock::residual_luma(BitStream& bs, const SliceHeader& sHeader, int32_t i16x16DClevel[16], int32_t i16x16AClevel[16][16], int32_t level4x4[16][16], int32_t level8x8[4][64], int32_t startIdx, int32_t endIdx)
+{
+	return 0;
+}
 bool Macroblock::sub_mb_pred(uint32_t mb_type)
 {
 	return false;

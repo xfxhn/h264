@@ -2,6 +2,7 @@
 #include "Common.h"
 #include "ParsePPS.h"
 #include "SliceHeader.h"
+#include "ResidualBlockCavlc.h"
 
 
 struct MB_TYPE_SLICES_I
@@ -84,6 +85,11 @@ public:
 
 
 
+	int32_t     i16x16DClevel[16]; //DCT变换后的直流系数
+	int32_t     i16x16AClevel[16][16]; //DCT变换后的交流系数
+	int32_t     level4x4[16][16];
+	int32_t     level8x8[4][64];
+
 public:
 	Macroblock();
 	bool macroblock_layer(BitStream& bs, const SliceHeader& sHeader);
@@ -95,12 +101,17 @@ public:
 	~Macroblock();
 private:
 	H264_MB_PART_PRED_MODE MbPartPredMode(uint32_t mb_type, SLIECETYPE slice_type, uint32_t mbPartIdx);
+	H264_MB_PART_PRED_MODE MbPartPredMode2(uint32_t mb_type, SLIECETYPE slice_type, uint32_t mbPartIdx);
 	int fixed_mb_type(uint32_t slice_type, uint32_t& fix_mb_type, SLIECETYPE& fix_slice_type);
 	bool is_I_NxN(uint32_t mb_type, SLIECETYPE slice_type);
 	bool mb_pred(BitStream& bs, const SliceHeader& sHeader, uint32_t mb_type, H264_MB_PART_PRED_MODE mode, uint32_t numMbPart);
-	bool residual(int startIdx, int endIdx);
+	bool residual(BitStream& bs, const SliceHeader& sHeader, int startIdx, int endIdx);
 	bool sub_mb_pred(uint32_t mb_type);
 	uint32_t NumMbPart(uint32_t mb_type, SLIECETYPE slice_type);
+
+
+	int residual_luma(BitStream& bs, const SliceHeader& sHeader, int32_t i16x16DClevel[16], int32_t i16x16AClevel[16][16], int32_t level4x4[16][16],
+		int32_t level8x8[4][64], int32_t startIdx, int32_t endIdx);
 private:
 	bool isAe;
 };
