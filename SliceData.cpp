@@ -105,14 +105,13 @@ bool SliceData::slice_data(BitStream& bs, SliceHeader& sHeader)
 		if (moreDataFlag)
 		{
 			if (sHeader.MbaffFrameFlag && (CurrMbAddr % 2 == 0 || (CurrMbAddr % 2 == 1 && prevMbSkipped))) {
+				printError("÷°≥°◊‘  ”¶ sHeader.MbaffFrameFlag && (CurrMbAddr % 2 == 0 || (CurrMbAddr % 2 == 1 && prevMbSkipped))");
 				return -1;
 			}
 			//macroblock_layer
 
 			Macroblock mb;
 			mb.macroblock_layer(bs, sHeader);
-
-
 		}
 		if (!sHeader.pps.entropy_coding_mode_flag)
 		{

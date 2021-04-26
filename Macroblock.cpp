@@ -146,7 +146,7 @@ bool Macroblock::macroblock_layer(BitStream& bs, const SliceHeader& sHeader)
 
 
 	//获取当前宏块的预测模式
-	H264_MB_PART_PRED_MODE mode = MbPartPredMode(fix_mb_type, fix_slice_type, 0);
+	mode = MbPartPredMode(fix_mb_type, fix_slice_type, 0);
 	uint32_t  numMbPart = NumMbPart(fix_mb_type, fix_slice_type);
 
 	if (fix_slice_type == SLIECETYPE::H264_SLIECE_TYPE_I && fix_mb_type == 25)  //I_PCM 不经过预测，变换，量化
@@ -222,12 +222,11 @@ bool Macroblock::macroblock_layer(BitStream& bs, const SliceHeader& sHeader)
 				//........
 			}
 
-			mb_pred(bs, sHeader, fix_mb_type, mode, numMbPart);
+			mb_pred(bs, sHeader, fix_mb_type, numMbPart);
 		}
 
 		if (mode != H264_MB_PART_PRED_MODE::Intra_16x16)
 		{
-
 			if (isAe)
 			{
 				//cabac
@@ -238,6 +237,7 @@ bool Macroblock::macroblock_layer(BitStream& bs, const SliceHeader& sHeader)
 				coded_block_pattern = bs.readME(sHeader.sps.ChromaArrayType, mode);
 
 			}
+			//公式7-33
 			//一个宏块的亮度分量的coded_block_pattern
 			CodedBlockPatternLuma = coded_block_pattern % 16;
 
@@ -290,7 +290,7 @@ bool Macroblock::macroblock_layer(BitStream& bs, const SliceHeader& sHeader)
 }
 
 //宏块预测语法
-bool Macroblock::mb_pred(BitStream& bs, const SliceHeader& sHeader, uint32_t mb_type, H264_MB_PART_PRED_MODE mode, uint32_t numMbPart)
+bool Macroblock::mb_pred(BitStream& bs, const SliceHeader& sHeader, uint32_t mb_type, uint32_t numMbPart)
 {
 
 	if (mode == H264_MB_PART_PRED_MODE::Intra_4x4 || mode == H264_MB_PART_PRED_MODE::Intra_8x8 || mode == H264_MB_PART_PRED_MODE::Intra_16x16)
@@ -416,6 +416,8 @@ H264_MB_PART_PRED_MODE Macroblock::MbPartPredMode(uint32_t mb_type, SLIECETYPE s
 			}
 			else {
 				mode = mb_type_slices_I[mb_type + 1].MbPartPredMode;
+				CodedBlockPatternLuma = mb_type_slices_I[mb_type + 1].CodedBlockPatternLuma;
+				CodedBlockPatternChroma = mb_type_slices_I[mb_type + 1].CodedBlockPatternChroma;;
 			}
 		}
 		else
@@ -535,7 +537,7 @@ bool Macroblock::is_I_NxN(uint32_t mb_type, SLIECETYPE slice_type)
 bool Macroblock::residual(BitStream& bs, const SliceHeader& sHeader, int startIdx, int endIdx)
 {
 
-	bool isAe = sHeader.pps.entropy_coding_mode_flag;
+	/*bool isAe = sHeader.pps.entropy_coding_mode_flag;*/
 	if (isAe)
 	{
 		//residual_block = residual_block_cabac
@@ -548,8 +550,65 @@ bool Macroblock::residual(BitStream& bs, const SliceHeader& sHeader, int startId
 	residual_luma(bs, sHeader, i16x16DClevel, i16x16AClevel, level4x4, level8x8, startIdx, endIdx);
 	return false;
 }
+//亮度块预测
 int Macroblock::residual_luma(BitStream& bs, const SliceHeader& sHeader, int32_t i16x16DClevel[16], int32_t i16x16AClevel[16][16], int32_t level4x4[16][16], int32_t level8x8[4][64], int32_t startIdx, int32_t endIdx)
 {
+
+	int TotalCoeff = 0;
+
+	if (startIdx == 0 && mode == H264_MB_PART_PRED_MODE::Intra_16x16)
+	{
+
+	}
+	//先循环外面四个8x8
+	for (size_t i8x8 = 0; i8x8 < 4; i8x8++)
+	{
+		//不是8x8解码或者cavlc
+		if (!transform_size_8x8_flag || !sHeader.pps.entropy_coding_mode_flag)
+		{
+			//在循环里面四个4x4
+			for (size_t i4x4 = 0; i4x4 < 4; i4x4++)
+			{
+				size_t BlkIdx = i8x8 * 4 + i4x4;//第几个块
+				if (CodedBlockPatternLuma & (1 << i8x8))
+				{
+					
+					if (mode == H264_MB_PART_PRED_MODE::Intra_16x16)
+					{
+						if (isAe)
+						{
+
+						}
+						else
+						{
+
+						}
+
+					}
+					else
+					{
+						if (isAe)
+						{
+
+						}
+						else
+						{
+							ResidualBlockCavlc residual_block;
+							residual_block.residual_block_cavlc(bs, sHeader, level4x4[BlkIdx], startIdx, endIdx, 16, BlkIdx);
+						}
+					}
+
+					mb_luma_4x4_non_zero_count_coeff[BlkIdx] = TotalCoeff;
+					mb_luma_8x8_non_zero_count_coeff[i8x8] += mb_luma_4x4_non_zero_count_coeff[BlkIdx];
+				}
+				else if (mode == H264_MB_PART_PRED_MODE::Intra_16x16)
+				{
+
+				}
+			}
+
+		}
+	}
 	return 0;
 }
 bool Macroblock::sub_mb_pred(uint32_t mb_type)

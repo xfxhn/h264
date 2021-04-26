@@ -66,13 +66,14 @@ public:
 	uint32_t		pcm_alignment_zero_bit; // 3 f(1)
 	uint32_t		pcm_sample_luma[256]; //3 u(v)
 	uint32_t* pcm_sample_chroma;
-	bool		transform_size_8x8_flag;
+	bool			transform_size_8x8_flag;
 	uint32_t		mb_type;
 
 
 	uint32_t		coded_block_pattern;
 	uint32_t		CodedBlockPatternLuma;
 	uint32_t		CodedBlockPatternChroma;
+
 	uint32_t		mb_qp_delta;
 
 	uint32_t     prev_intra4x4_pred_mode_flag[16];
@@ -90,6 +91,10 @@ public:
 	int32_t     level4x4[16][16];
 	int32_t     level8x8[4][64];
 
+
+	uint8_t     mb_luma_4x4_non_zero_count_coeff[16];//存储4x4亮度宏块非0系数
+	uint8_t     mb_luma_8x8_non_zero_count_coeff[4];//存储8x8亮度宏块非0系数
+
 public:
 	Macroblock();
 	bool macroblock_layer(BitStream& bs, const SliceHeader& sHeader);
@@ -104,7 +109,7 @@ private:
 	H264_MB_PART_PRED_MODE MbPartPredMode2(uint32_t mb_type, SLIECETYPE slice_type, uint32_t mbPartIdx);
 	int fixed_mb_type(uint32_t slice_type, uint32_t& fix_mb_type, SLIECETYPE& fix_slice_type);
 	bool is_I_NxN(uint32_t mb_type, SLIECETYPE slice_type);
-	bool mb_pred(BitStream& bs, const SliceHeader& sHeader, uint32_t mb_type, H264_MB_PART_PRED_MODE mode, uint32_t numMbPart);
+	bool mb_pred(BitStream& bs, const SliceHeader& sHeader, uint32_t mb_type, uint32_t numMbPart);
 	bool residual(BitStream& bs, const SliceHeader& sHeader, int startIdx, int endIdx);
 	bool sub_mb_pred(uint32_t mb_type);
 	uint32_t NumMbPart(uint32_t mb_type, SLIECETYPE slice_type);
@@ -114,5 +119,6 @@ private:
 		int32_t level8x8[4][64], int32_t startIdx, int32_t endIdx);
 private:
 	bool isAe;
+	H264_MB_PART_PRED_MODE mode;//当前宏块的预测模式
 };
 

@@ -28,6 +28,7 @@
     <ClCompile Include="ParsePPS.cpp" />
     <ClCompile Include="ParseSlice.cpp" />
     <ClCompile Include="ParseSPS.cpp" />
+    <ClCompile Include="ResidualBlockCavlc.cpp" />
     <ClCompile Include="SliceData.cpp" />
     <ClCompile Include="SliceHeader.cpp" />
   </ItemGroup>
@@ -41,6 +42,7 @@
     <ClInclude Include="ParsePPS.h" />
     <ClInclude Include="ParseSlice.h" />
     <ClInclude Include="ParseSPS.h" />
+    <ClInclude Include="ResidualBlockCavlc.h" />
     <ClInclude Include="SliceData.h" />
     <ClInclude Include="SliceHeader.h" />
   </ItemGroup>
