@@ -51,6 +51,9 @@
     <ClCompile Include="ResidualBlockCavlc.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="PictureInfo.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AnnexBReader.h">
@@ -87,6 +90,9 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="ResidualBlockCavlc.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="PictureInfo.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

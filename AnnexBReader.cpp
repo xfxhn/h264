@@ -190,8 +190,6 @@ void AnnexBReader::getNaluHeader(uint8_t* buffer, int size)
 			delete slice;
 			slice = nullptr;
 		}
-
-
 		slice = new ParseSlice(nalu);
 		slice->parse(bs, ppsCache, spsCache);
 

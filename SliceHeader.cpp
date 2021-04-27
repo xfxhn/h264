@@ -110,7 +110,7 @@ bool SliceHeader::slice_header(BitStream& bs, const ParsePPS ppsCache[256], cons
 	//这个属性表示的是在这个 Slice 中第一个宏块的序号
 	first_mb_in_slice = bs.readUE(); //2 ue(v)
 	//slice的类型
-	slice_type = bs.readUE(); //2 ue(v)
+	slice_type = bs.readUE() % 5; //2 ue(v)
 	//依赖的pps id
 	pic_parameter_set_id = bs.readUE(); //2 ue(v)
 
@@ -124,7 +124,7 @@ bool SliceHeader::slice_header(BitStream& bs, const ParsePPS ppsCache[256], cons
 		//则表示 UV 与 Y 分开编码。而对于分开编码的模式，我们采用和单色模式一样的规则。
 		colour_plane_id = bs.readMultiBit(2); //2 u(2)
 	}
-	// 用作一个图像标识 符 ，在比特流中应由 log2_max_frame_num_minus4 + 4 个比特表示
+	// 用作一个图像标识符 ，在比特流中应由 log2_max_frame_num_minus4 + 4 个比特表示
 	frame_num = bs.readMultiBit(sps.log2_max_frame_num_minus4 + 4); //2 u(v)
 	//m_picture_coded_type = H264_PICTURE_CODED_TYPE_FRAME;
 	//是否为帧编码
@@ -302,9 +302,9 @@ bool SliceHeader::slice_header(BitStream& bs, const ParsePPS ppsCache[256], cons
 	MbaffFrameFlag = (sps.mb_adaptive_frame_field_flag && !field_pic_flag);
 
 	//高有多少宏块
-	PicHeightInMbs = sps.FrameHeightInMbs / (1 + field_pic_flag);
+	PicHeightInMbs = sps.PicHeightInMapUnits;
 	//总共有多少宏块
-	PicSizeInMbs = sps.PicWidthInMbs * PicHeightInMbs;
+	PicSizeInMbs = sps.PicSizeInMapUnits;
 	/*
 	PicHeightInSamplesL = PicHeightInMbs * 16;
 	PicHeightInSamplesC = PicHeightInMbs * m_sps.MbHeightC;

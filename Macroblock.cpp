@@ -1,5 +1,7 @@
-#include "Macroblock.h"
 
+
+#include "Macroblock.h"
+#include "ParseSlice.h"
 
 MB_TYPE_SLICES_I mb_type_slices_I[27] =
 {
@@ -74,9 +76,9 @@ MB_TYPE_SLICES_SI mb_type_sleces_si[1] =
 };
 
 
-
-Macroblock::Macroblock()
+Macroblock::Macroblock(ParseSlice& slice) :sliceBase(slice)
 {
+
 	pcm_alignment_zero_bit = 0;
 	transform_size_8x8_flag = 0;
 	memset(pcm_sample_luma, 0, sizeof(uint8_t) * 256);
@@ -116,12 +118,12 @@ Macroblock::Macroblock()
 
 //CodedBlockPatternChroma :如果当前宏块类型采用的预测方式为Intra_16x16，那么该字段有效,它表示了Luma宏块中的CBP
 //
-//一个宏块的色度分量的coded_block_pattern，Cb、Cr的CodedBlockPatternChroma相同。
-bool Macroblock::macroblock_layer(BitStream& bs, const SliceHeader& sHeader)
+//一个宏块的色度分量的coded_block_pattern，Cb、Cr的CodedBlockPatternChroma相同。, const SliceHeader& sHeader
+bool Macroblock::macroblock_layer(BitStream& bs)
 {
-	isAe = sHeader.pps.entropy_coding_mode_flag;  //ae(v)表示CABAC编码
+	SliceHeader* sHeader = sliceBase.sHeader;
 
-
+	isAe = sHeader->pps.entropy_coding_mode_flag;  //ae(v)表示CABAC编码
 
 	if (isAe) // ae(v) 表示CABAC编码
 	{
@@ -134,7 +136,7 @@ bool Macroblock::macroblock_layer(BitStream& bs, const SliceHeader& sHeader)
 		mb_type = bs.readUE(); //2 ue(v) | ae(v)
 	}
 
-	uint32_t	 slice_type = sHeader.slice_type;
+	uint32_t	 slice_type = static_cast<uint32_t>(sHeader->slice_type);
 
 	uint32_t	 fix_mb_type = mb_type;		//修正过后的
 
@@ -142,7 +144,6 @@ bool Macroblock::macroblock_layer(BitStream& bs, const SliceHeader& sHeader)
 
 	//修正mb_type，因为p里可能包含了i宏块
 	fixed_mb_type(slice_type, fix_mb_type, fix_slice_type);
-
 
 
 	//获取当前宏块的预测模式
@@ -161,7 +162,7 @@ bool Macroblock::macroblock_layer(BitStream& bs, const SliceHeader& sHeader)
 
 		for (size_t i = 0; i < 256; i++)
 		{
-			int32_t v = sHeader.sps.BitDepthY;
+			int32_t v = sHeader->sps.BitDepthY;
 			/*pcm_sample_luma[i]是一个样点值。第一个 pcm_sample_luma[i]值代表宏块里光栅扫描中的亮度样点值。
 			  比特的数目通常代表这些样点每一个都是BitDepthY 。
 			  当 profile_idc 不等于 100, 110, 122 或 144 时， pcm_sample_luma[i]不能等于0*/
@@ -169,10 +170,10 @@ bool Macroblock::macroblock_layer(BitStream& bs, const SliceHeader& sHeader)
 		}
 
 		//MbWidthC   MbHeightC色度阵列的宽度和高度
-		pcm_sample_chroma = new uint32_t[2 * sHeader.sps.MbWidthC * sHeader.sps.MbHeightC]();
-		for (size_t i = 0; i < 2 * sHeader.sps.MbWidthC * sHeader.sps.MbHeightC; i++)
+		pcm_sample_chroma = new uint32_t[2 * sHeader->sps.MbWidthC * sHeader->sps.MbHeightC]();
+		for (size_t i = 0; i < 2 * sHeader->sps.MbWidthC * sHeader->sps.MbHeightC; i++)
 		{
-			int32_t v = sHeader.sps.BitDepthC;
+			int32_t v = sHeader->sps.BitDepthC;
 			/*pcm_sample_ chroma[i]是一个样点值。色度
 			第一个 MbWidthC* MbHeightC pcm_sample_ chroma[i]值代表宏块里光栅扫描中的Cb样点值且其余的MbWidthC* MbHeightC
 			pcm_sample_chroma[i]值代表宏块里光栅扫描中 的 Cr 样点值。比特的数目通常代表这些样点每一个都是 BitDepthC
@@ -203,7 +204,7 @@ bool Macroblock::macroblock_layer(BitStream& bs, const SliceHeader& sHeader)
 		}
 		else
 		{
-			if (sHeader.pps.transform_8x8_mode_flag && is_I_NxN(fix_mb_type, fix_slice_type))
+			if (sHeader->pps.transform_8x8_mode_flag && is_I_NxN(fix_mb_type, fix_slice_type))
 			{
 				//使用8x8变换解码
 				if (isAe)
@@ -222,7 +223,7 @@ bool Macroblock::macroblock_layer(BitStream& bs, const SliceHeader& sHeader)
 				//........
 			}
 
-			mb_pred(bs, sHeader, fix_mb_type, numMbPart);
+			mb_pred(bs, fix_mb_type, numMbPart);
 		}
 
 		if (mode != H264_MB_PART_PRED_MODE::Intra_16x16)
@@ -234,7 +235,7 @@ bool Macroblock::macroblock_layer(BitStream& bs, const SliceHeader& sHeader)
 			else
 			{
 				//表示六个亮度和色度8x8块可能含有非零的变换系数幅值。对预测模式不等于 Intra_16x16 的 宏块
-				coded_block_pattern = bs.readME(sHeader.sps.ChromaArrayType, mode);
+				coded_block_pattern = bs.readME(sHeader->sps.ChromaArrayType, mode);
 
 			}
 			//公式7-33
@@ -250,10 +251,10 @@ bool Macroblock::macroblock_layer(BitStream& bs, const SliceHeader& sHeader)
 
 			if (
 				CodedBlockPatternLuma > 0 &&
-				sHeader.pps.transform_8x8_mode_flag &&
+				sHeader->pps.transform_8x8_mode_flag &&
 				!is_I_NxN(fix_mb_type, fix_slice_type) &&
 				noSubMbPartSizeLessThan8x8Flag &&
-				(!(fix_slice_type == SLIECETYPE::H264_SLIECE_TYPE_B && mb_type == 0) || sHeader.sps.direct_8x8_inference_flag)
+				(!(fix_slice_type == SLIECETYPE::H264_SLIECE_TYPE_B && mb_type == 0) || sHeader->sps.direct_8x8_inference_flag)
 				)
 			{
 
@@ -281,7 +282,7 @@ bool Macroblock::macroblock_layer(BitStream& bs, const SliceHeader& sHeader)
 				//当任何宏块（包括 P_Skip 和 B_Skip 宏块类型）中都不存在 mb_qp_delta 时， mb_qp_delta 默认为0。
 				mb_qp_delta = bs.readSE();
 			}
-			residual(bs, sHeader, 0, 15);
+			residual(bs, 0, 15);
 		}
 	}
 
@@ -290,9 +291,9 @@ bool Macroblock::macroblock_layer(BitStream& bs, const SliceHeader& sHeader)
 }
 
 //宏块预测语法
-bool Macroblock::mb_pred(BitStream& bs, const SliceHeader& sHeader, uint32_t mb_type, uint32_t numMbPart)
+bool Macroblock::mb_pred(BitStream& bs, uint32_t mb_type, uint32_t numMbPart)
 {
-
+	SliceHeader* sHeader = sliceBase.sHeader;
 	if (mode == H264_MB_PART_PRED_MODE::Intra_4x4 || mode == H264_MB_PART_PRED_MODE::Intra_8x8 || mode == H264_MB_PART_PRED_MODE::Intra_16x16)
 	{
 		if (mode == H264_MB_PART_PRED_MODE::Intra_4x4)
@@ -358,7 +359,7 @@ bool Macroblock::mb_pred(BitStream& bs, const SliceHeader& sHeader, uint32_t mb_
 			}
 		}
 		// YUV 4 : 2 : 0 || YUV 4 : 2 : 2，yuv一起编码
-		if (sHeader.sps.ChromaArrayType == 1 || sHeader.sps.ChromaArrayType == 2)
+		if (sHeader->sps.ChromaArrayType == 1 || sHeader->sps.ChromaArrayType == 2)
 		{
 			//宏块中用于色度的空间预测类型使用Intra_4x4 或 Intra_16x16 预测
 			//intra_chroma_pred_mode 的取值范围为0 到  3。
@@ -534,9 +535,9 @@ bool Macroblock::is_I_NxN(uint32_t mb_type, SLIECETYPE slice_type)
 
 
 //计算残差数据
-bool Macroblock::residual(BitStream& bs, const SliceHeader& sHeader, int startIdx, int endIdx)
+bool Macroblock::residual(BitStream& bs, int startIdx, int endIdx)
 {
-
+	SliceHeader* sHeader = sliceBase.sHeader;
 	/*bool isAe = sHeader.pps.entropy_coding_mode_flag;*/
 	if (isAe)
 	{
@@ -544,16 +545,16 @@ bool Macroblock::residual(BitStream& bs, const SliceHeader& sHeader, int startId
 	}
 	else
 	{
-		ResidualBlockCavlc residual_block;
+		//ResidualBlockCavlc residual_block;
 	}
 
-	residual_luma(bs, sHeader, i16x16DClevel, i16x16AClevel, level4x4, level8x8, startIdx, endIdx);
+	residual_luma(bs, i16x16DClevel, i16x16AClevel, level4x4, level8x8, startIdx, endIdx);
 	return false;
 }
 //亮度块预测
-int Macroblock::residual_luma(BitStream& bs, const SliceHeader& sHeader, int32_t i16x16DClevel[16], int32_t i16x16AClevel[16][16], int32_t level4x4[16][16], int32_t level8x8[4][64], int32_t startIdx, int32_t endIdx)
+int Macroblock::residual_luma(BitStream& bs, int32_t i16x16DClevel[16], int32_t i16x16AClevel[16][16], int32_t level4x4[16][16], int32_t level8x8[4][64], int32_t startIdx, int32_t endIdx)
 {
-
+	SliceHeader* sHeader = sliceBase.sHeader;
 	int TotalCoeff = 0;
 
 	if (startIdx == 0 && mode == H264_MB_PART_PRED_MODE::Intra_16x16)
@@ -564,7 +565,7 @@ int Macroblock::residual_luma(BitStream& bs, const SliceHeader& sHeader, int32_t
 	for (size_t i8x8 = 0; i8x8 < 4; i8x8++)
 	{
 		//不是8x8解码或者cavlc
-		if (!transform_size_8x8_flag || !sHeader.pps.entropy_coding_mode_flag)
+		if (!transform_size_8x8_flag || !isAe)
 		{
 			//在循环里面四个4x4
 			for (size_t i4x4 = 0; i4x4 < 4; i4x4++)
@@ -572,7 +573,7 @@ int Macroblock::residual_luma(BitStream& bs, const SliceHeader& sHeader, int32_t
 				size_t BlkIdx = i8x8 * 4 + i4x4;//第几个块
 				if (CodedBlockPatternLuma & (1 << i8x8))
 				{
-					
+
 					if (mode == H264_MB_PART_PRED_MODE::Intra_16x16)
 					{
 						if (isAe)
@@ -593,8 +594,8 @@ int Macroblock::residual_luma(BitStream& bs, const SliceHeader& sHeader, int32_t
 						}
 						else
 						{
-							ResidualBlockCavlc residual_block;
-							residual_block.residual_block_cavlc(bs, sHeader, level4x4[BlkIdx], startIdx, endIdx, 16, BlkIdx);
+							ResidualBlockCavlc residual_block(sliceBase);
+							residual_block.residual_block_cavlc(bs, level4x4[BlkIdx], startIdx, endIdx, 16, BlkIdx);
 						}
 					}
 

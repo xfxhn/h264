@@ -211,7 +211,10 @@ bool ParseSPS::seq_parameter_set_data(BitStream& bs)
 	if (!frame_mbs_only_flag)
 	{
 		//采用了场编码的情况下
-		//是否采用红快级别帧场自适应的问题 ，是否可以在帧编码和场编码相互切换
+		//是否采用红快级别帧场自适应的问题 ，是否可以在帧编码和场编码相互切换 //帧场自适应
+
+		printError("不支持场编码 frame_mbs_only_flag");
+		exit(1);
 		mb_adaptive_frame_field_flag = bs.readBit();
 	}
 
@@ -243,7 +246,7 @@ bool ParseSPS::seq_parameter_set_data(BitStream& bs)
 	//总共有多少宏块
 	PicSizeInMapUnits = PicWidthInMbs * PicHeightInMapUnits;
 	//如果是场编码要*2
-	FrameHeightInMbs = (2 - frame_mbs_only_flag) * PicHeightInMapUnits;
+	//FrameHeightInMbs = (2 - frame_mbs_only_flag) * PicHeightInMapUnits;
 
 	//表示UV依附于Y 和Y一起编码，
 	if (separate_colour_plane_flag == 0) {

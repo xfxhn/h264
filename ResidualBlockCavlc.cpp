@@ -1,12 +1,15 @@
 #include "ResidualBlockCavlc.h"
+#include "ParseSlice.h"
 
-ResidualBlockCavlc::ResidualBlockCavlc()
+
+
+ResidualBlockCavlc::ResidualBlockCavlc(ParseSlice& slice):sliceBase(slice)
 {
-
+	
 }
 
 bool ResidualBlockCavlc::residual_block_cavlc(
-	BitStream& bs, const SliceHeader& sHeader, int32_t coeffLevel[16], int32_t startIdx, int32_t endIdx, uint32_t maxNumCoeff, size_t BlkIdx
+	BitStream& bs, int32_t coeffLevel[16], int32_t startIdx, int32_t endIdx, uint32_t maxNumCoeff, size_t BlkIdx
 )
 {
 
