@@ -7,8 +7,8 @@ ParseSlice::ParseSlice(ParseNalu& nalu) :nalu(nalu)
 {
 	/*macroblock = nullptr;
 	sHeader = nullptr;*/
-	mb_x = 0;
-	mb_y = 0;
+	mbX = 0;
+	mbY = 0;
 	this->sHeader = nullptr;
 }
 

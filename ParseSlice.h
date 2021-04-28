@@ -21,8 +21,8 @@ public:
 	Macroblock** macroblock;
 public:
 	uint32_t	CurrMbAddr;  //当前宏块的位置
-	uint32_t	mb_x;        //当前宏块x的位置（相对于图片左上角位置）
-	uint32_t	mb_y;		//当前宏块y的位置（相对于图片左上角位置）
+	uint32_t	mbX;        //当前宏块x的位置（相对于图片左上角位置）
+	uint32_t	mbY;		//当前宏块y的位置（相对于图片左上角位置）
 
 public:
 	ParseSlice(ParseNalu& nalu);

@@ -89,6 +89,7 @@ public:
 
 	uint8_t     mb_luma_4x4_non_zero_count_coeff[16];//存储4x4亮度宏块非0系数
 	uint8_t     mb_luma_8x8_non_zero_count_coeff[4];//存储8x8亮度宏块非0系数
+     
 
 public:
 	Macroblock(ParseSlice& slice);

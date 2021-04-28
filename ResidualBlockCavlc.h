@@ -11,9 +11,9 @@ class ResidualBlockCavlc
 public:
 	ResidualBlockCavlc(ParseSlice& slice);
 
-	bool residual_block_cavlc(BitStream& bs, int32_t coeffLevel[16], int32_t startIdx, int32_t endIdx, uint32_t maxNumCoeff, size_t BlkIdx);
+	bool residual_block_cavlc(BitStream& bs, int32_t coeffLevel[16], int32_t startIdx, int32_t endIdx, uint32_t maxNumCoeff, size_t i4x4, size_t i8x8);
 
-	int getNumberCurrent(int32_t startIdx);
+	int getNumberCurrent(size_t i4x4, size_t i8x8);
 public:
 	ParseSlice& sliceBase;
 };

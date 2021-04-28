@@ -99,6 +99,10 @@ Macroblock::Macroblock(ParseSlice& slice) :sliceBase(slice)
 	memset(prev_intra8x8_pred_mode_flag, 0, sizeof(uint8_t) * 4);
 	memset(rem_intra8x8_pred_mode, 0, sizeof(uint8_t) * 4);
 
+
+	memset(mb_luma_4x4_non_zero_count_coeff, 0, sizeof(uint8_t) * 16);
+	memset(mb_luma_8x8_non_zero_count_coeff, 0, sizeof(uint8_t) * 4);
+
 	intra_chroma_pred_mode = 0;
 }
 //slice type 五种类型
@@ -595,11 +599,12 @@ int Macroblock::residual_luma(BitStream& bs, int32_t i16x16DClevel[16], int32_t 
 						else
 						{
 							ResidualBlockCavlc residual_block(sliceBase);
-							residual_block.residual_block_cavlc(bs, level4x4[BlkIdx], startIdx, endIdx, 16, BlkIdx);
+							residual_block.residual_block_cavlc(bs, level4x4[BlkIdx], startIdx, endIdx, 16, i4x4, i8x8);
 						}
 					}
-
+					//存储当前4x4块非0系数数目
 					mb_luma_4x4_non_zero_count_coeff[BlkIdx] = TotalCoeff;
+					//存储当前8x8块非0系数数目
 					mb_luma_8x8_non_zero_count_coeff[i8x8] += mb_luma_4x4_non_zero_count_coeff[BlkIdx];
 				}
 				else if (mode == H264_MB_PART_PRED_MODE::Intra_16x16)

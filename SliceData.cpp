@@ -88,8 +88,8 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice& Slice)
 				for (size_t i = 0; i < mb_skip_run; i++)
 				{
 
-					Slice.mb_x = (CurrMbAddr % Slice.sHeader->sps.PicWidthInMbs);
-					Slice.mb_y = (CurrMbAddr / Slice.sHeader->sps.PicWidthInMbs) + Slice.mb_x;
+					Slice.mbX = (CurrMbAddr % Slice.sHeader->sps.PicWidthInMbs);
+					Slice.mbY = (CurrMbAddr / Slice.sHeader->sps.PicWidthInMbs);
 					CurrMbAddr = NextMbAddress(sHeader, CurrMbAddr);
 				}
 
@@ -117,8 +117,8 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice& Slice)
 			}
 
 
-			Slice.mb_x = (CurrMbAddr % Slice.sHeader->sps.PicWidthInMbs);
-			Slice.mb_y = (CurrMbAddr / Slice.sHeader->sps.PicWidthInMbs) + Slice.mb_x;
+			Slice.mbX = (CurrMbAddr % Slice.sHeader->sps.PicWidthInMbs);
+			Slice.mbY = (CurrMbAddr / Slice.sHeader->sps.PicWidthInMbs);
 
 			Slice.CurrMbAddr = CurrMbAddr;
 			Slice.macroblock[Slice.CurrMbAddr]->macroblock_layer(bs);
