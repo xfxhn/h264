@@ -23,10 +23,14 @@ public:
 
 	//读取n个bit
 	int readMultiBit(int n);
+	//获取n个bit
+	int getMultiBit(int n);
 	//读取一个无符号指数哥伦布熵编码的数据
 	int readUE();
 	int readSE();
 	int readME(int ChromaArrayType, H264_MB_PART_PRED_MODE mode);
+
+	
 
 	bool more_rbsp_data();
 

@@ -599,7 +599,7 @@ int Macroblock::residual_luma(BitStream& bs, int32_t i16x16DClevel[16], int32_t 
 						else
 						{
 							ResidualBlockCavlc residual_block(sliceBase);
-							residual_block.residual_block_cavlc(bs, level4x4[BlkIdx], startIdx, endIdx, 16, i4x4, i8x8);
+							residual_block.residual_block_cavlc(bs, level4x4[BlkIdx], startIdx, endIdx, 16, i4x4, i8x8,TotalCoeff);
 						}
 					}
 					//存储当前4x4块非0系数数目

@@ -89,6 +89,21 @@ int BitStream::readMultiBit(int n)
 	return result;
 }
 
+int BitStream::getMultiBit(int n)
+{
+
+	int ret = 0;
+
+	uint8_t* tempPtr = currentPtr;
+	size_t tempBitsLeft = bitsLeft;
+	uint8_t tempPostion = postion;
+	ret = readMultiBit(n);
+	currentPtr = tempPtr;
+	bitsLeft = tempBitsLeft;
+	postion = tempPostion;
+	return ret;
+}
+
 int BitStream::readUE()
 {
 	int result = 0;
@@ -133,6 +148,7 @@ int BitStream::readME(int ChromaArrayType, H264_MB_PART_PRED_MODE mode)
 	}
 
 }
+
 //是否还有数据，有返回true，否则返回false
 bool BitStream::more_rbsp_data()
 {
