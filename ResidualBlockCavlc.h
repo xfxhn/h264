@@ -19,5 +19,9 @@ private:
 	int getNumCoeffAndTrailingOnes(int nC, uint16_t coeff_token, int& coeff_token_length, int& TrailingOnes, int& TotalCoeff);
 public:
 	ParseSlice& sliceBase;
+	bool		trailing_ones_sign_flag;
+	int32_t     levelVal[3];
+	int32_t		level_suffix;
+	uint32_t		level_prefix;
 };
 

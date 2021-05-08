@@ -30,6 +30,84 @@ bool ResidualBlockCavlc::residual_block_cavlc(
 	//读取真正的token长度
 	bs.readMultiBit(coeff_token_length);
 
+
+	int suffixLength = 0;
+	int levelSuffixSize = 0;
+	if (TotalCoeff > 0)
+	{
+		if (TotalCoeff > 10 && TrailingOnes < 3)
+		{
+			suffixLength = 1;
+		}
+
+		for (size_t i = 0; i < TotalCoeff; i++)
+		{
+			if (i < TrailingOnes)
+			{
+				trailing_ones_sign_flag = bs.readBit();
+				levelVal[i] = 1 - 2 * trailing_ones_sign_flag; //3个拖尾系数，只能是1或-1   //1代表-1,0代表+1
+			}
+			else
+			{
+				//普通非零系数的幅值（Levels）由两个部分组成：前缀（level_prefix）和后缀（level_suffix）
+
+				
+				int leadingZeroBits = -1;
+
+				for (size_t b = 0; !b; leadingZeroBits++)
+				{
+					b = bs.readBit();
+				}
+
+				level_prefix = leadingZeroBits;
+
+
+
+
+				if (level_prefix == 14 && suffixLength == 0)
+				{
+					levelSuffixSize = 4;
+				}
+				else if (level_prefix >= 15)
+				{
+					levelSuffixSize = level_prefix - 3;
+				}
+				else
+				{
+					levelSuffixSize = suffixLength;
+				}
+
+
+				if (suffixLength > 0 || level_prefix >= 14)
+				{
+					//level_suffix
+					if (levelSuffixSize > 0)
+					{
+						level_suffix = bs.readMultiBit(levelSuffixSize);
+					}
+					else
+					{
+						levelSuffixSize = 0;
+					}
+				}
+
+
+
+				if (suffixLength == 0)
+				{
+					suffixLength = 1;
+				}
+
+
+				/*if (abs(level) > (3 << (suffixLength - 1)) && suffixLength < 6)
+				{
+					++suffixLength;
+				}*/
+			}
+		}
+	}
+
+
 	return false;
 }
 
