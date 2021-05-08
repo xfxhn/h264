@@ -122,7 +122,7 @@ Macroblock::Macroblock(ParseSlice& slice) :sliceBase(slice)
 
 //CodedBlockPatternChroma :如果当前宏块类型采用的预测方式为Intra_16x16，那么该字段有效,它表示了Luma宏块中的CBP
 //
-//一个宏块的色度分量的coded_block_pattern，Cb、Cr的CodedBlockPatternChroma相同。, const SliceHeader& sHeader
+//一个宏块的色度分量的coded_block_pattern，Cb、Cr的CodedBlockPatternChroma相同
 bool Macroblock::macroblock_layer(BitStream& bs)
 {
 	SliceHeader* sHeader = sliceBase.sHeader;

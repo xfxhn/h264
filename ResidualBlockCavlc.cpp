@@ -1,11 +1,11 @@
 #include "ResidualBlockCavlc.h"
 #include "ParseSlice.h"
-
+#include "CalvcTable.h"
 
 
 ResidualBlockCavlc::ResidualBlockCavlc(ParseSlice& slice) :sliceBase(slice)
 {
-
+	level_suffix = 0;
 }
 
 bool ResidualBlockCavlc::residual_block_cavlc(
@@ -51,7 +51,7 @@ bool ResidualBlockCavlc::residual_block_cavlc(
 			{
 				//普通非零系数的幅值（Levels）由两个部分组成：前缀（level_prefix）和后缀（level_suffix）
 
-				
+
 				int leadingZeroBits = -1;
 
 				for (size_t b = 0; !b; leadingZeroBits++)
@@ -89,9 +89,34 @@ bool ResidualBlockCavlc::residual_block_cavlc(
 					{
 						levelSuffixSize = 0;
 					}
+					levelCode += level_suffix;
+				}
+				levelCode = (min(15, level_prefix) << suffixLength);
+
+				if (level_prefix >= 15 && suffixLength == 0)
+				{
+					levelCode += 15;
+				}
+
+				if (level_prefix >= 16)
+				{
+					levelCode += (1 << (level_prefix - 3)) - 4096;
+				}
+
+				if (i == TrailingOnes && TrailingOnes < 3)
+				{
+					levelCode += 2;
 				}
 
 
+				if (levelCode % 2 == 0)
+				{
+					levelVal[i] = (levelCode + 2) >> 1;
+				}
+				else
+				{
+					levelVal[i] = (-levelCode - 1) >> 1;
+				}
 
 				if (suffixLength == 0)
 				{
@@ -99,10 +124,25 @@ bool ResidualBlockCavlc::residual_block_cavlc(
 				}
 
 
-				/*if (abs(level) > (3 << (suffixLength - 1)) && suffixLength < 6)
+				if (abs(levelVal[i]) > (3 << (suffixLength - 1)) && suffixLength < 6)
 				{
 					++suffixLength;
-				}*/
+				}
+			}
+
+			//最后一个非0系数之前的0的个数  TotalZeros  0, 15(4x4)
+			int TotalZeros = 0;
+			int32_t zerosLeft = 0;
+			if (TotalCoeff < endIdx - startIdx + 1)
+			{
+
+				//每个非0系数之前0的个数  zerosLeft
+				//解码total_zeros
+				zerosLeft = getTotalZeros(TotalCoeff - 1, maxNumCoeff);
+			}
+			else
+			{
+				zerosLeft = 0;
 			}
 		}
 	}
@@ -1970,5 +2010,34 @@ int ResidualBlockCavlc::getNumCoeffAndTrailingOnes(int nC, uint16_t coeff_token,
 			TotalCoeff = 8;
 		}
 	}
+	return 0;
+}
+
+int ResidualBlockCavlc::getTotalZeros(uint32_t TotalCoeff, uint32_t maxNumCoeff)
+{
+
+
+	int lengthTable = totalZerosTableLength[TotalCoeff][0];
+	int* codeTable = &totalZerosTableCode[TotalCoeff][0];
+
+	int codeLen = 0;
+	for (size_t i = 0; i < 16; i++)
+	{
+		codeLen = lengthTable[i];
+	}
+	if (maxNumCoeff == 4)
+	{
+		//表9-9 (a)
+	}
+	else if (maxNumCoeff == 8)
+	{
+		//表9 - 9 (b)
+	}
+	else
+	{
+		//表9-7和表9-8
+	}
+
+
 	return 0;
 }

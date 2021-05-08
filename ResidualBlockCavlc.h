@@ -1,5 +1,6 @@
 #pragma once
 #include "Common.h"
+//#include "CalvcTable.h"
 
 
 
@@ -17,11 +18,13 @@ public:
 
 private:
 	int getNumCoeffAndTrailingOnes(int nC, uint16_t coeff_token, int& coeff_token_length, int& TrailingOnes, int& TotalCoeff);
+	int getTotalZeros(uint32_t TotalCoeff,uint32_t maxNumCoeff);
 public:
 	ParseSlice& sliceBase;
-	bool		trailing_ones_sign_flag;
-	int32_t     levelVal[3];
-	int32_t		level_suffix;
-	uint32_t		level_prefix;
+	bool	trailing_ones_sign_flag;
+	int     levelVal[16]; //非零系数,带符号
+	int		level_suffix;
+	int		level_prefix;
+	int		levelCode;
 };
 

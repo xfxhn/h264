@@ -28,7 +28,6 @@
     <ClCompile Include="ParsePPS.cpp" />
     <ClCompile Include="ParseSlice.cpp" />
     <ClCompile Include="ParseSPS.cpp" />
-    <ClCompile Include="PictureInfo.cpp" />
     <ClCompile Include="ResidualBlockCavlc.cpp" />
     <ClCompile Include="SliceData.cpp" />
     <ClCompile Include="SliceHeader.cpp" />
@@ -36,6 +35,7 @@
   <ItemGroup>
     <ClInclude Include="AnnexBReader.h" />
     <ClInclude Include="BitStream.h" />
+    <ClInclude Include="CalvcTable.h" />
     <ClInclude Include="Common.h" />
     <ClInclude Include="Macroblock.h" />
     <ClInclude Include="NaluType.h" />
@@ -43,7 +43,6 @@
     <ClInclude Include="ParsePPS.h" />
     <ClInclude Include="ParseSlice.h" />
     <ClInclude Include="ParseSPS.h" />
-    <ClInclude Include="PictureInfo.h" />
     <ClInclude Include="ResidualBlockCavlc.h" />
     <ClInclude Include="SliceData.h" />
     <ClInclude Include="SliceHeader.h" />
