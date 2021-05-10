@@ -136,7 +136,7 @@ bool Macroblock::macroblock_layer(BitStream& bs)
 	}
 	else // ue(v) 表示CAVLC编码
 	{
-		//当前宏块是什么类型，采用什么解码方式 mb_type宏块类型的数值，I slice共有26个数值
+		//确定该 MB 是帧内或帧间（P 或 B）编码模式，确定该 MB 分割的尺寸
 		mb_type = bs.readUE(); //2 ue(v) | ae(v)
 	}
 
@@ -188,12 +188,12 @@ bool Macroblock::macroblock_layer(BitStream& bs)
 	}
 	else {
 		bool noSubMbPartSizeLessThan8x8Flag = true;
-
+		//子宏块  //（只对 8×8MB 分割的帧内 MB）确定每一子宏块的子宏 块分割，每一宏块分割的表 0 和 / 或表 1 的参考图象；每一 宏块子分割的差分编码运动矢量。
 		if (!is_I_NxN(fix_mb_type, fix_slice_type) &&
 			mode != H264_MB_PART_PRED_MODE::Intra_16x16 &&
 			numMbPart == 4)
 		{
-
+			
 			sub_mb_pred(fix_mb_type);
 			for (int mbPartIdx = 0; mbPartIdx < 4; mbPartIdx++)
 			{
@@ -208,6 +208,7 @@ bool Macroblock::macroblock_layer(BitStream& bs)
 		}
 		else
 		{
+			//8x8解码
 			if (sHeader->pps.transform_8x8_mode_flag && is_I_NxN(fix_mb_type, fix_slice_type))
 			{
 				//使用8x8变换解码
@@ -238,7 +239,7 @@ bool Macroblock::macroblock_layer(BitStream& bs)
 			}
 			else
 			{
-				//表示六个亮度和色度8x8块可能含有非零的变换系数幅值。对预测模式不等于 Intra_16x16 的 宏块
+				//指出哪个 8×8 块（亮度和彩色）包含编码变换系数
 				coded_block_pattern = bs.readME(sHeader->sps.ChromaArrayType, mode);
 
 			}
@@ -274,6 +275,7 @@ bool Macroblock::macroblock_layer(BitStream& bs)
 			}
 		}
 
+		//16x16
 		if (CodedBlockPatternLuma > 0 || CodedBlockPatternChroma > 0 || mode == H264_MB_PART_PRED_MODE::Intra_16x16)
 		{
 			if (isAe)
@@ -283,7 +285,8 @@ bool Macroblock::macroblock_layer(BitStream& bs)
 			else
 			{
 				//能改变宏块层 中 QPY 的值 。mb_qp_delta 解码后的值应包含在–( 26 + QpBdOffsetY / 2) 到 +( 25 + QpBdOffsetY / 2 )范围内。
-				//当任何宏块（包括 P_Skip 和 B_Skip 宏块类型）中都不存在 mb_qp_delta 时， mb_qp_delta 默认为0。
+				//当任何宏块（包括 P_Skip 和 B_Skip 宏块类型）中都不存在 mb_qp_delta 时， mb_qp_delta 默认为0
+				//量化参数的改变值。
 				mb_qp_delta = bs.readSE();
 			}
 			residual(bs, 0, 15);
@@ -304,7 +307,6 @@ bool Macroblock::mb_pred(BitStream& bs, uint32_t mb_type, uint32_t numMbPart)
 		{
 			for (size_t luma4x4BlkIdx = 0; luma4x4BlkIdx < 16; luma4x4BlkIdx++)
 			{
-
 				//表示序号为 luma4x4BlkIdx = 0到15 的4x4 亮度块的帧内Intra_4x4 预测。
 				if (isAe) // ae(v) 表示CABAC编码
 				{

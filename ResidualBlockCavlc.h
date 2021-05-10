@@ -18,7 +18,8 @@ public:
 
 private:
 	int getNumCoeffAndTrailingOnes(int nC, uint16_t coeff_token, int& coeff_token_length, int& TrailingOnes, int& TotalCoeff);
-	int getTotalZeros(uint32_t TotalCoeff,uint32_t maxNumCoeff);
+	int getTotalZeros(BitStream& bs, uint32_t TotalCoeff,uint32_t maxNumCoeff);
+	int getRunbefore(BitStream& bs, uint32_t zerosLeft);
 public:
 	ParseSlice& sliceBase;
 	bool	trailing_ones_sign_flag;
@@ -26,5 +27,6 @@ public:
 	int		level_suffix;
 	int		level_prefix;
 	int		levelCode;
+	int     runVal[16];
 };
 

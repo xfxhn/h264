@@ -6,6 +6,8 @@
 ResidualBlockCavlc::ResidualBlockCavlc(ParseSlice& slice) :sliceBase(slice)
 {
 	level_suffix = 0;
+	memset(&levelVal, 0, sizeof(int32_t) * 16);
+	memset(&runVal, 0, sizeof(int32_t) * 16);
 }
 
 bool ResidualBlockCavlc::residual_block_cavlc(
@@ -130,23 +132,42 @@ bool ResidualBlockCavlc::residual_block_cavlc(
 				}
 			}
 
-			//最后一个非0系数之前的0的个数  TotalZeros  0, 15(4x4)
-			int TotalZeros = 0;
-			int32_t zerosLeft = 0;
-			if (TotalCoeff < endIdx - startIdx + 1)
-			{
 
-				//每个非0系数之前0的个数  zerosLeft
-				//解码total_zeros
-				zerosLeft = getTotalZeros(TotalCoeff - 1, maxNumCoeff);
+		}
+
+		//最后一个非0系数之前的0的个数  TotalZeros  0, 15(4x4)
+		int TotalZeros = 0;
+		if (TotalCoeff < endIdx - startIdx + 1)
+		{
+			//解码total_zeros
+			TotalZeros = getTotalZeros(bs, TotalCoeff - 1, maxNumCoeff);
+		}
+		else
+		{
+			TotalZeros = 0;
+		}
+		//每个非0系数之前0的个数  zerosLeft
+		//获取每个非0系数之前到下一个非0之间0的个数  RunBefore
+		//初始化zerosLeft为TotalZeros
+		int zerosLeft = TotalZeros;
+		for (size_t i = 0; i < TotalCoeff - 1; i++)
+		{
+			if (zerosLeft > 0)
+			{
+				int runbeforeVlcIdx = (zerosLeft <= 6 ? zerosLeft - 1 : 6);
+
+				runVal[i] = getRunbefore(bs, runbeforeVlcIdx);
 			}
 			else
 			{
-				zerosLeft = 0;
+				runVal[i] = 0;
 			}
-		}
-	}
 
+			zerosLeft -= runVal[i];
+		}
+
+		runVal[TotalCoeff - 1] = zerosLeft;
+	}
 
 	return false;
 }
@@ -2013,18 +2034,14 @@ int ResidualBlockCavlc::getNumCoeffAndTrailingOnes(int nC, uint16_t coeff_token,
 	return 0;
 }
 
-int ResidualBlockCavlc::getTotalZeros(uint32_t TotalCoeff, uint32_t maxNumCoeff)
+int ResidualBlockCavlc::getTotalZeros(BitStream& bs, uint32_t TotalCoeff, uint32_t maxNumCoeff)
 {
 
 
-	int lengthTable = totalZerosTableLength[TotalCoeff][0];
-	int* codeTable = &totalZerosTableCode[TotalCoeff][0];
+	int* lengthTable = totalZerosTableLength[TotalCoeff];
+	int* codeTable = totalZerosTableCode[TotalCoeff];
 
-	int codeLen = 0;
-	for (size_t i = 0; i < 16; i++)
-	{
-		codeLen = lengthTable[i];
-	}
+	int TotalZeros = 0;
 	if (maxNumCoeff == 4)
 	{
 		//表9-9 (a)
@@ -2036,8 +2053,47 @@ int ResidualBlockCavlc::getTotalZeros(uint32_t TotalCoeff, uint32_t maxNumCoeff)
 	else
 	{
 		//表9-7和表9-8
+		for (size_t i = 0; i < 16; i++)
+		{
+			const int codeLen = lengthTable[i];
+			if (codeLen == 0)
+			{
+				break;
+			}
+
+			if (bs.getMultiBit(codeLen) == codeTable[i])
+			{
+				TotalZeros = i;
+				bs.readMultiBit(codeLen);
+				break;
+			}
+		}
 	}
 
 
-	return 0;
+	return TotalZeros;
+}
+
+int ResidualBlockCavlc::getRunbefore(BitStream& bs, uint32_t zerosLeft)
+{
+
+	int* tableLength = runBeforeTableLength[zerosLeft];
+	int* tableCode = runBeforeTableCode[zerosLeft];
+
+	int runbefore = 0;
+	for (size_t i = 0; i < 15; i++)
+	{
+		const int codeLen = tableLength[i];
+		if (codeLen == 0)
+		{
+			break;
+		}
+		if (bs.getMultiBit(codeLen) == tableCode[i])
+		{
+			runbefore = i;
+			bs.readMultiBit(codeLen);
+			break;
+		}
+	}
+	return runbefore;
 }
