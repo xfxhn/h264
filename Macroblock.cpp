@@ -193,7 +193,7 @@ bool Macroblock::macroblock_layer(BitStream& bs)
 			mode != H264_MB_PART_PRED_MODE::Intra_16x16 &&
 			numMbPart == 4)
 		{
-			
+
 			sub_mb_pred(fix_mb_type);
 			for (int mbPartIdx = 0; mbPartIdx < 4; mbPartIdx++)
 			{
@@ -555,14 +555,17 @@ bool Macroblock::residual(BitStream& bs, int startIdx, int endIdx)
 	}
 
 	residual_luma(bs, i16x16DClevel, i16x16AClevel, level4x4, level8x8, startIdx, endIdx);
+
+	cout << 1 << endl;
 	return false;
 }
 //亮度块预测
-int Macroblock::residual_luma(BitStream& bs, int32_t i16x16DClevel[16], int32_t i16x16AClevel[16][16], int32_t level4x4[16][16], int32_t level8x8[4][64], int32_t startIdx, int32_t endIdx)
+int Macroblock::residual_luma(BitStream& bs, int i16x16DClevel[16], int i16x16AClevel[16][16], int level4x4[16][16], int level8x8[4][64], int startIdx, int endIdx)
 {
 	SliceHeader* sHeader = sliceBase.sHeader;
 	int TotalCoeff = 0;
 
+	//先解析16*16的DC
 	if (startIdx == 0 && mode == H264_MB_PART_PRED_MODE::Intra_16x16)
 	{
 
@@ -576,10 +579,11 @@ int Macroblock::residual_luma(BitStream& bs, int32_t i16x16DClevel[16], int32_t 
 			//在循环里面四个4x4
 			for (size_t i4x4 = 0; i4x4 < 4; i4x4++)
 			{
-				size_t BlkIdx = i8x8 * 4 + i4x4;//第几个块
+				const size_t BlkIdx = i8x8 * 4 + i4x4;//第几个块
+				//有亮度分量解析量度分析，4*4是不区分AC和DC
 				if (CodedBlockPatternLuma & (1 << i8x8))
 				{
-
+					//解析16*16的AC
 					if (mode == H264_MB_PART_PRED_MODE::Intra_16x16)
 					{
 						if (isAe)
@@ -601,7 +605,7 @@ int Macroblock::residual_luma(BitStream& bs, int32_t i16x16DClevel[16], int32_t 
 						else
 						{
 							ResidualBlockCavlc residual_block(sliceBase);
-							residual_block.residual_block_cavlc(bs, level4x4[BlkIdx], startIdx, endIdx, 16, i4x4, i8x8,TotalCoeff);
+							residual_block.residual_block_cavlc(bs, level4x4[BlkIdx], startIdx, endIdx, 16, i4x4, i8x8, TotalCoeff);
 						}
 					}
 					//存储当前4x4块非0系数数目
@@ -611,9 +615,39 @@ int Macroblock::residual_luma(BitStream& bs, int32_t i16x16DClevel[16], int32_t 
 				}
 				else if (mode == H264_MB_PART_PRED_MODE::Intra_16x16)
 				{
+					//因为取走了一个直流分量所以最多15个
+					for (size_t i = 0; i < 15; i++)
+					{
+						i16x16AClevel[i8x8 * 4 + i4x4][i] = 0;
+					}
 
 				}
+				else
+				{
+					for (size_t i = 0; i < 16; i++)
+					{
+						level4x4[i8x8 * 4 + i4x4][i] = 0;
+					}
+				}
+
+
+				if (!sHeader->pps.entropy_coding_mode_flag && transform_size_8x8_flag)
+				{
+					for (size_t i = 0; i < 16; i++)
+					{
+						level8x8[i8x8][4 * i + i4x4] = level4x4[i8x8 * 4 + i4x4][i];
+					}
+					mb_luma_8x8_non_zero_count_coeff[i8x8] += mb_luma_4x4_non_zero_count_coeff[i8x8 * 4 + i4x4];
+				}
 			}
+
+		}
+		else if (CodedBlockPatternLuma & (1 << i8x8))
+		{
+
+		}
+		else
+		{
 
 		}
 	}

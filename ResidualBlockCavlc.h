@@ -26,7 +26,7 @@ public:
 	int     levelVal[16]; //非零系数,带符号
 	int		level_suffix;
 	int		level_prefix;
-	int		levelCode;
+	
 	int     runVal[16];
 };
 

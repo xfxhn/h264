@@ -11,7 +11,7 @@ ResidualBlockCavlc::ResidualBlockCavlc(ParseSlice& slice) :sliceBase(slice)
 }
 
 bool ResidualBlockCavlc::residual_block_cavlc(
-	BitStream& bs, int32_t coeffLevel[16], int32_t startIdx, int32_t endIdx, uint32_t maxNumCoeff, size_t i4x4, size_t i8x8, int& TotalCoeff
+	BitStream& bs, int coeffLevel[16], int startIdx, int endIdx, uint32_t maxNumCoeff, size_t i4x4, size_t i8x8, int& TotalCoeff
 )
 {
 
@@ -24,7 +24,7 @@ bool ResidualBlockCavlc::residual_block_cavlc(
 
 	int numberCurrent = getNumberCurrent(i4x4, i8x8);
 
-
+	cout << numberCurrent << endl;
 	//获取16bit因为token最长只有16bit
 	uint16_t coeff_token = bs.getMultiBit(16);
 
@@ -35,6 +35,7 @@ bool ResidualBlockCavlc::residual_block_cavlc(
 
 	int suffixLength = 0;
 	int levelSuffixSize = 0;
+	int	levelCode = 0;
 	if (TotalCoeff > 0)
 	{
 		if (TotalCoeff > 10 && TrailingOnes < 3)
@@ -64,8 +65,6 @@ bool ResidualBlockCavlc::residual_block_cavlc(
 				level_prefix = leadingZeroBits;
 
 
-
-
 				if (level_prefix == 14 && suffixLength == 0)
 				{
 					levelSuffixSize = 4;
@@ -79,7 +78,7 @@ bool ResidualBlockCavlc::residual_block_cavlc(
 					levelSuffixSize = suffixLength;
 				}
 
-
+				levelCode = (min(15, level_prefix) << suffixLength);
 				if (suffixLength > 0 || level_prefix >= 14)
 				{
 					//level_suffix
@@ -93,7 +92,7 @@ bool ResidualBlockCavlc::residual_block_cavlc(
 					}
 					levelCode += level_suffix;
 				}
-				levelCode = (min(15, level_prefix) << suffixLength);
+
 
 				if (level_prefix >= 15 && suffixLength == 0)
 				{
@@ -167,6 +166,12 @@ bool ResidualBlockCavlc::residual_block_cavlc(
 		}
 
 		runVal[TotalCoeff - 1] = zerosLeft;
+
+		int coeffNum = -1;
+		for (int i = TotalCoeff - 1; i >= 0; i--) {
+			coeffNum += runVal[i] + 1;
+			coeffLevel[startIdx + coeffNum] = levelVal[i];
+		}
 	}
 
 	return false;
@@ -221,7 +226,7 @@ int ResidualBlockCavlc::getNumberCurrent(size_t i4x4, size_t i8x8)
 			}
 		}
 		else {
-			nB = sliceBase.macroblock[sliceBase.CurrMbAddr]->mb_luma_4x4_non_zero_count_coeff[BlkIdx - 1];
+			nB = sliceBase.macroblock[sliceBase.CurrMbAddr]->mb_luma_4x4_non_zero_count_coeff[BlkIdx - 2];
 			availableTop = true;
 		}
 	}

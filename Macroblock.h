@@ -81,10 +81,10 @@ public:
 
 
 
-	int32_t     i16x16DClevel[16]; //DCT变换后的直流系数
-	int32_t     i16x16AClevel[16][16]; //DCT变换后的交流系数
-	int32_t     level4x4[16][16];
-	int32_t     level8x8[4][64];
+	int     i16x16DClevel[16]; //DCT变换后的直流系数
+	int     i16x16AClevel[16][16]; //DCT变换后的交流系数
+	int     level4x4[16][16];
+	int     level8x8[4][64];
 
 
 	uint8_t     mb_luma_4x4_non_zero_count_coeff[16];//存储4x4亮度宏块非0系数
@@ -111,8 +111,8 @@ private:
 	uint32_t NumMbPart(uint32_t mb_type, SLIECETYPE slice_type);
 
 
-	int residual_luma(BitStream& bs, int32_t i16x16DClevel[16], int32_t i16x16AClevel[16][16], int32_t level4x4[16][16],
-		int32_t level8x8[4][64], int32_t startIdx, int32_t endIdx);
+	int residual_luma(BitStream& bs, int i16x16DClevel[16], int i16x16AClevel[16][16], int level4x4[16][16],
+		int level8x8[4][64], int startIdx, int endIdx);
 private:
 	bool isAe;
 	H264_MB_PART_PRED_MODE mode;//当前宏块的预测模式
