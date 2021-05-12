@@ -56,6 +56,26 @@ maping_coded_block_pattern intra_cbp[48] =
 	{47,  41,   41}
 };
 
+maping_coded_block_pattern_equal0 intra_cbp_equal0[16] =
+{
+	{0,  15,   0},
+	{1,  0,   1},
+	{2,  7,   2},
+	{3,  11,   4},
+	{4,  13,   8},
+	{5,  14,   3},
+	{6,  3,   5},
+	{7,  5,   10},
+	{8,  10,   12},
+	{9,  12,   15},
+	{10,  1,   7},
+	{11,  2,   11},
+	{12,  4,   13},
+	{13,  8,   14},
+	{14,  6,   6},
+	{15,  9,   9},
+};
+
 
 
 BitStream::BitStream(uint8_t* buf, int _size)
@@ -145,6 +165,17 @@ int BitStream::readME(int ChromaArrayType, H264_MB_PART_PRED_MODE mode)
 			return intra_cbp[uev].Inter;
 		}
 
+	}
+	else
+	{
+		if (mode == H264_MB_PART_PRED_MODE::Intra_4x4 || mode == H264_MB_PART_PRED_MODE::Intra_8x8)
+		{
+			return intra_cbp_equal0[uev].Intra_4x4_or_Intra_8x8;
+		}
+		else
+		{
+			return intra_cbp_equal0[uev].Inter;
+		}
 	}
 
 }

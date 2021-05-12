@@ -11,6 +11,14 @@ struct maping_coded_block_pattern
 	int32_t Inter;
 };
 
+
+struct maping_coded_block_pattern_equal0
+{
+	int32_t code_num;
+	int32_t Intra_4x4_or_Intra_8x8;
+	int32_t Inter;
+};
+
 class BitStream
 {
 public:

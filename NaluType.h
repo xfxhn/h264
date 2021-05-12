@@ -150,12 +150,6 @@ enum class H264_MB_TYPE :int
 };
 
 
-
-
-
-
-
-
 //表明当前宏块类型所采用的Intra预测方式
 enum class H264_MB_PART_PRED_MODE :int
 {
@@ -167,4 +161,15 @@ enum class H264_MB_PART_PRED_MODE :int
 	Direct,
 	BiPred,
 	NA
+};
+
+
+enum class RESIDUAL_LEVEL
+{
+	LumaLevel4x4,
+	ChromaDCLevel,
+	ChromaACLevel,
+	Intra16x16DCLevel,
+	CbIntra16x16DCLevel,
+	CrIntra16x16DCLevel
 };

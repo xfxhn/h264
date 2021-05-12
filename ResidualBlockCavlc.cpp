@@ -11,18 +11,18 @@ ResidualBlockCavlc::ResidualBlockCavlc(ParseSlice& slice) :sliceBase(slice)
 }
 
 bool ResidualBlockCavlc::residual_block_cavlc(
-	BitStream& bs, int coeffLevel[16], int startIdx, int endIdx, uint32_t maxNumCoeff, size_t i4x4, size_t i8x8, int& TotalCoeff
+	BitStream& bs, int coeffLevel[16], int startIdx, int endIdx, uint32_t maxNumCoeff, int& TotalCoeff, RESIDUAL_LEVEL residualLevel, size_t i4x4, size_t i8x8
 )
 {
 
-	memset(coeffLevel, 0, sizeof(int32_t) * maxNumCoeff);
+	memset(coeffLevel, 0, sizeof(uint32_t) * maxNumCoeff);
 
 
 
 	int coeff_token_length = 0;
 	int TrailingOnes = 0;
 
-	int numberCurrent = getNumberCurrent(i4x4, i8x8);
+	int numberCurrent = getNumberCurrent(residualLevel, i4x4, i8x8);
 
 	cout << numberCurrent << endl;
 	//获取16bit因为token最长只有16bit
@@ -177,9 +177,13 @@ bool ResidualBlockCavlc::residual_block_cavlc(
 	return false;
 }
 
-int ResidualBlockCavlc::getNumberCurrent(size_t i4x4, size_t i8x8)
+int ResidualBlockCavlc::getNumberCurrent(RESIDUAL_LEVEL residualLevel, size_t i4x4, size_t i8x8)
 {
 
+
+	int luma4x4BlkIdx = 0;
+	int cb4x4BlkIdx = 0;
+	int cr4x4BlkIdx = 0;
 	int nC = 0;
 	bool availableTop = false;
 	bool availableLeft = false;
@@ -191,74 +195,94 @@ int ResidualBlockCavlc::getNumberCurrent(size_t i4x4, size_t i8x8)
 
 	const int BlkIdx = i8x8 * 4 + i4x4;
 
-	if (BlkIdx == 0 || BlkIdx == 2 || BlkIdx == 8 || BlkIdx == 10)
-	{
-		if (sliceBase.mbX > 0) {
-			const int leftMbIdx = sliceBase.CurrMbAddr - 1;
-			const int left4x4Idx = BlkIdx + 5;
 
-			nA = sliceBase.macroblock[leftMbIdx]->mb_luma_4x4_non_zero_count_coeff[left4x4Idx];
-			availableLeft = true;
+
+	if (residualLevel == RESIDUAL_LEVEL::ChromaDCLevel)
+	{
+		//色度固定码表
+		if (sliceBase.sHeader->sps.ChromaArrayType == 1)
+		{
+			nC = -1;
+		}
+		else
+		{
+			nC = -2;
 		}
 	}
 	else
 	{
-		if (BlkIdx % 2 == 1) {
 
-			nA = sliceBase.macroblock[sliceBase.CurrMbAddr]->mb_luma_4x4_non_zero_count_coeff[BlkIdx - 1];
-			availableLeft = true;
-		}
-		else {
-			nA = sliceBase.macroblock[sliceBase.CurrMbAddr]->mb_luma_4x4_non_zero_count_coeff[BlkIdx - 3];
-			availableLeft = true;
-		}
-	}
+		/*if (residualLevel == RESIDUAL_LEVEL::Intra16x16DCLevel)
+		{
 
-	if (i8x8 < 2)
-	{
-		if (i4x4 < 2) {
-			if (sliceBase.mbY > 0)
-			{
-				const int topMbIdx = sliceBase.CurrMbAddr - sliceBase.sHeader->sps.PicWidthInMbs;
-				const int top4x4Idx = BlkIdx + 10;
-				nB = sliceBase.macroblock[topMbIdx]->mb_luma_4x4_non_zero_count_coeff[top4x4Idx];
+		}*/
+		if (BlkIdx == 0 || BlkIdx == 2 || BlkIdx == 8 || BlkIdx == 10)
+		{
+			if (sliceBase.mbX > 0) {
+				const int leftMbIdx = sliceBase.CurrMbAddr - 1;
+				const int left4x4Idx = BlkIdx + 5;
+				nA = sliceBase.macroblock[leftMbIdx]->mb_luma_4x4_non_zero_count_coeff[left4x4Idx];
+				availableLeft = true;
+			}
+		}
+		else
+		{
+			if (BlkIdx % 2 == 1) {
+
+				nA = sliceBase.macroblock[sliceBase.CurrMbAddr]->mb_luma_4x4_non_zero_count_coeff[BlkIdx - 1];
+				availableLeft = true;
+			}
+			else {
+				nA = sliceBase.macroblock[sliceBase.CurrMbAddr]->mb_luma_4x4_non_zero_count_coeff[BlkIdx - 3];
+				availableLeft = true;
+			}
+		}
+
+		if (i8x8 < 2)
+		{
+			if (i4x4 < 2) {
+				if (sliceBase.mbY > 0)
+				{
+					const int topMbIdx = sliceBase.CurrMbAddr - sliceBase.sHeader->sps.PicWidthInMbs;
+					const int top4x4Idx = BlkIdx + 10;
+					nB = sliceBase.macroblock[topMbIdx]->mb_luma_4x4_non_zero_count_coeff[top4x4Idx];
+					availableTop = true;
+				}
+			}
+			else {
+				nB = sliceBase.macroblock[sliceBase.CurrMbAddr]->mb_luma_4x4_non_zero_count_coeff[BlkIdx - 2];
 				availableTop = true;
 			}
 		}
-		else {
-			nB = sliceBase.macroblock[sliceBase.CurrMbAddr]->mb_luma_4x4_non_zero_count_coeff[BlkIdx - 2];
-			availableTop = true;
+		else
+		{
+			if (i4x4 < 2) {
+				nB = sliceBase.macroblock[sliceBase.CurrMbAddr]->mb_luma_4x4_non_zero_count_coeff[BlkIdx - 6];
+				availableTop = true;
+			}
+			else {
+				nB = sliceBase.macroblock[sliceBase.CurrMbAddr]->mb_luma_4x4_non_zero_count_coeff[BlkIdx - 2];
+				availableTop = true;
+			}
 		}
-	}
-	else
-	{
-		if (i4x4 < 2) {
-			nB = sliceBase.macroblock[sliceBase.CurrMbAddr]->mb_luma_4x4_non_zero_count_coeff[BlkIdx - 6];
-			availableTop = true;
-		}
-		else {
-			nB = sliceBase.macroblock[sliceBase.CurrMbAddr]->mb_luma_4x4_non_zero_count_coeff[BlkIdx - 2];
-			availableTop = true;
-		}
-	}
 
-	if (availableTop && availableLeft)
-	{
-		nC = (nA + nB + 1) >> 1;
+		if (availableTop && availableLeft)
+		{
+			nC = (nA + nB + 1) >> 1;
+		}
+		else if (availableLeft && !availableTop)
+		{
+			nC = nA;
+		}
+		else if (availableTop && !availableLeft)
+		{
+			nC = nB;
+		}
+		else
+		{
+			nC = 0;
+		}
 	}
-	else if (availableLeft && !availableTop)
-	{
-		nC = nA;
-	}
-	else if (availableTop && !availableLeft)
-	{
-		nC = nB;
-	}
-	else
-	{
-		nC = 0;
-	}
-
 
 	return nC;
 }

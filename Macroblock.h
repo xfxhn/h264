@@ -60,7 +60,7 @@ class Macroblock
 public:
 	uint32_t		pcm_alignment_zero_bit; // 3 f(1)
 	uint32_t		pcm_sample_luma[256]; //3 u(v)
-	uint32_t* pcm_sample_chroma;
+	uint32_t*		pcm_sample_chroma;
 	bool			transform_size_8x8_flag;
 	uint32_t		mb_type;
 
@@ -71,20 +71,25 @@ public:
 
 	uint32_t		mb_qp_delta;
 
-	uint32_t     prev_intra4x4_pred_mode_flag[16];
-	uint32_t     rem_intra4x4_pred_mode[16];
+	uint32_t		prev_intra4x4_pred_mode_flag[16];
+	uint32_t		rem_intra4x4_pred_mode[16];
 
-	uint32_t     prev_intra8x8_pred_mode_flag[4];
-	uint32_t     rem_intra8x8_pred_mode[4];
+	uint32_t		prev_intra8x8_pred_mode_flag[4];
+	uint32_t		rem_intra8x8_pred_mode[4];
 
-	uint32_t     intra_chroma_pred_mode;
+	uint32_t		intra_chroma_pred_mode;
 
 
 
 	int     i16x16DClevel[16]; //DCT变换后的直流系数
 	int     i16x16AClevel[16][16]; //DCT变换后的交流系数
-	int     level4x4[16][16];
+
+	int     level4x4[16][16];     //存储亮度的残差数据
 	int     level8x8[4][64];
+
+
+
+	int     ChromaDCLevel[2][16]; //存储色度u和v的残差数据
 
 
 	uint8_t     mb_luma_4x4_non_zero_count_coeff[16];//存储4x4亮度宏块非0系数

@@ -1,4 +1,4 @@
-
+ï»¿
 
 #include "Macroblock.h"
 #include "ParseSlice.h"
@@ -105,90 +105,90 @@ Macroblock::Macroblock(ParseSlice& slice) :sliceBase(slice)
 
 	intra_chroma_pred_mode = 0;
 }
-//slice type ÎåÖÖÀàĞÍ
-//I sliceÖĞµÄºê¿éÀàĞÍÖ»ÄÜÊÇIºê¿éÀàĞÍ
-//P sliceÖĞ°üº¬ÁËIºê¿éÀàĞÍ,ÓëPºê¿éÀàĞÍ
-//B sliceÖĞ°üº¬ÁËIºê¿éÀàĞÍ,ÓëBºê¿éÀàĞÍ
-//sp sliceÖĞ°üº¬ÁËIºê¿éÀàĞÍ,Óëpºê¿éÀàĞÍ
-//si ½ö°üº¬siºê¿é
-//Intra16x16PredMode  Èç¹ûµ±Ç°ºê¿éÀàĞÍ²ÉÓÃµÄÔ¤²â·½Ê½ÎªIntra_16x16£¬ÄÇÃ´¸Ã×Ö¶ÎÓĞĞ§£¬ËüÓÃ0~3±íÊ¾ÁËIntra_16x16ÖĞµÄËÄÖÖÄ£Ê½
+//slice type äº”ç§ç±»å‹
+//I sliceä¸­çš„å®å—ç±»å‹åªèƒ½æ˜¯Iå®å—ç±»å‹
+//P sliceä¸­åŒ…å«äº†Iå®å—ç±»å‹,ä¸På®å—ç±»å‹
+//B sliceä¸­åŒ…å«äº†Iå®å—ç±»å‹,ä¸Bå®å—ç±»å‹
+//sp sliceä¸­åŒ…å«äº†Iå®å—ç±»å‹,ä¸på®å—ç±»å‹
+//si ä»…åŒ…å«siå®å—
+//Intra16x16PredMode  å¦‚æœå½“å‰å®å—ç±»å‹é‡‡ç”¨çš„é¢„æµ‹æ–¹å¼ä¸ºIntra_16x16ï¼Œé‚£ä¹ˆè¯¥å­—æ®µæœ‰æ•ˆï¼Œå®ƒç”¨0~3è¡¨ç¤ºäº†Intra_16x16ä¸­çš„å››ç§æ¨¡å¼
 
 
-//CodedBlockPatternLuma  Èç¹ûµ±Ç°ºê¿éÀàĞÍ²ÉÓÃµÄÔ¤²â·½Ê½ÎªIntra_16x16£¬ÄÇÃ´¸Ã×Ö¶ÎÓĞĞ§£¬Ëü±íÊ¾ÁËLumaºê¿éÖĞµÄCBP¡£
-//´Óh.264Óï·¨½á¹¹·ÖÎöµÄresidual²¿·Ö£¬ÎÒÃÇÖªµÀµ±Ô¤²âÄ£Ê½ÎªIntra_16x16Ê±£¬ºê¿éĞèÒª·Ö¿ªAC levelÓëDC level½øĞĞìØ±àÂë¡£
-//0£º±íÊ¾ºê¿éÄÚµÄ16¸ö4x4¿éÖĞµÄAC levelÈ«²¿¶¼Îª0£¬15£ººê¿éÄÚµÄ16¸ö4x4¿éÖĞÖÁÉÙÓĞÒ»¸ö¿éµÄAC level²»È«Îª0
+//CodedBlockPatternLuma  å¦‚æœå½“å‰å®å—ç±»å‹é‡‡ç”¨çš„é¢„æµ‹æ–¹å¼ä¸ºIntra_16x16ï¼Œé‚£ä¹ˆè¯¥å­—æ®µæœ‰æ•ˆï¼Œå®ƒè¡¨ç¤ºäº†Lumaå®å—ä¸­çš„CBPã€‚
+//ä»h.264è¯­æ³•ç»“æ„åˆ†æçš„residualéƒ¨åˆ†ï¼Œæˆ‘ä»¬çŸ¥é“å½“é¢„æµ‹æ¨¡å¼ä¸ºIntra_16x16æ—¶ï¼Œå®å—éœ€è¦åˆ†å¼€AC levelä¸DC levelè¿›è¡Œç†µç¼–ç ã€‚
+//0ï¼šè¡¨ç¤ºå®å—å†…çš„16ä¸ª4x4å—ä¸­çš„AC levelå…¨éƒ¨éƒ½ä¸º0ï¼Œ15ï¼šå®å—å†…çš„16ä¸ª4x4å—ä¸­è‡³å°‘æœ‰ä¸€ä¸ªå—çš„AC levelä¸å…¨ä¸º0
 
 
 
-//CodedBlockPatternChroma :Èç¹ûµ±Ç°ºê¿éÀàĞÍ²ÉÓÃµÄÔ¤²â·½Ê½ÎªIntra_16x16£¬ÄÇÃ´¸Ã×Ö¶ÎÓĞĞ§,Ëü±íÊ¾ÁËLumaºê¿éÖĞµÄCBP
+//CodedBlockPatternChroma :å¦‚æœå½“å‰å®å—ç±»å‹é‡‡ç”¨çš„é¢„æµ‹æ–¹å¼ä¸ºIntra_16x16ï¼Œé‚£ä¹ˆè¯¥å­—æ®µæœ‰æ•ˆ,å®ƒè¡¨ç¤ºäº†Lumaå®å—ä¸­çš„CBP
 //
-//Ò»¸öºê¿éµÄÉ«¶È·ÖÁ¿µÄcoded_block_pattern£¬Cb¡¢CrµÄCodedBlockPatternChromaÏàÍ¬
+//ä¸€ä¸ªå®å—çš„è‰²åº¦åˆ†é‡çš„coded_block_patternï¼ŒCbã€Crçš„CodedBlockPatternChromaç›¸åŒ
 bool Macroblock::macroblock_layer(BitStream& bs)
 {
 	SliceHeader* sHeader = sliceBase.sHeader;
 
-	isAe = sHeader->pps.entropy_coding_mode_flag;  //ae(v)±íÊ¾CABAC±àÂë
+	isAe = sHeader->pps.entropy_coding_mode_flag;  //ae(v)è¡¨ç¤ºCABACç¼–ç 
 
-	if (isAe) // ae(v) ±íÊ¾CABAC±àÂë
+	if (isAe) // ae(v) è¡¨ç¤ºCABACç¼–ç 
 	{
 		//ret = cabac.CABAC_decode_mb_type(picture, bs, mb_type); //2 ue(v) | ae(v)
 		//RETURN_IF_FAILED(ret != 0, ret);
 	}
-	else // ue(v) ±íÊ¾CAVLC±àÂë
+	else // ue(v) è¡¨ç¤ºCAVLCç¼–ç 
 	{
-		//È·¶¨¸Ã MB ÊÇÖ¡ÄÚ»òÖ¡¼ä£¨P »ò B£©±àÂëÄ£Ê½£¬È·¶¨¸Ã MB ·Ö¸îµÄ³ß´ç
+		//ç¡®å®šè¯¥ MB æ˜¯å¸§å†…æˆ–å¸§é—´ï¼ˆP æˆ– Bï¼‰ç¼–ç æ¨¡å¼ï¼Œç¡®å®šè¯¥ MB åˆ†å‰²çš„å°ºå¯¸
 		mb_type = bs.readUE(); //2 ue(v) | ae(v)
 	}
 
 	uint32_t	 slice_type = static_cast<uint32_t>(sHeader->slice_type);
 
-	uint32_t	 fix_mb_type = mb_type;		//ĞŞÕı¹ıºóµÄ
+	uint32_t	 fix_mb_type = mb_type;		//ä¿®æ­£è¿‡åçš„
 
-	SLIECETYPE   fix_slice_type = (SLIECETYPE)(slice_type % 5);   //ĞŞÕı¹ıºóµÄ
+	SLIECETYPE   fix_slice_type = (SLIECETYPE)(slice_type % 5);   //ä¿®æ­£è¿‡åçš„
 
-	//ĞŞÕımb_type£¬ÒòÎªpÀï¿ÉÄÜ°üº¬ÁËiºê¿é
+	//ä¿®æ­£mb_typeï¼Œå› ä¸ºpé‡Œå¯èƒ½åŒ…å«äº†iå®å—
 	fixed_mb_type(slice_type, fix_mb_type, fix_slice_type);
 
 
-	//»ñÈ¡µ±Ç°ºê¿éµÄÔ¤²âÄ£Ê½
+	//è·å–å½“å‰å®å—çš„é¢„æµ‹æ¨¡å¼
 	mode = MbPartPredMode(fix_mb_type, fix_slice_type, 0);
 	uint32_t  numMbPart = NumMbPart(fix_mb_type, fix_slice_type);
 
-	if (fix_slice_type == SLIECETYPE::H264_SLIECE_TYPE_I && fix_mb_type == 25)  //I_PCM ²»¾­¹ıÔ¤²â£¬±ä»»£¬Á¿»¯
+	if (fix_slice_type == SLIECETYPE::H264_SLIECE_TYPE_I && fix_mb_type == 25)  //I_PCM ä¸ç»è¿‡é¢„æµ‹ï¼Œå˜æ¢ï¼Œé‡åŒ–
 	{
 		while (!byte_aligned(bs))
 		{
-			/*µ±ìØ±àÂëÄ£Ê½ÊÇCABACÊ±,
-			  ´ËÊ±ÒªÇóÊı¾İ×Ö½Ú¶ÔÆë, ¼´Êı¾İ´ÓÏÂÒ»¸ö×Ö½ÚµÄµÚÒ»¸ö±ÈÌØ¿ªÊ¼,
-			  Èç¹û»¹Ã»ÓĞ×Ö½Ú¶ÔÆë½«³öÏÖÈô¸É¸ö pcm_alignment_zero_bit ×÷ÎªÌî³ä¡£*/
+			/*å½“ç†µç¼–ç æ¨¡å¼æ˜¯CABACæ—¶,
+			  æ­¤æ—¶è¦æ±‚æ•°æ®å­—èŠ‚å¯¹é½, å³æ•°æ®ä»ä¸‹ä¸€ä¸ªå­—èŠ‚çš„ç¬¬ä¸€ä¸ªæ¯”ç‰¹å¼€å§‹,
+			  å¦‚æœè¿˜æ²¡æœ‰å­—èŠ‚å¯¹é½å°†å‡ºç°è‹¥å¹²ä¸ª pcm_alignment_zero_bit ä½œä¸ºå¡«å……ã€‚*/
 			pcm_alignment_zero_bit = bs.readBit(); //2 f(1)
 		}
 
 		for (size_t i = 0; i < 256; i++)
 		{
 			int32_t v = sHeader->sps.BitDepthY;
-			/*pcm_sample_luma[i]ÊÇÒ»¸öÑùµãÖµ¡£µÚÒ»¸ö pcm_sample_luma[i]Öµ´ú±íºê¿éÀï¹âÕ¤É¨ÃèÖĞµÄÁÁ¶ÈÑùµãÖµ¡£
-			  ±ÈÌØµÄÊıÄ¿Í¨³£´ú±íÕâĞ©ÑùµãÃ¿Ò»¸ö¶¼ÊÇBitDepthY ¡£
-			  µ± profile_idc ²»µÈÓÚ 100, 110, 122 »ò 144 Ê±£¬ pcm_sample_luma[i]²»ÄÜµÈÓÚ0*/
+			/*pcm_sample_luma[i]æ˜¯ä¸€ä¸ªæ ·ç‚¹å€¼ã€‚ç¬¬ä¸€ä¸ª pcm_sample_luma[i]å€¼ä»£è¡¨å®å—é‡Œå…‰æ …æ‰«æä¸­çš„äº®åº¦æ ·ç‚¹å€¼ã€‚
+			  æ¯”ç‰¹çš„æ•°ç›®é€šå¸¸ä»£è¡¨è¿™äº›æ ·ç‚¹æ¯ä¸€ä¸ªéƒ½æ˜¯BitDepthY ã€‚
+			  å½“ profile_idc ä¸ç­‰äº 100, 110, 122 æˆ– 144 æ—¶ï¼Œ pcm_sample_luma[i]ä¸èƒ½ç­‰äº0*/
 			pcm_sample_luma[i] = bs.readMultiBit(v); //3 u(v)
 		}
 
-		//MbWidthC   MbHeightCÉ«¶ÈÕóÁĞµÄ¿í¶ÈºÍ¸ß¶È
+		//MbWidthC   MbHeightCè‰²åº¦é˜µåˆ—çš„å®½åº¦å’Œé«˜åº¦
 		pcm_sample_chroma = new uint32_t[2 * sHeader->sps.MbWidthC * sHeader->sps.MbHeightC]();
 		for (size_t i = 0; i < 2 * sHeader->sps.MbWidthC * sHeader->sps.MbHeightC; i++)
 		{
 			int32_t v = sHeader->sps.BitDepthC;
-			/*pcm_sample_ chroma[i]ÊÇÒ»¸öÑùµãÖµ¡£É«¶È
-			µÚÒ»¸ö MbWidthC* MbHeightC pcm_sample_ chroma[i]Öµ´ú±íºê¿éÀï¹âÕ¤É¨ÃèÖĞµÄCbÑùµãÖµÇÒÆäÓàµÄMbWidthC* MbHeightC
-			pcm_sample_chroma[i]Öµ´ú±íºê¿éÀï¹âÕ¤É¨ÃèÖĞ µÄ Cr ÑùµãÖµ¡£±ÈÌØµÄÊıÄ¿Í¨³£´ú±íÕâĞ©ÑùµãÃ¿Ò»¸ö¶¼ÊÇ BitDepthC
-			µ± profile_idc ²»µÈÓÚ 100, 110, 122 »ò 144 Ê±£¬pcm_sample_ chroma[i]²»ÄÜµÈÓÚ0¡£
+			/*pcm_sample_ chroma[i]æ˜¯ä¸€ä¸ªæ ·ç‚¹å€¼ã€‚è‰²åº¦
+			ç¬¬ä¸€ä¸ª MbWidthC* MbHeightC pcm_sample_ chroma[i]å€¼ä»£è¡¨å®å—é‡Œå…‰æ …æ‰«æä¸­çš„Cbæ ·ç‚¹å€¼ä¸”å…¶ä½™çš„MbWidthC* MbHeightC
+			pcm_sample_chroma[i]å€¼ä»£è¡¨å®å—é‡Œå…‰æ …æ‰«æä¸­ çš„ Cr æ ·ç‚¹å€¼ã€‚æ¯”ç‰¹çš„æ•°ç›®é€šå¸¸ä»£è¡¨è¿™äº›æ ·ç‚¹æ¯ä¸€ä¸ªéƒ½æ˜¯ BitDepthC
+			å½“ profile_idc ä¸ç­‰äº 100, 110, 122 æˆ– 144 æ—¶ï¼Œpcm_sample_ chroma[i]ä¸èƒ½ç­‰äº0ã€‚
 			*/
 			pcm_sample_chroma[i] = bs.readMultiBit(v); //3 u(v)
 		}
 	}
 	else {
 		bool noSubMbPartSizeLessThan8x8Flag = true;
-		//×Óºê¿é  //£¨Ö»¶Ô 8¡Á8MB ·Ö¸îµÄÖ¡ÄÚ MB£©È·¶¨Ã¿Ò»×Óºê¿éµÄ×Óºê ¿é·Ö¸î£¬Ã¿Ò»ºê¿é·Ö¸îµÄ±í 0 ºÍ / »ò±í 1 µÄ²Î¿¼Í¼Ïó£»Ã¿Ò» ºê¿é×Ó·Ö¸îµÄ²î·Ö±àÂëÔË¶¯Ê¸Á¿¡£
+		//å­å®å—  //ï¼ˆåªå¯¹ 8Ã—8MB åˆ†å‰²çš„å¸§å†… MBï¼‰ç¡®å®šæ¯ä¸€å­å®å—çš„å­å® å—åˆ†å‰²ï¼Œæ¯ä¸€å®å—åˆ†å‰²çš„è¡¨ 0 å’Œ / æˆ–è¡¨ 1 çš„å‚è€ƒå›¾è±¡ï¼›æ¯ä¸€ å®å—å­åˆ†å‰²çš„å·®åˆ†ç¼–ç è¿åŠ¨çŸ¢é‡ã€‚
 		if (!is_I_NxN(fix_mb_type, fix_slice_type) &&
 			mode != H264_MB_PART_PRED_MODE::Intra_16x16 &&
 			numMbPart == 4)
@@ -208,20 +208,20 @@ bool Macroblock::macroblock_layer(BitStream& bs)
 		}
 		else
 		{
-			//8x8½âÂë
+			//8x8è§£ç 
 			if (sHeader->pps.transform_8x8_mode_flag && is_I_NxN(fix_mb_type, fix_slice_type))
 			{
-				//Ê¹ÓÃ8x8±ä»»½âÂë
+				//ä½¿ç”¨8x8å˜æ¢è§£ç 
 				if (isAe)
 				{
 
 				}
 				else
 				{
-					/*µÈÓÚ1±íÊ¾¶ÔÓÚµ±Ç°ºê¿é£¬ÁÁ¶ÈÑùµãÖĞ±ä»»ÏµÊı½âÂë¹ı³ÌºÍÍ¼Ïñ¹¹½¨¹ı³ÌµÄµ÷ÓÃ£¬
-					  Ó¦ÔÚ²ĞÓàµÄ 8x8 ¿éµÄÈ¥¿éĞ§Ó¦ÂË²¨¹ı³ÌÖ®Ç°Íê³É¡£transform_size_8x8_flag µÈÓÚ 0 ±íÊ¾¶ÔÓÚµ±Ç°ºê¿é£¬
-					  ÁÁ¶ÈÑùµãµ±ÖĞ±ä»»ÏµÊı½âÂë¹ı³ÌºÍÍ¼Ïñ¹¹½¨¹ı³ÌµÄµ÷ÓÃÔÚÊ£ÓàµÄ4x4¿éµÄÈ¥¿éĞ§Ó¦ÂË²¨¹ı³ÌÖ®Ç°Íê³É¡£
-					  Èç¹û transform_size_8x8_flag ÔÚ±ÈÌØÁ÷ÖĞ²»´æÔÚ£¬ÔòÄ¬ÈÏÆäÖµÎª0¡£*/
+					/*ç­‰äº1è¡¨ç¤ºå¯¹äºå½“å‰å®å—ï¼Œäº®åº¦æ ·ç‚¹ä¸­å˜æ¢ç³»æ•°è§£ç è¿‡ç¨‹å’Œå›¾åƒæ„å»ºè¿‡ç¨‹çš„è°ƒç”¨ï¼Œ
+					  åº”åœ¨æ®‹ä½™çš„ 8x8 å—çš„å»å—æ•ˆåº”æ»¤æ³¢è¿‡ç¨‹ä¹‹å‰å®Œæˆã€‚transform_size_8x8_flag ç­‰äº 0 è¡¨ç¤ºå¯¹äºå½“å‰å®å—ï¼Œ
+					  äº®åº¦æ ·ç‚¹å½“ä¸­å˜æ¢ç³»æ•°è§£ç è¿‡ç¨‹å’Œå›¾åƒæ„å»ºè¿‡ç¨‹çš„è°ƒç”¨åœ¨å‰©ä½™çš„4x4å—çš„å»å—æ•ˆåº”æ»¤æ³¢è¿‡ç¨‹ä¹‹å‰å®Œæˆã€‚
+					  å¦‚æœ transform_size_8x8_flag åœ¨æ¯”ç‰¹æµä¸­ä¸å­˜åœ¨ï¼Œåˆ™é»˜è®¤å…¶å€¼ä¸º0ã€‚*/
 					transform_size_8x8_flag = bs.readBit();
 				}
 
@@ -239,19 +239,19 @@ bool Macroblock::macroblock_layer(BitStream& bs)
 			}
 			else
 			{
-				//Ö¸³öÄÄ¸ö 8¡Á8 ¿é£¨ÁÁ¶ÈºÍ²ÊÉ«£©°üº¬±àÂë±ä»»ÏµÊı
+				//å®å—é¢„æµ‹æ¨¡å¼ç­‰äº Intra_4x4, Intra_8x8 æˆ–è€…  Inter æ—¶ï¼Œcoded_block_pattern çš„å€¼ä¸åŒ
 				coded_block_pattern = bs.readME(sHeader->sps.ChromaArrayType, mode);
 
 			}
-			//¹«Ê½7-33
-			//Ò»¸öºê¿éµÄÁÁ¶È·ÖÁ¿µÄcoded_block_pattern
+			//å…¬å¼7-33
+			//ä¸€ä¸ªå®å—çš„äº®åº¦åˆ†é‡çš„coded_block_pattern
 			CodedBlockPatternLuma = coded_block_pattern % 16;
 
 			/*CodedBlockPatternChroma
-				ÃèÊö
-				0		ËùÓĞÉ«¶È±ä»»ÏµÊı·ùÖµ¶¼µÈÓÚ 0¡£
-				1		Ò»¸ö»ò¶à¸öÉ«¶È   DC ±ä»»ÏµÊı·ùÖµ²»Îª0¡£ËùÓĞÉ«¶È   AC ±ä»»ÏµÊı·ùÖµ¶¼µÈ ÓÚ 0¡£
-				2		Áã¸ö»ò¶à¸öÉ«¶È   DC ±ä»»ÏµÊı·ùÖµ²»Îª0¡£Ò»¸ö»ò¶à¸öÉ«¶È   AC ±ä»»ÏµÊı·ù Öµ²»Îª 0¡£*/
+				æè¿°
+				0		æ‰€æœ‰è‰²åº¦å˜æ¢ç³»æ•°å¹…å€¼éƒ½ç­‰äº 0ã€‚
+				1		ä¸€ä¸ªæˆ–å¤šä¸ªè‰²åº¦   DC å˜æ¢ç³»æ•°å¹…å€¼ä¸ä¸º0ã€‚æ‰€æœ‰è‰²åº¦   AC å˜æ¢ç³»æ•°å¹…å€¼éƒ½ç­‰ äº 0ã€‚
+				2		é›¶ä¸ªæˆ–å¤šä¸ªè‰²åº¦   DC å˜æ¢ç³»æ•°å¹…å€¼ä¸ä¸º0ã€‚ä¸€ä¸ªæˆ–å¤šä¸ªè‰²åº¦   AC å˜æ¢ç³»æ•°å¹… å€¼ä¸ä¸º 0ã€‚*/
 			CodedBlockPatternChroma = coded_block_pattern / 16;
 
 			if (
@@ -284,9 +284,9 @@ bool Macroblock::macroblock_layer(BitStream& bs)
 			}
 			else
 			{
-				//ÄÜ¸Ä±äºê¿é²ã ÖĞ QPY µÄÖµ ¡£mb_qp_delta ½âÂëºóµÄÖµÓ¦°üº¬ÔÚ¨C( 26 + QpBdOffsetY / 2) µ½ +( 25 + QpBdOffsetY / 2 )·¶Î§ÄÚ¡£
-				//µ±ÈÎºÎºê¿é£¨°üÀ¨ P_Skip ºÍ B_Skip ºê¿éÀàĞÍ£©ÖĞ¶¼²»´æÔÚ mb_qp_delta Ê±£¬ mb_qp_delta Ä¬ÈÏÎª0
-				//Á¿»¯²ÎÊıµÄ¸Ä±äÖµ¡£
+				//èƒ½æ”¹å˜å®å—å±‚ ä¸­ QPY çš„å€¼ ã€‚mb_qp_delta è§£ç åçš„å€¼åº”åŒ…å«åœ¨â€“( 26 + QpBdOffsetY / 2) åˆ° +( 25 + QpBdOffsetY / 2 )èŒƒå›´å†…ã€‚
+				//å½“ä»»ä½•å®å—ï¼ˆåŒ…æ‹¬ P_Skip å’Œ B_Skip å®å—ç±»å‹ï¼‰ä¸­éƒ½ä¸å­˜åœ¨ mb_qp_delta æ—¶ï¼Œ mb_qp_delta é»˜è®¤ä¸º0
+				//é‡åŒ–å‚æ•°çš„æ”¹å˜å€¼ã€‚
 				mb_qp_delta = bs.readSE();
 			}
 			residual(bs, 0, 15);
@@ -297,7 +297,7 @@ bool Macroblock::macroblock_layer(BitStream& bs)
 	return false;
 }
 
-//ºê¿éÔ¤²âÓï·¨
+//å®å—é¢„æµ‹è¯­æ³•
 bool Macroblock::mb_pred(BitStream& bs, uint32_t mb_type, uint32_t numMbPart)
 {
 	SliceHeader* sHeader = sliceBase.sHeader;
@@ -307,29 +307,29 @@ bool Macroblock::mb_pred(BitStream& bs, uint32_t mb_type, uint32_t numMbPart)
 		{
 			for (size_t luma4x4BlkIdx = 0; luma4x4BlkIdx < 16; luma4x4BlkIdx++)
 			{
-				//±íÊ¾ĞòºÅÎª luma4x4BlkIdx = 0µ½15 µÄ4x4 ÁÁ¶È¿éµÄÖ¡ÄÚIntra_4x4 Ô¤²â¡£
-				if (isAe) // ae(v) ±íÊ¾CABAC±àÂë
+				//è¡¨ç¤ºåºå·ä¸º luma4x4BlkIdx = 0åˆ°15 çš„4x4 äº®åº¦å—çš„å¸§å†…Intra_4x4 é¢„æµ‹ã€‚
+				if (isAe) // ae(v) è¡¨ç¤ºCABACç¼–ç 
 				{
 
 				}
 				else
 				{
-					//ÓÃÀ´±íÊ¾ÎÒµ±Ç°ÓÃµÄÄ£Ê½ºÍÇ°ÃæµÄÊÇ²»ÊÇÒ»ÑùµÄ
+					//ç”¨æ¥è¡¨ç¤ºæˆ‘å½“å‰ç”¨çš„æ¨¡å¼å’Œå‰é¢çš„æ˜¯ä¸æ˜¯ä¸€æ ·çš„
 					prev_intra4x4_pred_mode_flag[luma4x4BlkIdx] = bs.readBit();
 				}
 
 				if (!prev_intra4x4_pred_mode_flag[luma4x4BlkIdx]) {
-					if (isAe) // ae(v) ±íÊ¾CABAC±àÂë
+					if (isAe) // ae(v) è¡¨ç¤ºCABACç¼–ç 
 					{
 
 					}
 					else
 					{
-						//ÓĞ9ÖÖÔ¤²âÄ£Ê½
-						/*Ä£Ê½0£º´¹Ö±Ä£Ê½£¬Ìõ¼ş£ºA~D¿ÉÓÃ¡£
-						  Ä£Ê½1£ºË®Æ½Ä£Ê½£¬Ìõ¼ş£ºI~L¿ÉÓÃ¡£
-						  Ä£Ê½2£ºDCÄ£Ê½£¬Ìõ¼ş£ºA~D»òI~L¿ÉÓÃ¡£
-						  Ä£Ê½3~8£º·½ÏòÄ£Ê½£¬¸÷¸öÏñËØÊÇÓÉAµ½LÏñËØÍ¨¹ıÈ¨ÖØ²»µÈµÄ¹«Ê½¼ÓÈ¨¼ÆËãµÄ¡£*/
+						//æœ‰9ç§é¢„æµ‹æ¨¡å¼
+						/*æ¨¡å¼0ï¼šå‚ç›´æ¨¡å¼ï¼Œæ¡ä»¶ï¼šA~Då¯ç”¨ã€‚
+						  æ¨¡å¼1ï¼šæ°´å¹³æ¨¡å¼ï¼Œæ¡ä»¶ï¼šI~Lå¯ç”¨ã€‚
+						  æ¨¡å¼2ï¼šDCæ¨¡å¼ï¼Œæ¡ä»¶ï¼šA~Dæˆ–I~Lå¯ç”¨ã€‚
+						  æ¨¡å¼3~8ï¼šæ–¹å‘æ¨¡å¼ï¼Œå„ä¸ªåƒç´ æ˜¯ç”±Aåˆ°Låƒç´ é€šè¿‡æƒé‡ä¸ç­‰çš„å…¬å¼åŠ æƒè®¡ç®—çš„ã€‚*/
 						rem_intra4x4_pred_mode[luma4x4BlkIdx] = bs.readMultiBit(3);
 					}
 
@@ -341,8 +341,8 @@ bool Macroblock::mb_pred(BitStream& bs, uint32_t mb_type, uint32_t numMbPart)
 		if (mode == H264_MB_PART_PRED_MODE::Intra_8x8)
 		{
 			for (size_t luma8x8BlkIdx = 0; luma8x8BlkIdx < 4; luma8x8BlkIdx++) {
-				//±íÊ¾ĞòºÅÎª luma8x8BlkIdx = 0µ½3 µÄ8x8 ÁÁ¶È¿éµÄIntra_8x8 Ô¤²â
-				if (isAe) // ae(v) ±íÊ¾CABAC±àÂë
+				//è¡¨ç¤ºåºå·ä¸º luma8x8BlkIdx = 0åˆ°3 çš„8x8 äº®åº¦å—çš„Intra_8x8 é¢„æµ‹
+				if (isAe) // ae(v) è¡¨ç¤ºCABACç¼–ç 
 				{
 
 				}
@@ -352,7 +352,7 @@ bool Macroblock::mb_pred(BitStream& bs, uint32_t mb_type, uint32_t numMbPart)
 				}
 
 				if (!prev_intra8x8_pred_mode_flag[luma8x8BlkIdx]) {
-					if (isAe) // ae(v) ±íÊ¾CABAC±àÂë
+					if (isAe) // ae(v) è¡¨ç¤ºCABACç¼–ç 
 					{
 
 					}
@@ -364,17 +364,17 @@ bool Macroblock::mb_pred(BitStream& bs, uint32_t mb_type, uint32_t numMbPart)
 				}
 			}
 		}
-		// YUV 4 : 2 : 0 || YUV 4 : 2 : 2£¬yuvÒ»Æğ±àÂë
+		// YUV 4 : 2 : 0 || YUV 4 : 2 : 2ï¼Œyuvä¸€èµ·ç¼–ç 
 		if (sHeader->sps.ChromaArrayType == 1 || sHeader->sps.ChromaArrayType == 2)
 		{
-			//ºê¿éÖĞÓÃÓÚÉ«¶ÈµÄ¿Õ¼äÔ¤²âÀàĞÍÊ¹ÓÃIntra_4x4 »ò Intra_16x16 Ô¤²â
-			//intra_chroma_pred_mode µÄÈ¡Öµ·¶Î§Îª0 µ½  3¡£
-			//  0 = DC ÓÖ±»³ÆÖ®Îª¾ùÖµÄ£Ê½¡£¾ùÖµÄ£Ê½ÏÂ£¬4 x 4 ×Ó¿éÖĞ 16 ¸öÏñËØ¶¼ÊÇÏàÍ¬µÄÖµ£¬
-			//         ÊÇÉÏ·½µÄËÄ¸öÏñËØ A B C D ºÍ×ó±ßËÄ¸öÏñËØ I J K L µÄ¾ùÖµ¡£
-			//	1 = Ë®Æ½µÄ
-			//	2 = ´¹Ö±µÄ
-			//	3 = Æ½ÃæµÄ
-			if (isAe) // ae(v) ±íÊ¾CABAC±àÂë
+			//å®å—ä¸­ç”¨äºè‰²åº¦çš„ç©ºé—´é¢„æµ‹ç±»å‹ä½¿ç”¨Intra_4x4 æˆ– Intra_16x16 é¢„æµ‹
+			//intra_chroma_pred_mode çš„å–å€¼èŒƒå›´ä¸º0 åˆ°  3ã€‚
+			//  0 = DC åˆè¢«ç§°ä¹‹ä¸ºå‡å€¼æ¨¡å¼ã€‚å‡å€¼æ¨¡å¼ä¸‹ï¼Œ4 x 4 å­å—ä¸­ 16 ä¸ªåƒç´ éƒ½æ˜¯ç›¸åŒçš„å€¼ï¼Œ
+			//         æ˜¯ä¸Šæ–¹çš„å››ä¸ªåƒç´  A B C D å’Œå·¦è¾¹å››ä¸ªåƒç´  I J K L çš„å‡å€¼ã€‚
+			//	1 = æ°´å¹³çš„
+			//	2 = å‚ç›´çš„
+			//	3 = å¹³é¢çš„
+			if (isAe) // ae(v) è¡¨ç¤ºCABACç¼–ç 
 			{
 
 			}
@@ -388,7 +388,7 @@ bool Macroblock::mb_pred(BitStream& bs, uint32_t mb_type, uint32_t numMbPart)
 	{
 		for (size_t mbPartIdx = 0; mbPartIdx < numMbPart; mbPartIdx++)
 		{
-			//µ±ref_idx_l0[mbPartIdx] ´æÔÚÊ±, Ëü±íÊ¾²Î¿¼Í¼ÏñÁĞ±íĞòºÅÎª0 µÄ²Î¿¼Í¼Ïñ±»ÓÃÓÚÔ¤²â
+			//å½“ref_idx_l0[mbPartIdx] å­˜åœ¨æ—¶, å®ƒè¡¨ç¤ºå‚è€ƒå›¾åƒåˆ—è¡¨åºå·ä¸º0 çš„å‚è€ƒå›¾åƒè¢«ç”¨äºé¢„æµ‹
 
 			/*if ((sHeader.num_ref_idx_l0_active_minus1 > 0  ||
 				slice_data.mb_field_decoding_flag != field_pic_flag) && MbPartPredMode(mb_type, mbPartIdx) != Pred_L1)
@@ -399,7 +399,7 @@ bool Macroblock::mb_pred(BitStream& bs, uint32_t mb_type, uint32_t numMbPart)
 	}
 	return false;
 }
-//»ñµÃµ±Ç°ºê¿éÀàĞÍËù²ÉÓÃµÄIntraÔ¤²â·½Ê½
+//è·å¾—å½“å‰å®å—ç±»å‹æ‰€é‡‡ç”¨çš„Intraé¢„æµ‹æ–¹å¼
 H264_MB_PART_PRED_MODE Macroblock::MbPartPredMode(uint32_t mb_type, SLIECETYPE slice_type, uint32_t mbPartIdx)
 {
 	H264_MB_PART_PRED_MODE mode = H264_MB_PART_PRED_MODE::NA;
@@ -429,7 +429,7 @@ H264_MB_PART_PRED_MODE Macroblock::MbPartPredMode(uint32_t mb_type, SLIECETYPE s
 		}
 		else
 		{
-			printError("iºê¿émbPartIdx±ØĞëÊÇ0");
+			printError("iå®å—mbPartIdxå¿…é¡»æ˜¯0");
 			exit(1);
 		}
 
@@ -463,7 +463,7 @@ H264_MB_PART_PRED_MODE Macroblock::MbPartPredMode(uint32_t mb_type, SLIECETYPE s
 		}
 		else
 		{
-			printError("SImbPartIdx±ØĞëÊÇ0");
+			printError("SImbPartIdxå¿…é¡»æ˜¯0");
 			exit(1);
 		}
 
@@ -478,7 +478,7 @@ H264_MB_PART_PRED_MODE Macroblock::MbPartPredMode2(uint32_t mb_type, SLIECETYPE 
 	return H264_MB_PART_PRED_MODE();
 }
 
-//ºê¿é±»·Ö¸î³É¶àÉÙ²¿·Ö
+//å®å—è¢«åˆ†å‰²æˆå¤šå°‘éƒ¨åˆ†
 uint32_t Macroblock::NumMbPart(uint32_t mb_type, SLIECETYPE slice_type)
 {
 	int ret = 0;
@@ -495,16 +495,16 @@ uint32_t Macroblock::NumMbPart(uint32_t mb_type, SLIECETYPE slice_type)
 
 
 
-//ĞŞÕıslice_typeºÍmb_type
+//ä¿®æ­£slice_typeå’Œmb_type
 int Macroblock::fixed_mb_type(uint32_t slice_type, uint32_t& fix_mb_type, SLIECETYPE& fix_slice_type)
 {
 
 	if ((SLIECETYPE)(slice_type % 5) == SLIECETYPE::H264_SLIECE_TYPE_SI)
 	{
-		if (mb_type >= 1 && mb_type <= 26)//ËµÃ÷°üº¬ÁËiºê¿é
+		if (mb_type >= 1 && mb_type <= 26)//è¯´æ˜åŒ…å«äº†iå®å—
 		{
 			fix_mb_type = mb_type - 1;
-			fix_slice_type = SLIECETYPE::H264_SLIECE_TYPE_I;  //ËµÃ÷°üº¬ÁËIºê¿é
+			fix_slice_type = SLIECETYPE::H264_SLIECE_TYPE_I;  //è¯´æ˜åŒ…å«äº†Iå®å—
 		}
 	}
 	else if ((SLIECETYPE)(slice_type % 5) == SLIECETYPE::H264_SLIECE_TYPE_SP ||
@@ -513,7 +513,7 @@ int Macroblock::fixed_mb_type(uint32_t slice_type, uint32_t& fix_mb_type, SLIECE
 		if (mb_type >= 5 && mb_type <= 30)
 		{
 			fix_mb_type = mb_type - 5;
-			fix_slice_type = SLIECETYPE::H264_SLIECE_TYPE_I;  //ËµÃ÷°üº¬ÁËIºê¿é
+			fix_slice_type = SLIECETYPE::H264_SLIECE_TYPE_I;  //è¯´æ˜åŒ…å«äº†Iå®å—
 		}
 	}
 	else if ((SLIECETYPE)(slice_type % 5) == SLIECETYPE::H264_SLIECE_TYPE_B)
@@ -521,7 +521,7 @@ int Macroblock::fixed_mb_type(uint32_t slice_type, uint32_t& fix_mb_type, SLIECE
 		if (mb_type >= 23 && mb_type <= 48)
 		{
 			fix_mb_type = mb_type - 23;
-			fix_slice_type = SLIECETYPE::H264_SLIECE_TYPE_I;  //ËµÃ÷°üº¬ÁËIºê¿é
+			fix_slice_type = SLIECETYPE::H264_SLIECE_TYPE_I;  //è¯´æ˜åŒ…å«äº†Iå®å—
 		}
 	}
 
@@ -540,10 +540,11 @@ bool Macroblock::is_I_NxN(uint32_t mb_type, SLIECETYPE slice_type)
 }
 
 
-//¼ÆËã²Ğ²îÊı¾İ
+//è®¡ç®—æ®‹å·®æ•°æ®
 bool Macroblock::residual(BitStream& bs, int startIdx, int endIdx)
 {
 	SliceHeader* sHeader = sliceBase.sHeader;
+	ResidualBlockCavlc residual_block(sliceBase);
 	/*bool isAe = sHeader.pps.entropy_coding_mode_flag;*/
 	if (isAe)
 	{
@@ -557,33 +558,71 @@ bool Macroblock::residual(BitStream& bs, int startIdx, int endIdx)
 	residual_luma(bs, i16x16DClevel, i16x16AClevel, level4x4, level8x8, startIdx, endIdx);
 
 	cout << 1 << endl;
+
+	//chroma_format_idc = 0	å•è‰²
+	//chroma_format_idc = 1	YUV 4 : 2 : 0
+	//chroma_format_idc = 2	YUV 4 : 2 : 2
+	//chroma_format_idc = 3	YUV 4 : 4 : 4
+	if (sHeader->sps.ChromaArrayType == 1 || sHeader->sps.ChromaArrayType == 2)
+	{
+		//2,  1		//422
+		int NumC8x8 = 4 / (sHeader->sps.SubWidthC * sHeader->sps.SubHeightC);
+		//420å¯¹åº”ä¸€ä¸ªuï¼Œä¸€ä¸ªv
+		for (size_t iCbCr = 0; iCbCr < 2; iCbCr++)
+		{
+			int TotalCoeff = 0;
+			if ((CodedBlockPatternChroma & 3) && startIdx == 0)
+			{
+			
+				if (isAe)
+				{
+
+				}
+				else
+				{
+					//è§£ç è‰²åº¦DCç³»æ•°ï¼Œè¿™æ˜¯å¿…æœ‰çš„  DCæ˜¯å›ºå®šç è¡¨
+					//420æœ€å¤§ç³»æ•°æœ‰4ä¸ª   422æœ€å¤§ç³»æ•°æœ‰8ä¸ª  444æœ€å¤§ç³»æ•°æœ‰16ä¸ª   
+					residual_block.residual_block_cavlc(bs, ChromaDCLevel[iCbCr], 0, 4 * NumC8x8 - 1, 4 * NumC8x8, TotalCoeff, RESIDUAL_LEVEL::ChromaDCLevel);
+
+				}
+			}
+			else
+			{
+				//æ‰€æœ‰æ®‹å·®éƒ½ä¸è¢«ä¼ é€ï¼Œè§£ç å™¨æŠŠæ‰€æœ‰æ®‹å·®ç³»æ•°èµ‹ä¸º0ã€‚
+				for (size_t i = 0; i < 4 * NumC8x8; i++)
+				{
+					ChromaDCLevel[iCbCr][i] = 0;
+				}
+			}
+		}
+	}
 	return false;
 }
-//ÁÁ¶È¿éÔ¤²â
+//äº®åº¦å—é¢„æµ‹
 int Macroblock::residual_luma(BitStream& bs, int i16x16DClevel[16], int i16x16AClevel[16][16], int level4x4[16][16], int level8x8[4][64], int startIdx, int endIdx)
 {
 	SliceHeader* sHeader = sliceBase.sHeader;
 	int TotalCoeff = 0;
 
-	//ÏÈ½âÎö16*16µÄDC
+	//å…ˆè§£æ16*16çš„DC
 	if (startIdx == 0 && mode == H264_MB_PART_PRED_MODE::Intra_16x16)
 	{
 
 	}
-	//ÏÈÑ­»·ÍâÃæËÄ¸ö8x8
+	//å…ˆå¾ªç¯å¤–é¢å››ä¸ª8x8
 	for (size_t i8x8 = 0; i8x8 < 4; i8x8++)
 	{
-		//²»ÊÇ8x8½âÂë»òÕßcavlc
+		//ä¸æ˜¯8x8è§£ç æˆ–è€…cavlc
 		if (!transform_size_8x8_flag || !isAe)
 		{
-			//ÔÚÑ­»·ÀïÃæËÄ¸ö4x4
+			//åœ¨å¾ªç¯é‡Œé¢å››ä¸ª4x4
 			for (size_t i4x4 = 0; i4x4 < 4; i4x4++)
 			{
-				const size_t BlkIdx = i8x8 * 4 + i4x4;//µÚ¼¸¸ö¿é
-				//ÓĞÁÁ¶È·ÖÁ¿½âÎöÁ¿¶È·ÖÎö£¬4*4ÊÇ²»Çø·ÖACºÍDC
+				const size_t BlkIdx = i8x8 * 4 + i4x4;//ç¬¬å‡ ä¸ªå—
+				//æœ‰äº®åº¦åˆ†é‡è§£æé‡åº¦åˆ†æï¼Œ4*4æ˜¯ä¸åŒºåˆ†ACå’ŒDC
 				if (CodedBlockPatternLuma & (1 << i8x8))
 				{
-					//½âÎö16*16µÄAC
+					//è§£æ16*16çš„AC
 					if (mode == H264_MB_PART_PRED_MODE::Intra_16x16)
 					{
 						if (isAe)
@@ -605,17 +644,18 @@ int Macroblock::residual_luma(BitStream& bs, int i16x16DClevel[16], int i16x16AC
 						else
 						{
 							ResidualBlockCavlc residual_block(sliceBase);
-							residual_block.residual_block_cavlc(bs, level4x4[BlkIdx], startIdx, endIdx, 16, i4x4, i8x8, TotalCoeff);
+
+							residual_block.residual_block_cavlc(bs, level4x4[BlkIdx], startIdx, endIdx, 16, TotalCoeff, RESIDUAL_LEVEL::LumaLevel4x4, i4x4, i8x8);
 						}
 					}
-					//´æ´¢µ±Ç°4x4¿é·Ç0ÏµÊıÊıÄ¿
+					//å­˜å‚¨å½“å‰4x4å—é0ç³»æ•°æ•°ç›®
 					mb_luma_4x4_non_zero_count_coeff[BlkIdx] = TotalCoeff;
-					//´æ´¢µ±Ç°8x8¿é·Ç0ÏµÊıÊıÄ¿
+					//å­˜å‚¨å½“å‰8x8å—é0ç³»æ•°æ•°ç›®
 					mb_luma_8x8_non_zero_count_coeff[i8x8] += mb_luma_4x4_non_zero_count_coeff[BlkIdx];
 				}
 				else if (mode == H264_MB_PART_PRED_MODE::Intra_16x16)
 				{
-					//ÒòÎªÈ¡×ßÁËÒ»¸öÖ±Á÷·ÖÁ¿ËùÒÔ×î¶à15¸ö
+					//å› ä¸ºå–èµ°äº†ä¸€ä¸ªç›´æµåˆ†é‡æ‰€ä»¥æœ€å¤š15ä¸ª
 					for (size_t i = 0; i < 15; i++)
 					{
 						i16x16AClevel[i8x8 * 4 + i4x4][i] = 0;
