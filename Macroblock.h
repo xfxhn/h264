@@ -60,7 +60,7 @@ class Macroblock
 public:
 	uint32_t		pcm_alignment_zero_bit; // 3 f(1)
 	uint32_t		pcm_sample_luma[256]; //3 u(v)
-	uint32_t*		pcm_sample_chroma;
+	uint32_t* pcm_sample_chroma;
 	bool			transform_size_8x8_flag;
 	uint32_t		mb_type;
 
@@ -89,12 +89,14 @@ public:
 
 
 
-	int     ChromaDCLevel[2][16]; //存储色度u和v的残差数据
+	int     ChromaDCLevel[2][16]; //存储DC色度u和v的残差数据
+	int     ChromaACLevel[2][16][16]; //存储AC色度u和v的残差数据
 
 
 	uint8_t     mb_luma_4x4_non_zero_count_coeff[16];//存储4x4亮度宏块非0系数
 	uint8_t     mb_luma_8x8_non_zero_count_coeff[4];//存储8x8亮度宏块非0系数
-     
+	uint8_t     mb_chroma_4x4_non_zero_count_coeff[2][16];//存储色度宏块非0系数
+
 
 public:
 	Macroblock(ParseSlice& slice);

@@ -543,6 +543,9 @@ bool Macroblock::is_I_NxN(uint32_t mb_type, SLIECETYPE slice_type)
 //计算残差数据
 bool Macroblock::residual(BitStream& bs, int startIdx, int endIdx)
 {
+
+
+	int TotalCoeff = 0;
 	SliceHeader* sHeader = sliceBase.sHeader;
 	ResidualBlockCavlc residual_block(sliceBase);
 	/*bool isAe = sHeader.pps.entropy_coding_mode_flag;*/
@@ -557,12 +560,12 @@ bool Macroblock::residual(BitStream& bs, int startIdx, int endIdx)
 
 	residual_luma(bs, i16x16DClevel, i16x16AClevel, level4x4, level8x8, startIdx, endIdx);
 
-	cout << 1 << endl;
-
 	//chroma_format_idc = 0	单色
 	//chroma_format_idc = 1	YUV 4 : 2 : 0
 	//chroma_format_idc = 2	YUV 4 : 2 : 2
 	//chroma_format_idc = 3	YUV 4 : 4 : 4
+
+	//CodedBlockPatternChroma 只会有0,1,2三个值
 	if (sHeader->sps.ChromaArrayType == 1 || sHeader->sps.ChromaArrayType == 2)
 	{
 		//2,  1		//422
@@ -570,10 +573,10 @@ bool Macroblock::residual(BitStream& bs, int startIdx, int endIdx)
 		//420对应一个u，一个v
 		for (size_t iCbCr = 0; iCbCr < 2; iCbCr++)
 		{
-			int TotalCoeff = 0;
+			//有CodedBlockPatternChroma这个值才能进行解码  解码器把所有残差系数赋为0
 			if ((CodedBlockPatternChroma & 3) && startIdx == 0)
 			{
-			
+
 				if (isAe)
 				{
 
@@ -595,7 +598,36 @@ bool Macroblock::residual(BitStream& bs, int startIdx, int endIdx)
 				}
 			}
 		}
+
+		for (size_t iCbCr = 0; iCbCr < 2; iCbCr++)
+		{
+			//420是4个y对应一组uv，422是两个y对应一组uv，如果这里是420的就u和v各读一个,如果422的就各读两个 如果444的就各读四个，所以最多有16个
+			for (size_t i8x8 = 0; i8x8 < NumC8x8; i8x8++)
+			{
+				for (size_t i4x4 = 0; i4x4 < 4; i4x4++)
+				{
+					const size_t BlkIdx = i8x8 * 4 + i4x4;//第几个块
+					//AC系数解码
+					if (CodedBlockPatternChroma & 2)
+					{
+						if (isAe)
+						{
+
+						}
+						else
+						{
+
+							RESIDUAL_LEVEL level = iCbCr == 0 ? RESIDUAL_LEVEL::ChromaACLevelCb : RESIDUAL_LEVEL::ChromaACLevelCr;
+							//能走到这里DC系数最少被取走了一个，所以这里最多15
+							residual_block.residual_block_cavlc(bs, ChromaACLevel[iCbCr][BlkIdx], max(0, startIdx - 1), endIdx - 1, 15, TotalCoeff, level, i4x4, i8x8);
+						}
+					}
+					mb_chroma_4x4_non_zero_count_coeff[iCbCr][BlkIdx] = TotalCoeff;
+				}
+			}
+		}
 	}
+	cout << 1 << endl;
 	return false;
 }
 //亮度块预测

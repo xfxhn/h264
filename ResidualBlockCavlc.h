@@ -20,6 +20,9 @@ private:
 	int getNumCoeffAndTrailingOnes(int nC, uint16_t coeff_token, int& coeff_token_length, int& TrailingOnes, int& TotalCoeff);
 	int getTotalZeros(BitStream& bs, uint32_t TotalCoeff, uint32_t maxNumCoeff);
 	int getRunbefore(BitStream& bs, uint32_t zerosLeft);
+	int findTable(BitStream& bs, int maxNumber, int* lengthTable, int* codeTable);
+
+	int findChromaAC_nA_nB(const int CbCr, const int BlkIdx, int& nA, int& nB, bool& availableLeft, bool& availableTop);
 public:
 	ParseSlice& sliceBase;
 	bool	trailing_ones_sign_flag;

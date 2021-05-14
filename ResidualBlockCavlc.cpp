@@ -23,7 +23,6 @@ bool ResidualBlockCavlc::residual_block_cavlc(
 	int TrailingOnes = 0;
 
 	int numberCurrent = getNumberCurrent(residualLevel, i4x4, i8x8);
-
 	cout << numberCurrent << endl;
 	//获取16bit因为token最长只有16bit
 	uint16_t coeff_token = bs.getMultiBit(16);
@@ -216,55 +215,82 @@ int ResidualBlockCavlc::getNumberCurrent(RESIDUAL_LEVEL residualLevel, size_t i4
 		{
 
 		}*/
-		if (BlkIdx == 0 || BlkIdx == 2 || BlkIdx == 8 || BlkIdx == 10)
-		{
-			if (sliceBase.mbX > 0) {
-				const int leftMbIdx = sliceBase.CurrMbAddr - 1;
-				const int left4x4Idx = BlkIdx + 5;
-				nA = sliceBase.macroblock[leftMbIdx]->mb_luma_4x4_non_zero_count_coeff[left4x4Idx];
-				availableLeft = true;
-			}
-		}
-		else
-		{
-			if (BlkIdx % 2 == 1) {
 
-				nA = sliceBase.macroblock[sliceBase.CurrMbAddr]->mb_luma_4x4_non_zero_count_coeff[BlkIdx - 1];
-				availableLeft = true;
-			}
-			else {
-				nA = sliceBase.macroblock[sliceBase.CurrMbAddr]->mb_luma_4x4_non_zero_count_coeff[BlkIdx - 3];
-				availableLeft = true;
-			}
+		if (residualLevel == RESIDUAL_LEVEL::ChromaACLevelCb)
+		{
+			findChromaAC_nA_nB(0, BlkIdx, nA, nB, availableLeft, availableTop);
+
+		}
+		else if (residualLevel == RESIDUAL_LEVEL::ChromaACLevelCr)
+		{
+			findChromaAC_nA_nB(1, BlkIdx, nA, nB, availableLeft, availableTop);
 		}
 
-		if (i8x8 < 2)
+
+
+
+		if (residualLevel == RESIDUAL_LEVEL::LumaLevel4x4)
 		{
-			if (i4x4 < 2) {
-				if (sliceBase.mbY > 0)
-				{
-					const int topMbIdx = sliceBase.CurrMbAddr - sliceBase.sHeader->sps.PicWidthInMbs;
-					const int top4x4Idx = BlkIdx + 10;
-					nB = sliceBase.macroblock[topMbIdx]->mb_luma_4x4_non_zero_count_coeff[top4x4Idx];
+			if (BlkIdx == 0 || BlkIdx == 2 || BlkIdx == 8 || BlkIdx == 10)
+			{
+				if (sliceBase.mbX > 0) {
+					const int leftMbIdx = sliceBase.CurrMbAddr - 1;
+					const int left4x4Idx = BlkIdx + 5;
+					nA = sliceBase.macroblock[leftMbIdx]->mb_luma_4x4_non_zero_count_coeff[left4x4Idx];
+					availableLeft = true;
+				}
+			}
+			else
+			{
+				if (BlkIdx % 2 == 1) {
+
+					nA = sliceBase.macroblock[sliceBase.CurrMbAddr]->mb_luma_4x4_non_zero_count_coeff[BlkIdx - 1];
+					availableLeft = true;
+				}
+				else {
+					nA = sliceBase.macroblock[sliceBase.CurrMbAddr]->mb_luma_4x4_non_zero_count_coeff[BlkIdx - 3];
+					availableLeft = true;
+				}
+			}
+
+
+
+
+			if (i8x8 < 2)
+			{
+				if (i4x4 < 2) {
+					if (sliceBase.mbY > 0)
+					{
+						const int topMbIdx = sliceBase.CurrMbAddr - sliceBase.sHeader->sps.PicWidthInMbs;
+						const int top4x4Idx = BlkIdx + 10;
+						nB = sliceBase.macroblock[topMbIdx]->mb_luma_4x4_non_zero_count_coeff[top4x4Idx];
+						availableTop = true;
+					}
+				}
+				else {
+					nB = sliceBase.macroblock[sliceBase.CurrMbAddr]->mb_luma_4x4_non_zero_count_coeff[BlkIdx - 2];
 					availableTop = true;
 				}
 			}
-			else {
-				nB = sliceBase.macroblock[sliceBase.CurrMbAddr]->mb_luma_4x4_non_zero_count_coeff[BlkIdx - 2];
-				availableTop = true;
+			else
+			{
+				if (i4x4 < 2) {
+					nB = sliceBase.macroblock[sliceBase.CurrMbAddr]->mb_luma_4x4_non_zero_count_coeff[BlkIdx - 6];
+					availableTop = true;
+				}
+				else {
+					nB = sliceBase.macroblock[sliceBase.CurrMbAddr]->mb_luma_4x4_non_zero_count_coeff[BlkIdx - 2];
+					availableTop = true;
+				}
 			}
 		}
-		else
-		{
-			if (i4x4 < 2) {
-				nB = sliceBase.macroblock[sliceBase.CurrMbAddr]->mb_luma_4x4_non_zero_count_coeff[BlkIdx - 6];
-				availableTop = true;
-			}
-			else {
-				nB = sliceBase.macroblock[sliceBase.CurrMbAddr]->mb_luma_4x4_non_zero_count_coeff[BlkIdx - 2];
-				availableTop = true;
-			}
-		}
+
+
+
+
+
+
+
 
 		if (availableTop && availableLeft)
 		{
@@ -2065,38 +2091,34 @@ int ResidualBlockCavlc::getNumCoeffAndTrailingOnes(int nC, uint16_t coeff_token,
 
 int ResidualBlockCavlc::getTotalZeros(BitStream& bs, uint32_t TotalCoeff, uint32_t maxNumCoeff)
 {
-
-
-	int* lengthTable = totalZerosTableLength[TotalCoeff];
-	int* codeTable = totalZerosTableCode[TotalCoeff];
-
 	int TotalZeros = 0;
 	if (maxNumCoeff == 4)
 	{
+		int* lengthTable = totalZerosTableChromaDCLength_420[TotalCoeff];
+		int* codeTable = totalZerosTableChromaDCCode_420[TotalCoeff];
 		//表9-9 (a)
+
+		TotalZeros = findTable(bs, 4, lengthTable, codeTable);
+
 	}
 	else if (maxNumCoeff == 8)
 	{
 		//表9 - 9 (b)
+
+		int* lengthTable = totalZerosTableChromaDCLength_422[TotalCoeff];
+		int* codeTable = totalZerosTableChromaDCCode_422[TotalCoeff];
+		//表9-9 (a)
+		TotalZeros = findTable(bs, 8, lengthTable, codeTable);
+
 	}
 	else
 	{
+		int* lengthTable = totalZerosTableLength[TotalCoeff];
+		int* codeTable = totalZerosTableCode[TotalCoeff];
 		//表9-7和表9-8
-		for (size_t i = 0; i < 16; i++)
-		{
-			const int codeLen = lengthTable[i];
-			if (codeLen == 0)
-			{
-				break;
-			}
 
-			if (bs.getMultiBit(codeLen) == codeTable[i])
-			{
-				TotalZeros = i;
-				bs.readMultiBit(codeLen);
-				break;
-			}
-		}
+		TotalZeros = findTable(bs, 16, lengthTable, codeTable);
+
 	}
 
 
@@ -2109,20 +2131,85 @@ int ResidualBlockCavlc::getRunbefore(BitStream& bs, uint32_t zerosLeft)
 	int* tableLength = runBeforeTableLength[zerosLeft];
 	int* tableCode = runBeforeTableCode[zerosLeft];
 
-	int runbefore = 0;
-	for (size_t i = 0; i < 15; i++)
+	int runbefore = findTable(bs, 15, tableLength, tableCode);
+
+	return runbefore;
+}
+
+int ResidualBlockCavlc::findTable(BitStream& bs, int maxNumber, int* lengthTable, int* codeTable)
+{
+
+	int ret = 0;
+	for (size_t i = 0; i < maxNumber; i++)
 	{
-		const int codeLen = tableLength[i];
+		const int codeLen = lengthTable[i];
 		if (codeLen == 0)
 		{
 			break;
 		}
-		if (bs.getMultiBit(codeLen) == tableCode[i])
+
+		if (bs.getMultiBit(codeLen) == codeTable[i])
 		{
-			runbefore = i;
+			ret = i;
 			bs.readMultiBit(codeLen);
 			break;
 		}
 	}
-	return runbefore;
+	return ret;
+}
+
+
+
+
+int ResidualBlockCavlc::findChromaAC_nA_nB(const int CbCr, const int BlkIdx, int& nA, int& nB, bool& availableLeft, bool& availableTop)
+{
+
+	//const int MbWidthC = sliceBase.sHeader->sps.MbWidthC;    //色度宏块宽度 8
+	//const int MbHeightC = sliceBase.sHeader->sps.MbHeightC;	//色度宏块高度 8
+
+	if (sliceBase.sHeader->sps.ChromaArrayType == 1)//420
+	{
+		if (BlkIdx % 2 == 0)
+		{
+			if (sliceBase.mbX > 0)
+			{
+				const int leftMbIdx = sliceBase.CurrMbAddr - 1;
+				const int leftIdx = BlkIdx + 1;
+
+				nA = sliceBase.macroblock[leftMbIdx]->mb_chroma_4x4_non_zero_count_coeff[CbCr][leftIdx];
+				availableLeft = true;
+			}
+		}
+		else
+		{
+			nA = sliceBase.macroblock[sliceBase.CurrMbAddr]->mb_chroma_4x4_non_zero_count_coeff[CbCr][BlkIdx - 1];
+			availableLeft = true;
+		}
+
+
+		if (BlkIdx < 2)
+		{
+			if (sliceBase.mbY > 0)
+			{
+				const int topMbIdx = sliceBase.CurrMbAddr - sliceBase.sHeader->sps.PicWidthInMbs;
+				const int leftIdx = BlkIdx + 2;
+				nB = sliceBase.macroblock[topMbIdx]->mb_chroma_4x4_non_zero_count_coeff[CbCr][leftIdx];
+				availableTop = true;
+			}
+		}
+		else
+		{
+			nB = sliceBase.macroblock[sliceBase.CurrMbAddr]->mb_chroma_4x4_non_zero_count_coeff[CbCr][BlkIdx - 2];
+			availableTop = true;
+		}
+	}
+	else if (sliceBase.sHeader->sps.ChromaArrayType == 2)//422
+	{
+
+	}
+	else if (sliceBase.sHeader->sps.ChromaArrayType == 3)//444
+	{
+
+	}
+	return 0;
 }

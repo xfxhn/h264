@@ -169,7 +169,9 @@ enum class RESIDUAL_LEVEL
 	LumaLevel4x4,
 	ChromaDCLevel,
 	ChromaACLevel,
+	ChromaACLevelCb,
+	ChromaACLevelCr,
 	Intra16x16DCLevel,
 	CbIntra16x16DCLevel,
-	CrIntra16x16DCLevel
+	CrIntra16x16DCLevel,
 };
