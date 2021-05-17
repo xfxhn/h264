@@ -172,6 +172,7 @@ enum class RESIDUAL_LEVEL
 	ChromaACLevelCb,
 	ChromaACLevelCr,
 	Intra16x16DCLevel,
+	Intra16x16ACLevel,
 	CbIntra16x16DCLevel,
 	CrIntra16x16DCLevel,
 };

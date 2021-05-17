@@ -11,7 +11,7 @@ ResidualBlockCavlc::ResidualBlockCavlc(ParseSlice& slice) :sliceBase(slice)
 }
 
 bool ResidualBlockCavlc::residual_block_cavlc(
-	BitStream& bs, int coeffLevel[16], int startIdx, int endIdx, uint32_t maxNumCoeff, int& TotalCoeff, RESIDUAL_LEVEL residualLevel, size_t i4x4, size_t i8x8
+	BitStream& bs, int* coeffLevel, int startIdx, int endIdx, uint32_t maxNumCoeff, int& TotalCoeff, RESIDUAL_LEVEL residualLevel, size_t i4x4, size_t i8x8
 )
 {
 
@@ -211,10 +211,26 @@ int ResidualBlockCavlc::getNumberCurrent(RESIDUAL_LEVEL residualLevel, size_t i4
 	else
 	{
 
-		/*if (residualLevel == RESIDUAL_LEVEL::Intra16x16DCLevel)
+		if (residualLevel == RESIDUAL_LEVEL::Intra16x16DCLevel)
 		{
+			if (sliceBase.mbY > 0)
+			{
+				const int topMbIdx = sliceBase.CurrMbAddr - sliceBase.sHeader->sps.PicWidthInMbs;
+				nB = sliceBase.macroblock[topMbIdx]->mb_luma_4x4_non_zero_count_coeff[0];
+				availableTop = true;
+			}
 
-		}*/
+
+			if (sliceBase.mbX > 0)
+			{
+				const int leftMbIdx = sliceBase.CurrMbAddr - 1;
+				nA = sliceBase.macroblock[leftMbIdx]->mb_luma_4x4_non_zero_count_coeff[0];
+				availableLeft = true;
+			}
+
+		}
+
+
 
 		if (residualLevel == RESIDUAL_LEVEL::ChromaACLevelCb)
 		{
@@ -229,7 +245,7 @@ int ResidualBlockCavlc::getNumberCurrent(RESIDUAL_LEVEL residualLevel, size_t i4
 
 
 
-		if (residualLevel == RESIDUAL_LEVEL::LumaLevel4x4)
+		if (residualLevel == RESIDUAL_LEVEL::LumaLevel4x4 || residualLevel == RESIDUAL_LEVEL::Intra16x16ACLevel)
 		{
 			if (BlkIdx == 0 || BlkIdx == 2 || BlkIdx == 8 || BlkIdx == 10)
 			{
@@ -2094,28 +2110,25 @@ int ResidualBlockCavlc::getTotalZeros(BitStream& bs, uint32_t TotalCoeff, uint32
 	int TotalZeros = 0;
 	if (maxNumCoeff == 4)
 	{
+		//表9-9 (a)
 		int* lengthTable = totalZerosTableChromaDCLength_420[TotalCoeff];
 		int* codeTable = totalZerosTableChromaDCCode_420[TotalCoeff];
-		//表9-9 (a)
-
 		TotalZeros = findTable(bs, 4, lengthTable, codeTable);
 
 	}
 	else if (maxNumCoeff == 8)
 	{
 		//表9 - 9 (b)
-
 		int* lengthTable = totalZerosTableChromaDCLength_422[TotalCoeff];
 		int* codeTable = totalZerosTableChromaDCCode_422[TotalCoeff];
-		//表9-9 (a)
 		TotalZeros = findTable(bs, 8, lengthTable, codeTable);
 
 	}
 	else
 	{
+		//表9-7和表9-8
 		int* lengthTable = totalZerosTableLength[TotalCoeff];
 		int* codeTable = totalZerosTableCode[TotalCoeff];
-		//表9-7和表9-8
 
 		TotalZeros = findTable(bs, 16, lengthTable, codeTable);
 
@@ -2205,10 +2218,40 @@ int ResidualBlockCavlc::findChromaAC_nA_nB(const int CbCr, const int BlkIdx, int
 	}
 	else if (sliceBase.sHeader->sps.ChromaArrayType == 2)//422
 	{
+		//2 1
+		if (BlkIdx % 2 == 0)
+		{
+			if (sliceBase.mbX > 0)
+			{
+				const int leftMbIdx = sliceBase.CurrMbAddr - 1;
+				const int leftIdx = BlkIdx + 1;
+				nA = sliceBase.macroblock[leftMbIdx]->mb_chroma_4x4_non_zero_count_coeff[CbCr][leftIdx];
+				availableLeft = true;
+			}
+		}
+		else
+		{
+			nA = sliceBase.macroblock[sliceBase.CurrMbAddr]->mb_chroma_4x4_non_zero_count_coeff[CbCr][BlkIdx - 1];
+			availableLeft = true;
+		}
 
-	}
-	else if (sliceBase.sHeader->sps.ChromaArrayType == 3)//444
-	{
+
+
+		if (BlkIdx < 2)
+		{
+			if (sliceBase.mbY > 0)
+			{
+				const int topMbIdx = sliceBase.CurrMbAddr - sliceBase.sHeader->sps.PicWidthInMbs;
+				const int leftIdx = BlkIdx + 6;
+				nB = sliceBase.macroblock[topMbIdx]->mb_chroma_4x4_non_zero_count_coeff[CbCr][leftIdx];
+				availableTop = true;
+			}
+		}
+		else
+		{
+			nB = sliceBase.macroblock[sliceBase.CurrMbAddr]->mb_chroma_4x4_non_zero_count_coeff[CbCr][BlkIdx - 2];
+			availableTop = true;
+		}
 
 	}
 	return 0;

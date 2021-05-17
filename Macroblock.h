@@ -90,7 +90,7 @@ public:
 
 
 	int     ChromaDCLevel[2][16]; //存储DC色度u和v的残差数据
-	int     ChromaACLevel[2][16][16]; //存储AC色度u和v的残差数据
+	int     ChromaACLevel[2][16][15]; //存储AC色度u和v的残差数据
 
 
 	uint8_t     mb_luma_4x4_non_zero_count_coeff[16];//存储4x4亮度宏块非0系数

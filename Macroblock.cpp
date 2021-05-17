@@ -586,7 +586,6 @@ bool Macroblock::residual(BitStream& bs, int startIdx, int endIdx)
 					//解码色度DC系数，这是必有的  DC是固定码表
 					//420最大系数有4个   422最大系数有8个  444最大系数有16个   
 					residual_block.residual_block_cavlc(bs, ChromaDCLevel[iCbCr], 0, 4 * NumC8x8 - 1, 4 * NumC8x8, TotalCoeff, RESIDUAL_LEVEL::ChromaDCLevel);
-
 				}
 			}
 			else
@@ -622,10 +621,24 @@ bool Macroblock::residual(BitStream& bs, int startIdx, int endIdx)
 							residual_block.residual_block_cavlc(bs, ChromaACLevel[iCbCr][BlkIdx], max(0, startIdx - 1), endIdx - 1, 15, TotalCoeff, level, i4x4, i8x8);
 						}
 					}
+					else
+					{
+						//所有残差都不被传送，解码器把所有残差系数赋为0。
+						for (size_t i = 0; i < 15; i++)
+						{
+							ChromaACLevel[iCbCr][BlkIdx][i] = 0;
+						}
+
+					}
+					//色度非0系数
 					mb_chroma_4x4_non_zero_count_coeff[iCbCr][BlkIdx] = TotalCoeff;
 				}
 			}
 		}
+	}
+	else if (sHeader->sps.ChromaArrayType == 3)
+	{
+		residual_luma(bs, i16x16DClevel, i16x16AClevel, level4x4, level8x8, startIdx, endIdx);
 	}
 	cout << 1 << endl;
 	return false;
@@ -633,13 +646,21 @@ bool Macroblock::residual(BitStream& bs, int startIdx, int endIdx)
 //亮度块预测
 int Macroblock::residual_luma(BitStream& bs, int i16x16DClevel[16], int i16x16AClevel[16][16], int level4x4[16][16], int level8x8[4][64], int startIdx, int endIdx)
 {
+	ResidualBlockCavlc residual_block(sliceBase);
 	SliceHeader* sHeader = sliceBase.sHeader;
 	int TotalCoeff = 0;
 
 	//先解析16*16的DC
 	if (startIdx == 0 && mode == H264_MB_PART_PRED_MODE::Intra_16x16)
 	{
+		if (isAe)
+		{
 
+		}
+		else
+		{
+			residual_block.residual_block_cavlc(bs, i16x16DClevel, 0, 15, 16, TotalCoeff, RESIDUAL_LEVEL::Intra16x16DCLevel);
+		}
 	}
 	//先循环外面四个8x8
 	for (size_t i8x8 = 0; i8x8 < 4; i8x8++)
@@ -663,7 +684,7 @@ int Macroblock::residual_luma(BitStream& bs, int i16x16DClevel[16], int i16x16AC
 						}
 						else
 						{
-
+							residual_block.residual_block_cavlc(bs, level4x4[BlkIdx], startIdx, endIdx, 16, TotalCoeff, RESIDUAL_LEVEL::Intra16x16ACLevel, i4x4, i8x8);
 						}
 
 					}
@@ -675,8 +696,6 @@ int Macroblock::residual_luma(BitStream& bs, int i16x16DClevel[16], int i16x16AC
 						}
 						else
 						{
-							ResidualBlockCavlc residual_block(sliceBase);
-
 							residual_block.residual_block_cavlc(bs, level4x4[BlkIdx], startIdx, endIdx, 16, TotalCoeff, RESIDUAL_LEVEL::LumaLevel4x4, i4x4, i8x8);
 						}
 					}
