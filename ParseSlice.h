@@ -31,10 +31,14 @@ public:
 
 	~ParseSlice();
 
-	
+
 
 
 
 	void transformDecode4x4LuamResidualProcess();
+
+	void inverseScannerProcess(int level4x4Luam[16], int c[4][4]);
+
+	void scalingTransformProcess(int c[4][4], int r[4][4], bool isLuam);
 };
 

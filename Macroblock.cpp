@@ -142,11 +142,15 @@ bool Macroblock::macroblock_layer(BitStream& bs)
 
 	uint32_t	 slice_type = sHeader->slice_type;
 
-	uint32_t	 fix_mb_type = mb_type;		//修正过后的
-	//当前宏块是什么类型
-	SLIECETYPE   fix_slice_type = (SLIECETYPE)(slice_type % 5);   //修正过后的
 
-	//修正mb_type，因为p里可能包含了i宏块
+
+	//修正过后的
+	uint32_t	 fix_mb_type = mb_type;		
+
+
+	//当前宏块是什么类型   //修正过后的
+	fix_slice_type = (SLIECETYPE)(slice_type);
+	//修正mb_type，因为p,SI里可能包含了i宏块
 	fixed_mb_type(slice_type, fix_mb_type, fix_slice_type);
 
 
@@ -509,7 +513,7 @@ int Macroblock::fixed_mb_type(uint32_t slice_type, uint32_t& fix_mb_type, SLIECE
 		}
 	}
 	else if ((SLIECETYPE)(slice_type % 5) == SLIECETYPE::H264_SLIECE_TYPE_SP ||
-		(SLIECETYPE)(slice_type % 5) != SLIECETYPE::H264_SLIECE_TYPE_P)
+		(SLIECETYPE)(slice_type % 5) == SLIECETYPE::H264_SLIECE_TYPE_P)
 	{
 		if (mb_type >= 5 && mb_type <= 30)
 		{
