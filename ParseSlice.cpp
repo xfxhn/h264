@@ -10,6 +10,8 @@ ParseSlice::ParseSlice(ParseNalu& nalu) :nalu(nalu)
 	mbX = 0;
 	mbY = 0;
 	this->sHeader = nullptr;
+	macroblock = nullptr;
+	CurrMbAddr = 0;
 }
 
 bool ParseSlice::parse(BitStream& bs, const ParsePPS* ppsCache, const ParseSPS* spsCache)
@@ -66,5 +68,16 @@ ParseSlice::~ParseSlice()
 	{
 		delete sHeader;
 	}
+
+}
+
+void ParseSlice::transformDecode4x4LuamResidualProcess()
+{
+
+	if (macroblock[CurrMbAddr])
+	{
+
+	}
+
 
 }

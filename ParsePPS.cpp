@@ -61,7 +61,7 @@ bool ParsePPS::pic_parameter_set_rbsp(BitStream& bs, const ParseSPS spsCache[32]
 	//slice groups数量减去1，为0的是时候这个slice属于所有slice group，大于0被分割成多个slice group
 	//num_slice_groups_minus1等于0，图像只有一个片组时，则不启用FMO；其他情况下，一个图像中有多个片组，这时都使用FMO。
 	//slice group表示一帧中红快的组成方式
-	//加  1 表示一个图像中的条带组数。当 num_slice_groups_minus1 等于 0 时，图像中 所有的条带属于同一个条带组。
+	//加1表示一个图像中的条带组数。当 num_slice_groups_minus1 等于 0 时，图像中 所有的条带属于同一个条带组。
 	num_slice_groups_minus1 = bs.readUE(); //1 ue(v)
 
 	//图像参数集应包括取值范围0-7的num_slice_groups_minus1参数，包括0与7；

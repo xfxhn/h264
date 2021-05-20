@@ -7,7 +7,7 @@ SliceHeader::SliceHeader(ParseNalu& nalu) :nalu(nalu)
 	pic_parameter_set_id = 0;
 	colour_plane_id = 0;
 	frame_num = 0;
-	field_pic_flag = 0;
+	field_pic_flag = false;
 	bottom_field_flag = 0;
 	idr_pic_id = 0;
 	pic_order_cnt_lsb = 0;
@@ -57,7 +57,7 @@ SliceHeader::SliceHeader(ParseNalu& nalu) :nalu(nalu)
 
 
 
-	MbaffFrameFlag = 0;
+	MbaffFrameFlag = false;
 	SliceGroupChangeRate = 0;
 	SliceQPY = 0;
 	QPY_prev = 0;
@@ -127,11 +127,12 @@ bool SliceHeader::slice_header(BitStream& bs, const ParsePPS ppsCache[256], cons
 	// 用作一个图像标识符 ，在比特流中应由 log2_max_frame_num_minus4 + 4 个比特表示
 	frame_num = bs.readMultiBit(sps.log2_max_frame_num_minus4 + 4); //2 u(v)
 	//m_picture_coded_type = H264_PICTURE_CODED_TYPE_FRAME;
-	//是否为帧编码
+
+
+	//frame_mbs_only_flag是否为帧编码
 	if (!sps.frame_mbs_only_flag)
 	{
-		//等于 1 表示该条带是一个编码场的条带。
-		//field_pic_flag 等于 0 表示该条带是一个编码帧的条带。当field_pic_flag 不存在时，应推定其值为0。
+		//当这个句法元素取值为1时属于场编码； 0时为非场编码。当field_pic_flag 不存在时，应推定其值为0。
 		field_pic_flag = bs.readBit(); //2 u(1)
 		//m_picture_coded_type = H264_PICTURE_CODED_TYPE_TOP_FIELD;
 		if (field_pic_flag)
@@ -283,15 +284,19 @@ bool SliceHeader::slice_header(BitStream& bs, const ParsePPS ppsCache[256], cons
 			slice_beta_offset_div2 = bs.readSE(); //2 se(v)
 		}
 	}
+
+
+
+
+
 	//指出当切片组的大小对于每个图像来说都不同的时候,对切片组数目的运算的乘数.slice_group_change_rate_minus1取值范围为0到PicSizeInMapUnits-1:
 	SliceGroupChangeRate = pps.slice_group_change_rate_minus1 + 1;
 
 
 	if (pps.num_slice_groups_minus1 > 0 && pps.slice_group_map_type >= 3 && pps.slice_group_map_type <= 5)
 	{
-		int32_t temp = sps.PicSizeInMapUnits / SliceGroupChangeRate + 1;
-		int32_t v = h264_log2(temp); // Ceil( Log2( PicSizeInMapUnits ÷ SliceGroupChangeRate + 1 ) );
-		/* 片组类型是3.4.5时，由该元素可以获取片组中映射单元的数目 */
+		int v = h264_log2(sps.PicSizeInMapUnits / SliceGroupChangeRate + 1); // Ceil( Log2( PicSizeInMapUnits ÷ SliceGroupChangeRate + 1 ) );
+		/* 片组类型 slice_group_map_type 是3.4.5时，由该元素可以获取片组中映射单元的数目 */
 		slice_group_change_cycle = bs.readMultiBit(v); //2 u(v)
 	}
 
@@ -320,10 +325,9 @@ bool SliceHeader::slice_header(BitStream& bs, const ParsePPS ppsCache[256], cons
 
 	if (mapUnitToSliceGroupMap == nullptr)
 	{
-		//pic_width_in_mbs_minus1 + 1 * pic_height_in_map_units_minus1 + 1  --- PicSizeInMapUnits 总共有多少宏块
-		mapUnitToSliceGroupMap = new uint32_t[sps.PicSizeInMapUnits]();
-		//mapUnitToSliceGroupMap = (int32_t*)my_malloc(sizeof(int32_t) * m_sps.PicSizeInMapUnits);
-		/*RETURN_IF_FAILED(mapUnitToSliceGroupMap == NULL, -1);*/
+		//PicSizeInMapUnits 总共有多少宏块
+		mapUnitToSliceGroupMap = new uint32_t[PicSizeInMbs]();
+
 		if (mapUnitToSliceGroupMap == nullptr)
 		{
 			printError("分配失败 mapUnitToSliceGroupMap");
@@ -332,15 +336,20 @@ bool SliceHeader::slice_header(BitStream& bs, const ParsePPS ppsCache[256], cons
 		setMapUnitToSliceGroupMap();
 	}
 
+
+
+	//解码器在对每个片解码之前，首先需要基于当前有效图像参数集和需解码的片头，产生宏块片组映射图变量 MbToSliceGroupMap
 	if (MbToSliceGroupMap == nullptr)
 	{
-		//MbToSliceGroupMap = (int32_t*)my_malloc(sizeof(int32_t) * PicSizeInMbs);
+		//在得到 mapUnitToSliceGroupMap 之后,要调用8.2.2.8中规定的过程，
+		//将映射单元到条带组的映射mapUnitToSliceGroupMap, 转变为宏块到条带组的映射 MbToSliceGroupMap
 		MbToSliceGroupMap = new uint32_t[PicSizeInMbs]();
 		if (MbToSliceGroupMap == nullptr)
 		{
 			printError("分配失败 MbToSliceGroupMap");
 			return -1;
 		}
+		//用于计算变量nextMbAddress
 		setMbToSliceGroupMap();
 
 	}
@@ -503,6 +512,7 @@ bool SliceHeader::ref_pic_list_modification(BitStream& bs)
 
 bool SliceHeader::setMapUnitToSliceGroupMap()
 {
+	//所有宏块属于片组0
 	if (pps.num_slice_groups_minus1 == 0)
 	{
 		for (size_t i = 0; i < sps.PicSizeInMapUnits; i++)
@@ -521,15 +531,15 @@ bool SliceHeader::setMbToSliceGroupMap()
 
 	for (i = 0; i < PicSizeInMbs; i++)
 	{
-		if (sps.frame_mbs_only_flag == 1 || field_pic_flag == 1)//场编码
+		if (sps.frame_mbs_only_flag || field_pic_flag)//场编码或者帧编码
 		{
 			MbToSliceGroupMap[i] = mapUnitToSliceGroupMap[i];
 		}
-		else if (MbaffFrameFlag == 1)//帧场自适应
+		else if (MbaffFrameFlag)//帧场自适应
 		{
 			MbToSliceGroupMap[i] = mapUnitToSliceGroupMap[i / 2];
 		}
-		else//帧编码
+		else//既不是帧编码，也不是场编码，也不是帧场自适应
 		{
 			MbToSliceGroupMap[i] = mapUnitToSliceGroupMap[(i / (2 * sps.PicWidthInMbs)) * sps.PicWidthInMbs + (i % sps.PicWidthInMbs)];
 		}
@@ -538,4 +548,18 @@ bool SliceHeader::setMbToSliceGroupMap()
 }
 SliceHeader::~SliceHeader()
 {
+
+
+	if (mapUnitToSliceGroupMap != nullptr)
+	{
+		delete[] mapUnitToSliceGroupMap;
+		mapUnitToSliceGroupMap = nullptr;
+	}
+
+	if (MbToSliceGroupMap != nullptr)
+	{
+		delete[] MbToSliceGroupMap;
+		MbToSliceGroupMap = nullptr;
+	}
+
 }

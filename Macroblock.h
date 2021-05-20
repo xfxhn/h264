@@ -60,9 +60,11 @@ class Macroblock
 public:
 	uint32_t		pcm_alignment_zero_bit; // 3 f(1)
 	uint32_t		pcm_sample_luma[256]; //3 u(v)
-	uint32_t* pcm_sample_chroma;
+	uint32_t*		pcm_sample_chroma;
 	bool			transform_size_8x8_flag;
 	uint32_t		mb_type;
+
+
 
 
 	uint32_t		coded_block_pattern;
@@ -98,6 +100,8 @@ public:
 	uint8_t     mb_chroma_4x4_non_zero_count_coeff[2][16];//存储色度宏块非0系数
 
 
+	H264_MB_PART_PRED_MODE mode;//当前宏块的预测模式
+
 public:
 	Macroblock(ParseSlice& slice);
 	bool macroblock_layer(BitStream& bs);
@@ -122,7 +126,7 @@ private:
 		int level8x8[4][64], int startIdx, int endIdx);
 private:
 	bool isAe;
-	H264_MB_PART_PRED_MODE mode;//当前宏块的预测模式
+	
 
 	ParseSlice& sliceBase;
 };

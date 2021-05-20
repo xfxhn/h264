@@ -9,12 +9,7 @@ SliceData::SliceData()
 //跳过宏块
 int SliceData::NextMbAddress(SliceHeader* sHeader, uint32_t n)
 {
-	int32_t i = n + 1;
-	if (sHeader->MbToSliceGroupMap == NULL)
-	{
-		printError("sHeader.MbToSliceGroupMap=null");
-		return -1;
-	}
+	int i = n + 1;
 
 
 	if (i >= sHeader->PicSizeInMbs)
@@ -23,14 +18,10 @@ int SliceData::NextMbAddress(SliceHeader* sHeader, uint32_t n)
 		return -1;
 	}
 
+	//i有效且其所属片组与n不同 i=i+1,因为如果有多条带组，宏块的顺序就是乱的
 	while (i < sHeader->PicSizeInMbs && sHeader->MbToSliceGroupMap[i] != sHeader->MbToSliceGroupMap[n])
 	{
 		i++;
-		if (i >= sHeader->PicSizeInMbs)
-		{
-			printError("i(%d) >= slice_header.PicSizeInMbs(%d);\n");
-			return -3;
-		}
 	}
 
 	return i;
@@ -123,7 +114,13 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice& Slice)
 			Slice.CurrMbAddr = CurrMbAddr;
 			Slice.macroblock[Slice.CurrMbAddr]->macroblock_layer(bs);
 
-		
+
+
+			if (Slice.macroblock[Slice.CurrMbAddr]->mode != H264_MB_PART_PRED_MODE::Intra_16x16)
+			{
+				Slice.transformDecode4x4LuamResidualProcess();
+			}
+
 		}
 		if (!sHeader->pps.entropy_coding_mode_flag)
 		{
@@ -151,7 +148,7 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice& Slice)
 
 			}
 		}
-
+		CurrMbAddr = NextMbAddress(sHeader, CurrMbAddr);
 
 	} while (moreDataFlag);
 	return false;

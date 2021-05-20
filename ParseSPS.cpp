@@ -50,7 +50,7 @@ ParseSPS::ParseSPS()
 	gaps_in_frame_num_value_allowed_flag = 0;
 	pic_width_in_mbs_minus1 = 0;
 	pic_height_in_map_units_minus1 = 0;
-	frame_mbs_only_flag = 0;
+	frame_mbs_only_flag = false;
 	mb_adaptive_frame_field_flag = 0;
 	direct_8x8_inference_flag = 0;
 	frame_cropping_flag = 0;
@@ -212,10 +212,10 @@ bool ParseSPS::seq_parameter_set_data(BitStream& bs)
 	{
 		//采用了场编码的情况下
 		//是否采用红快级别帧场自适应的问题 ，是否可以在帧编码和场编码相互切换 //帧场自适应
-
+		mb_adaptive_frame_field_flag = bs.readBit();
 		printError("不支持场编码 frame_mbs_only_flag");
 		exit(1);
-		mb_adaptive_frame_field_flag = bs.readBit();
+		
 	}
 
 	//B_Skip、B_Direct_16x16 和 B_Direct_8x8 亮度运动矢量 的计算过程使用的方法

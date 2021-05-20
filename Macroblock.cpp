@@ -140,10 +140,10 @@ bool Macroblock::macroblock_layer(BitStream& bs)
 		mb_type = bs.readUE(); //2 ue(v) | ae(v)
 	}
 
-	uint32_t	 slice_type = static_cast<uint32_t>(sHeader->slice_type);
+	uint32_t	 slice_type = sHeader->slice_type;
 
 	uint32_t	 fix_mb_type = mb_type;		//修正过后的
-
+	//当前宏块是什么类型
 	SLIECETYPE   fix_slice_type = (SLIECETYPE)(slice_type % 5);   //修正过后的
 
 	//修正mb_type，因为p里可能包含了i宏块
@@ -152,6 +152,7 @@ bool Macroblock::macroblock_layer(BitStream& bs)
 
 	//获取当前宏块的预测模式
 	mode = MbPartPredMode(fix_mb_type, fix_slice_type, 0);
+
 	uint32_t  numMbPart = NumMbPart(fix_mb_type, fix_slice_type);
 
 	if (fix_slice_type == SLIECETYPE::H264_SLIECE_TYPE_I && fix_mb_type == 25)  //I_PCM 不经过预测，变换，量化
@@ -557,7 +558,7 @@ bool Macroblock::residual(BitStream& bs, int startIdx, int endIdx)
 	{
 		//ResidualBlockCavlc residual_block;
 	}
-
+	//解析量度
 	residual_luma(bs, i16x16DClevel, i16x16AClevel, level4x4, level8x8, startIdx, endIdx);
 
 	//chroma_format_idc = 0	单色
@@ -638,9 +639,8 @@ bool Macroblock::residual(BitStream& bs, int startIdx, int endIdx)
 	}
 	else if (sHeader->sps.ChromaArrayType == 3)
 	{
-		residual_luma(bs, i16x16DClevel, i16x16AClevel, level4x4, level8x8, startIdx, endIdx);
+		//residual_luma(bs, i16x16DClevel, i16x16AClevel, level4x4, level8x8, startIdx, endIdx);
 	}
-	cout << 1 << endl;
 	return false;
 }
 //亮度块预测

@@ -30,5 +30,11 @@ public:
 	bool parse(BitStream& bs, const ParsePPS* ppsCache, const ParseSPS* spsCache);
 
 	~ParseSlice();
+
+	
+
+
+
+	void transformDecode4x4LuamResidualProcess();
 };
 
