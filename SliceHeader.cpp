@@ -259,9 +259,14 @@ bool SliceHeader::slice_header(BitStream& bs, const ParsePPS ppsCache[256], cons
 		//表示用于决定关联变量的初始化过程中使用的初始化表格的序号。变量 cabac_init_idc 的值应 该在0 到  2 的范围内（包括0 和2）
 		cabac_init_idc = bs.readUE(); //2 ue(v)
 	}
-	//表示用于条带中的所有宏块的 QPY  的初始值，该值在宏块层将被 mb_qp_delta 的值修改。该 条带初始  QPY 量化参数按下面的公式计算：
+	//表示用于条带中的所有宏块的 QPY  的初始值，该值在宏块层将被 mb_qp_delta 的值修改。该条带初始 QPY 量化参数按下面的公式计算：
 	//SliceQPY = 26 + pic_init_qp_minus26 + slice_qp_delta
+
 	slice_qp_delta = bs.readSE();
+
+	SliceQPY = 26 + pps.pic_init_qp_minus26 + slice_qp_delta;
+	QPY_prev = SliceQPY;
+
 
 
 	if ((SLIECETYPE)slice_type == SLIECETYPE::H264_SLIECE_TYPE_SP || (SLIECETYPE)slice_type == SLIECETYPE::H264_SLIECE_TYPE_SI)
@@ -272,7 +277,8 @@ bool SliceHeader::slice_header(BitStream& bs, const ParsePPS ppsCache[256], cons
 		}
 		slice_qs_delta = bs.readSE(); //2 se(v)
 	}
-
+	//QSY 的值用于解码 mb_type 等SI 的SI 条带的所有宏块以及预测模式为帧间的SP 条带的所有宏块。
+	QSY = 26 + pps.pic_init_qs_minus26 + slice_qs_delta;
 	//是否存在去块滤波器控制相关信息 =1存在响应去块滤波器 =0没有相应信息
 	if (pps.deblocking_filter_control_present_flag)
 	{
@@ -301,8 +307,7 @@ bool SliceHeader::slice_header(BitStream& bs, const ParsePPS ppsCache[256], cons
 	}
 
 
-	SliceQPY = 26 + pps.pic_init_qp_minus26 + slice_qp_delta;
-	QPY_prev = SliceQPY;
+	
 	//是否是帧场自适应编码
 	MbaffFrameFlag = (sps.mb_adaptive_frame_field_flag && !field_pic_flag);
 
@@ -317,11 +322,11 @@ bool SliceHeader::slice_header(BitStream& bs, const ParsePPS ppsCache[256], cons
 	MaxPicNum = (field_pic_flag == 0) ? m_sps.MaxFrameNum : (2 * m_sps.MaxFrameNum);
 	CurrPicNum = (field_pic_flag == 0) ? frame_num : (2 * frame_num + 1);
 	MapUnitsInSliceGroup0 = MIN(slice_group_change_cycle * SliceGroupChangeRate, m_sps.PicSizeInMapUnits);
-	QSY = 26 + m_pps.pic_init_qs_minus26 + slice_qs_delta;
+	
 
 	FilterOffsetA = slice_alpha_c0_offset_div2 << 1;
 	FilterOffsetB = slice_beta_offset_div2 << 1;*/
-
+	
 
 	if (mapUnitToSliceGroupMap == nullptr)
 	{

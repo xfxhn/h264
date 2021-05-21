@@ -42,10 +42,10 @@ public:
 
 
 
+	int		QSY;
 
 
-
-	 // dec_ref_pic_marking
+	// dec_ref_pic_marking
 	bool     no_output_of_prior_pics_flag; // 2 | 5 u(1)
 	bool     long_term_reference_flag; // 2 | 5 u(1)
 	bool     adaptive_ref_pic_marking_mode_flag; // 2 | 5 u(1)
@@ -85,7 +85,7 @@ public:
 	//表示帧场自适应
 	bool			MbaffFrameFlag;   //MbaffFrameFlag = ( mb_adaptive_frame_field_flag && !field_pic_flag );
 	int32_t			SliceGroupChangeRate;
-	int32_t         SliceQPY; //SliceQPY = 26 + pic_init_qp_minus26 + slice_qp_delta;
+	int				SliceQPY; //SliceQPY = 26 + pic_init_qp_minus26 + slice_qp_delta;
 	int32_t         QPY_prev; //QPY,PREV 是当前 slice 中前一宏块的量化参数 QPY 的值，在每个 slice 的开始处，对于 slice 中的第一个宏块，QPY,PREV 应该被初始化成等式 7-16 中的 SliceQPY 值。
 
 

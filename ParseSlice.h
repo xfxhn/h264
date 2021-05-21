@@ -24,6 +24,9 @@ public:
 	uint32_t	mbX;        //当前宏块x的位置（相对于图片左上角位置）
 	uint32_t	mbY;		//当前宏块y的位置（相对于图片左上角位置）
 
+
+	//int LevelScale4x4[];
+
 public:
 	ParseSlice(ParseNalu& nalu);
 
@@ -39,6 +42,9 @@ public:
 
 	void inverseScannerProcess(int level4x4Luam[16], int c[4][4]);
 
-	void scalingTransformProcess(int c[4][4], int r[4][4], bool isLuam);
+	void scalingTransformProcess(int c[4][4], int r[4][4], bool isLuam, bool isChromaCb);
+
+	void getChromaQuantisationParameters(bool isChromaCb);
+	void scaling();
 };
 

@@ -34,7 +34,7 @@ ParseSPS::ParseSPS()
 	separate_colour_plane_flag = 0;
 	bit_depth_luma_minus8 = 0;
 	bit_depth_chroma_minus8 = 0;
-	qpprime_y_zero_transform_bypass_flag = 0;
+	qpprime_y_zero_transform_bypass_flag = false;
 	seq_scaling_matrix_present_flag = 0;
 	memset(seq_scaling_list_present_flag, 0, sizeof(int32_t) * 12);
 	log2_max_frame_num_minus4 = 0;
@@ -129,7 +129,7 @@ bool ParseSPS::seq_parameter_set_data(BitStream& bs)
 		chroma_format_idc = bs.readUE();
 		//当在码流中读取到 chroma_format_idc 之后separate_colour_plane_flag
 		//当separate_colour_plane_flag不存在时，它将被推断为等于0。
-		separate_colour_plane_flag = 0;
+		separate_colour_plane_flag = false;
 		//这个语法元素在 chroma_format_idc 等于 3，也就是 YUV 444 模式的时候才有
 		if (chroma_format_idc == 3)
 		{
@@ -144,6 +144,9 @@ bool ParseSPS::seq_parameter_set_data(BitStream& bs)
 		bit_depth_luma_minus8 = bs.readUE();
 		//与bit_depth_luma_minus8类似，只不过是针对色度的
 		bit_depth_chroma_minus8 = bs.readUE();
+		//等于1是指当 QP'Y 等于 0 时变换系数解码过程的变换旁路操作和图 像构建过程将会在第8.5 节给出的去块效应滤波过程之前执行。
+		//qpprime_y_zero_transform_bypass_flag 等于0 是指变换系数解码过程和图像构建过程在去块效应滤波过程之前执行而不使用变换旁路操作。
+		//当 qpprime_y_zero_transform_bypass_flag 没有特别指定时，应推定其值为0。
 		qpprime_y_zero_transform_bypass_flag = bs.readBit();
 		//缩放标志位
 		seq_scaling_matrix_present_flag = bs.readBit();
@@ -215,7 +218,7 @@ bool ParseSPS::seq_parameter_set_data(BitStream& bs)
 		mb_adaptive_frame_field_flag = bs.readBit();
 		printError("不支持场编码 frame_mbs_only_flag");
 		exit(1);
-		
+
 	}
 
 	//B_Skip、B_Direct_16x16 和 B_Direct_8x8 亮度运动矢量 的计算过程使用的方法
@@ -249,7 +252,7 @@ bool ParseSPS::seq_parameter_set_data(BitStream& bs)
 	//FrameHeightInMbs = (2 - frame_mbs_only_flag) * PicHeightInMapUnits;
 
 	//表示UV依附于Y 和Y一起编码，
-	if (separate_colour_plane_flag == 0) {
+	if (!separate_colour_plane_flag) {
 		ChromaArrayType = chroma_format_idc;
 	}
 	else {

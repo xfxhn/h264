@@ -145,7 +145,7 @@ bool Macroblock::macroblock_layer(BitStream& bs)
 
 
 	//修正过后的
-	uint32_t	 fix_mb_type = mb_type;		
+	uint32_t	 fix_mb_type = mb_type;
 
 
 	//当前宏块是什么类型   //修正过后的
@@ -297,8 +297,23 @@ bool Macroblock::macroblock_layer(BitStream& bs)
 			residual(bs, 0, 15);
 		}
 	}
+	//其中 QPY,PREV  是当前条带中按解码顺序排列的前一个宏块的亮度量化参数 QPY,对于条带中的第一个宏块，QPY, PREV 的初始值为SliceQPY
+	//QPY = ( ( QPY,PREV + mb_qp_delta + 52 + 2 * QpBdOffsetY ) % ( 52 + QpBdOffsetY ) ) －QpBdOffsetY
+	//QpBdOffsetY  亮度偏移
+	QPY = ((sHeader->QPY_prev + mb_qp_delta + 52 + 2 * sHeader->sps.QpBdOffsetY) % (52 + sHeader->sps.QpBdOffsetY) - sHeader->sps.QpBdOffsetY);
+	sHeader->QPY_prev = QPY;
+
+	QP1Y = QPY + sHeader->sps.QpBdOffsetY;
 
 
+	if (sHeader->sps.qpprime_y_zero_transform_bypass_flag && QP1Y == 0)
+	{
+		TransformBypassModeFlag = true;
+	}
+	else 
+	{
+		TransformBypassModeFlag = false;
+	}
 	return false;
 }
 

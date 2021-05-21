@@ -18,11 +18,33 @@ inline void printError(const char* err) {
 	cout << err << endl;
 }
 
+inline int Clip3(int x, int y, int z)
+{
+	if (z < x)
+	{
+		return x;
+	}
+	else if (z > y)
+	{
+		return y;
+	}
+	else
+	{
+		return z;
+	}
+}
+
+
+
+
 inline bool isInterMode(H264_MB_PART_PRED_MODE mode)
 {
 	return (mode == H264_MB_PART_PRED_MODE::Intra_4x4) || (mode == H264_MB_PART_PRED_MODE::Intra_8x8) || (mode == H264_MB_PART_PRED_MODE::Intra_16x16);
 }
-
+inline bool isInterframe(H264_MB_PART_PRED_MODE mode)
+{
+	return (mode == H264_MB_PART_PRED_MODE::Pred_L0) || (mode == H264_MB_PART_PRED_MODE::Pred_L1) || (mode == H264_MB_PART_PRED_MODE::BiPred);
+}
 
 string printHex(unsigned char* data, int len);
 

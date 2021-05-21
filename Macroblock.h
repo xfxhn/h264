@@ -73,6 +73,23 @@ public:
 
 	uint32_t		mb_qp_delta;
 
+	int             QPY;
+	int				QP1Y;
+
+	int QP1C;
+	int QPC;
+
+
+	int QSY;
+	int QSC;
+
+
+
+	/*int QPCb;
+	int QP1Cb;
+	int QPCr;
+	int QP1Cr;*/
+
 	uint32_t		prev_intra4x4_pred_mode_flag[16];
 	uint32_t		rem_intra4x4_pred_mode[16];
 
@@ -102,6 +119,9 @@ public:
 
 	H264_MB_PART_PRED_MODE mode;//当前宏块的预测模式
 	SLIECETYPE   fix_slice_type;
+
+
+	bool TransformBypassModeFlag;
 
 public:
 	Macroblock(ParseSlice& slice);

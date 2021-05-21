@@ -116,7 +116,7 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice& Slice)
 
 
 
-			if (Slice.macroblock[Slice.CurrMbAddr]->mode != H264_MB_PART_PRED_MODE::Intra_4x4)
+			if (Slice.macroblock[Slice.CurrMbAddr]->mode == H264_MB_PART_PRED_MODE::Intra_4x4)
 			{
 
 				Slice.transformDecode4x4LuamResidualProcess();

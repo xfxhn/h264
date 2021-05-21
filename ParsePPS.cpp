@@ -33,7 +33,7 @@ ParsePPS::ParsePPS()
 	constrained_intra_pred_flag = 0;
 	redundant_pic_cnt_present_flag = false;
 	transform_8x8_mode_flag = 0;
-	pic_scaling_matrix_present_flag = 0;
+	pic_scaling_matrix_present_flag = false;
 	memset(pic_scaling_list_present_flag, 0, sizeof(int32_t) * 12);
 	second_chroma_qp_index_offset = 0;
 	memset(ScalingList4x4, 0, sizeof(int32_t) * 6 * 16);
@@ -138,6 +138,7 @@ bool ParsePPS::pic_parameter_set_rbsp(BitStream& bs, const ParseSPS spsCache[32]
 	  当解码非0 值的slice_qp_delta 时，该初始值在 条带层被修正，
 	  并且在宏块层解码非 0 值的 mb_qp_delta 时进一步被修正。pic_init_qp_minus26 的值应该在－ (26 + QpBdOffsetY ) 到 +25 之间（包括边界值）。*/
 	pic_init_qp_minus26 = bs.readSE(); // /* relative to 26 */ 1 se(v)
+	//表示在 SP 或 SI 条带中的所有宏块的 SliceQSY初始值减26
 	pic_init_qs_minus26 = bs.readSE(); // /* relative to 26 */ 1 se(v)
 	//计算色度量化参数的偏移量值  范围：-22 ---  22
 	chroma_qp_index_offset = bs.readSE(); //1 se(v)
@@ -153,7 +154,9 @@ bool ParsePPS::pic_parameter_set_rbsp(BitStream& bs, const ParseSPS spsCache[32]
 	//redundant_pic_cnt_present_flag 等 于 1 表示 redundant_pic_cnt语法元素将出现在条带头、
 	//图像参数集中指明（直接或与相应的数据分割块 A 关联的数据分割块 B 和数据分割块 C 中。
 	redundant_pic_cnt_present_flag = bs.readBit(); //1 u(1)
-	
+
+	//当second_chroma_qp_index_offset 不存在时，默认其值等于 chroma_qp_index_offset
+	second_chroma_qp_index_offset = chroma_qp_index_offset;
 	if (bs.more_rbsp_data())
 	{
 		//等于1表示8x8变换解码过程可能正在使用（参见 8.5 节）。transform_8x8_mode_flag 等于 0 表示未使用 8x8 变换解码过程。
@@ -191,6 +194,8 @@ bool ParsePPS::pic_parameter_set_rbsp(BitStream& bs, const ParseSPS spsCache[32]
 					}
 				}
 			}
+			//表示为在 QPC 值的表格中寻找 Cr 色度分量而应加到参数 QPY 和 QSY 上的偏移。second_chroma_qp_index_offset 的值应在-12 到 +12 范围内（包括边界值）
+			second_chroma_qp_index_offset = bs.readSE();
 		}
 	}
 

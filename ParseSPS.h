@@ -40,7 +40,7 @@ public:
 	bool separate_colour_plane_flag;  // 0 u(1)
 	uint32_t bit_depth_luma_minus8;   // 0 ue(v)当bit_depth_luma_minus8不存在时，它将被推断为等于0。bit_depth_luma_minus8的取值范围为0到6(包括6)。
 	uint32_t bit_depth_chroma_minus8;   // 0 ue(v)
-	uint32_t qpprime_y_zero_transform_bypass_flag;  // 0 u(1)
+	bool qpprime_y_zero_transform_bypass_flag;  // 0 u(1)
 	uint32_t seq_scaling_matrix_present_flag;  // 0 u(1)
 	int32_t  seq_scaling_list_present_flag[12]; //seq_scaling_list_present_flag[ i ] 0 u(1)
 	uint32_t log2_max_frame_num_minus4;  // 0 ue(v)
