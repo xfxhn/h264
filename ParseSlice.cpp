@@ -178,29 +178,29 @@ void ParseSlice::scalingTransformProcess(int c[4][4], int r[4][4], bool isLuam, 
 		//8.5.12.1 Scaling process for residual 4x4 blocks
 		int d[4][4] = { 0 };
 
-		for (size_t i = 0; i <= 3; i++)
-		{
-			for (size_t j = 0; j <= 3; j++)
-			{
-				if (i == 0 && j == 0
-					&& ((isLuam && macroblock[CurrMbAddr]->mode == H264_MB_PART_PRED_MODE::Intra_16x16) || !isLuam)
-					)
-				{
-					d[0][0] = c[0][0];
-				}
-				else
-				{
-					if (qP >= 24)
-					{
-						d[i][j] = (c[i][j] * LevelScale4x4[qP % 6][i][j]) << (qP / 6 - 4);
-					}
-					else //if (qP < 24)
-					{
-						d[i][j] = (c[i][j] * LevelScale4x4[qP % 6][i][j] + h264_power2(3 - qP / 6)) >> (4 - qP / 6);
-					}
-				}
-			}
-		}
+		//for (size_t i = 0; i <= 3; i++)
+		//{
+		//	for (size_t j = 0; j <= 3; j++)
+		//	{
+		//		if (i == 0 && j == 0
+		//			&& ((isLuam && macroblock[CurrMbAddr]->mode == H264_MB_PART_PRED_MODE::Intra_16x16) || !isLuam)
+		//			)
+		//		{
+		//			d[0][0] = c[0][0];
+		//		}
+		//		else
+		//		{
+		//			if (qP >= 24)
+		//			{
+		//				d[i][j] = (c[i][j] * LevelScale4x4[qP % 6][i][j]) << (qP / 6 - 4);
+		//			}
+		//			else //if (qP < 24)
+		//			{
+		//				d[i][j] = (c[i][j] * LevelScale4x4[qP % 6][i][j] + h264_power2(3 - qP / 6)) >> (4 - qP / 6);
+		//			}
+		//		}
+		//	}
+		//}
 	}
 
 
