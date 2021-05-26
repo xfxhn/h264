@@ -71,21 +71,64 @@ ParseSlice::~ParseSlice()
 
 }
 
+void ParseSlice::Intra_4x4_prediction(size_t luma4x4BlkIdx)
+{
+	//9种帧内4x4预测模式
+	getIntra4x4PredMode(luma4x4BlkIdx);
+
+
+}
+//Intra4x4PredMode的推导过程
+void ParseSlice::getIntra4x4PredMode(size_t luma4x4BlkIdx)
+{
+
+	//相邻的4×4亮度块的推导过程
+	getMbAddrNAndLuma4x4BlkIdxN(luma4x4BlkIdx);
+	int mbAddrA = 0;
+	bool dcPredModePredictedFlag = false;
+	if (true)
+	{
+
+	}
+}
+//mbAddrN 和luma4x4BlkIdxN（N 等于A or B）推导如下
+void ParseSlice::getMbAddrNAndLuma4x4BlkIdxN(size_t luma4x4BlkIdx)
+{
+	//计算当前亮度块左上角亮度样点距离当前宏块左上角亮度样点的相对位置
+	int x = InverseRasterScan(luma4x4BlkIdx / 4, 8, 8, 16, 0) + InverseRasterScan(luma4x4BlkIdx / 4, 4, 8, 8, 0);
+	int y = InverseRasterScan(luma4x4BlkIdx / 4, 8, 8, 16, 1) + InverseRasterScan(luma4x4BlkIdx / 4, 4, 8, 8, 1);
+
+
+	int 
+	int xN = x + (-1);
+	int yN = y + 0;
+}
 void ParseSlice::transformDecode4x4LuamResidualProcess()
 {
 
 	if (macroblock[CurrMbAddr]->mode != H264_MB_PART_PRED_MODE::Intra_16x16)
 	{
-		scaling();
-		for (size_t i = 0; i < 16; i++)
+		//scaling();
+		for (size_t luma4x4BlkIdx = 0; luma4x4BlkIdx < 16; luma4x4BlkIdx++)
 		{
-			int c[4][4] = { 0 };
-			int r[4][4] = { 0 };
+			//int c[4][4] = { 0 };
+			//int r[4][4] = { 0 };
 
 			//逆扫描过程
-			inverseScannerProcess(macroblock[CurrMbAddr]->level4x4[i], c);
+			//inverseScannerProcess(macroblock[CurrMbAddr]->level4x4[i], c);
 			//调用4*4残差缩放以及变换过程，c 为输入，r 为输出。输出是残差样点值
-			scalingTransformProcess(c, r, true, false);
+			//scalingTransformProcess(c, r, true, false);
+
+			//计算当前亮度块左上角亮度样点距离当前宏块左上角亮度样点的相对位置
+			int x = InverseRasterScan(luma4x4BlkIdx / 4, 8, 8, 16, 0) + InverseRasterScan(luma4x4BlkIdx / 4, 4, 8, 8, 0);
+			int y = InverseRasterScan(luma4x4BlkIdx / 4, 8, 8, 16, 1) + InverseRasterScan(luma4x4BlkIdx / 4, 4, 8, 8, 1);
+
+
+			//4*4预测过程
+			Intra_4x4_prediction(luma4x4BlkIdx);
+
+
+			//环路滤波器过程
 		}
 
 
@@ -264,6 +307,8 @@ void ParseSlice::getChromaQuantisationParameters(bool isChromaCb)
 	//}
 
 }
+
+
 
 
 

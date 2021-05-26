@@ -36,6 +36,7 @@ public:
 
 
 
+	void Intra_4x4_prediction(size_t luma4x4BlkIdx);
 
 
 	void transformDecode4x4LuamResidualProcess();
@@ -45,6 +46,10 @@ public:
 	void scalingTransformProcess(int c[4][4], int r[4][4], bool isLuam, bool isChromaCb);
 
 	void getChromaQuantisationParameters(bool isChromaCb);
+	void getIntra4x4PredMode(size_t luma4x4BlkIdx);
+
+	void getMbAddrNAndLuma4x4BlkIdxN();
+
 	void scaling();
 };
 
