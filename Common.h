@@ -12,6 +12,15 @@ constexpr auto NA = -1;
 using namespace std;
 
 
+inline bool isMbUsable(int mbAddr, int CurrMbAddr)
+{
+	//地址为mbAddr的宏块和地址为CurrMbAddr的宏块属于不同的条带,这个先不做判断，还没有验证正确性
+	if (mbAddr < 0 || mbAddr > CurrMbAddr) {
+		return true;
+	}
+	return false;
+}
+
 
 inline void printError(const char* err) {
 

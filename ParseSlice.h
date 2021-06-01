@@ -36,7 +36,7 @@ public:
 
 
 
-	void Intra_4x4_prediction(size_t luma4x4BlkIdx);
+	void Intra_4x4_prediction(size_t luma4x4BlkIdx, bool isLuam);
 
 
 	void transformDecode4x4LuamResidualProcess();
@@ -46,9 +46,9 @@ public:
 	void scalingTransformProcess(int c[4][4], int r[4][4], bool isLuam, bool isChromaCb);
 
 	void getChromaQuantisationParameters(bool isChromaCb);
-	void getIntra4x4PredMode(size_t luma4x4BlkIdx);
+	void getIntra4x4PredMode(size_t luma4x4BlkIdx, bool isLuam);
 
-	void getMbAddrNAndLuma4x4BlkIdxN();
+	void getMbAddrNAndLuma4x4BlkIdxN(size_t luma4x4BlkIdx, bool isLuam, int& mbAddrN, const int xN, const int yN, const int maxW, const int maxH, int& xW, int& yW);
 
 	void scaling();
 };

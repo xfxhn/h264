@@ -71,20 +71,65 @@ ParseSlice::~ParseSlice()
 
 }
 
-void ParseSlice::Intra_4x4_prediction(size_t luma4x4BlkIdx)
+void ParseSlice::Intra_4x4_prediction(size_t luma4x4BlkIdx, bool isLuam)
 {
 	//9种帧内4x4预测模式
-	getIntra4x4PredMode(luma4x4BlkIdx);
+	getIntra4x4PredMode(luma4x4BlkIdx, isLuam);
 
 
 }
 //Intra4x4PredMode的推导过程
-void ParseSlice::getIntra4x4PredMode(size_t luma4x4BlkIdx)
+void ParseSlice::getIntra4x4PredMode(size_t luma4x4BlkIdx, bool isLuam)
 {
 
-	//相邻的4×4亮度块的推导过程
-	getMbAddrNAndLuma4x4BlkIdxN(luma4x4BlkIdx);
-	int mbAddrA = 0;
+	//计算当前亮度块左上角亮度样点距离当前宏块左上角亮度样点的相对位置
+	int x = InverseRasterScan(luma4x4BlkIdx / 4, 8, 8, 16, 0) + InverseRasterScan(luma4x4BlkIdx / 4, 4, 8, 8, 0);
+	int y = InverseRasterScan(luma4x4BlkIdx / 4, 8, 8, 16, 1) + InverseRasterScan(luma4x4BlkIdx / 4, 4, 8, 8, 1);
+
+
+	int maxW = 0;
+	int maxH = 0;
+	if (isLuam)
+	{
+		maxW = maxH = 16;
+	}
+	else
+	{
+		//色度块高度和宽度
+		maxH = sHeader->sps.MbHeightC;
+		maxW = sHeader->sps.MbWidthC;
+	}
+
+
+	
+
+	//不考虑帧场自适应
+	//等于CurrMbAddr或等于包含（xN，yN）的相邻宏块的地址，及其可用性状态
+	int mbAddrA = NA;
+	int mbAddrB = NA;
+
+	//位于4×4块luma4x4BlkIdx左侧和上侧的4×4亮度块的索引及其可用性状态
+	int luma4x4BlkIdxA = NA;
+	int luma4x4BlkIdxB = NA;
+	//表示与宏块mbAddrN左上角的相对（不是相对于当前宏块左上角）位置（xN，yN）。
+	int xW = NA;
+	int yW = NA;
+
+	//亮度位置的差分值 表6-2（ xD, yD ）
+	//亮度位置（ xN, yN)
+	getMbAddrNAndLuma4x4BlkIdxN(luma4x4BlkIdx, isLuam, mbAddrA, x + (-1), y + 0, maxW, maxH, xW, yW);
+
+	if (mbAddrA != NA)
+	{
+		luma4x4BlkIdxA = 8 * (yW / 8) + 4 * (xW / 8) + 2 * ((yW % 8) / 4) + ((xW % 8) / 4);
+	}
+	getMbAddrNAndLuma4x4BlkIdxN(luma4x4BlkIdx, isLuam, mbAddrB, x + 0, y + (-1), maxW, maxH, xW, yW);
+	if (mbAddrB != NA)
+	{
+		luma4x4BlkIdxB = 8 * (yW / 8) + 4 * (xW / 8) + 2 * ((yW % 8) / 4) + ((xW % 8) / 4);
+	}
+
+
 	bool dcPredModePredictedFlag = false;
 	if (true)
 	{
@@ -92,16 +137,72 @@ void ParseSlice::getIntra4x4PredMode(size_t luma4x4BlkIdx)
 	}
 }
 //mbAddrN 和luma4x4BlkIdxN（N 等于A or B）推导如下
-void ParseSlice::getMbAddrNAndLuma4x4BlkIdxN(size_t luma4x4BlkIdx)
+void ParseSlice::getMbAddrNAndLuma4x4BlkIdxN(
+	size_t luma4x4BlkIdx, bool isLuam, int& mbAddrN, const int xN, const int yN, const int maxW, const int maxH, int& xW, int& yW
+)
 {
-	//计算当前亮度块左上角亮度样点距离当前宏块左上角亮度样点的相对位置
-	int x = InverseRasterScan(luma4x4BlkIdx / 4, 8, 8, 16, 0) + InverseRasterScan(luma4x4BlkIdx / 4, 4, 8, 8, 0);
-	int y = InverseRasterScan(luma4x4BlkIdx / 4, 8, 8, 16, 1) + InverseRasterScan(luma4x4BlkIdx / 4, 4, 8, 8, 1);
+	if (xN < 0 && yN < 0)
+	{
+		//6.4.5 节规定的过程的输入为 mbAddrD = CurrMbAddr – PicWidthInMbs – 1，输出为 mbAddrD 是否可用。
+		//另 外，当CurrMbAddr % PicWidthInMbs 等于0 时mbAddrD 将被标识为不可用。
+		int mbAddrD = CurrMbAddr - sHeader->sps.PicWidthInMbs - 1;
+		//不可用
+		if (isMbUsable(mbAddrD, CurrMbAddr) || CurrMbAddr % sHeader->sps.PicWidthInMbs == 0)
+		{
+
+		}
+		else
+		{
+			mbAddrN = mbAddrD;
+		}
+	}
+	else if (xN < 0 && (yN >= 0 && yN <= maxH - 1))
+	{
+		int mbAddrA = CurrMbAddr - 1;
+		if (isMbUsable(mbAddrA, CurrMbAddr) || CurrMbAddr % sHeader->sps.PicWidthInMbs == 0)
+		{
+
+		}
+		else
+		{
+			mbAddrN = mbAddrA;
+		}
+	}
+	else if ((xN >= 0 && xN <= maxW - 1) && yN < 0)
+	{
+		int mbAddrB = CurrMbAddr - sHeader->sps.PicWidthInMbs;
+		if (isMbUsable(mbAddrB, CurrMbAddr))
+		{
+
+		}
+		else
+		{
+			mbAddrN = mbAddrB;
+		}
+	}
+	else if (xN > maxW - 1 && yN < 0)
+	{
+		int mbAddrC = CurrMbAddr - sHeader->sps.PicWidthInMbs + 1;
+		if (isMbUsable(mbAddrC, CurrMbAddr) || (CurrMbAddr + 1) % sHeader->sps.PicWidthInMbs == 0)
+		{
+
+		}
+		else
+		{
+			mbAddrN = mbAddrC;
+		}
+	}
+	else if ((xN >= 0 && xN <= maxW - 1) && (yN >= 0 && yN <= maxH - 1))
+	{
+
+		mbAddrN = CurrMbAddr;
+	}
+
+	//表示与宏块mbAddrN左上角的相对（不是相对于当前宏块左上角）位置（xN，yN）。
+	xW = (xN + maxW) % maxW;
+	yW = (yN + maxH) % maxH;
 
 
-	int 
-	int xN = x + (-1);
-	int yN = y + 0;
 }
 void ParseSlice::transformDecode4x4LuamResidualProcess()
 {
@@ -125,7 +226,7 @@ void ParseSlice::transformDecode4x4LuamResidualProcess()
 
 
 			//4*4预测过程
-			Intra_4x4_prediction(luma4x4BlkIdx);
+			Intra_4x4_prediction(luma4x4BlkIdx, true);
 
 
 			//环路滤波器过程
