@@ -176,3 +176,28 @@ enum class RESIDUAL_LEVEL
 	CbIntra16x16DCLevel,
 	CrIntra16x16DCLevel,
 };
+
+//Intra4x4PredMode 9种4*4帧内预测模式
+constexpr int Intra_4x4_Vertical = 0;
+constexpr int Intra_4x4_Horizontal = 1;
+constexpr int Intra_4x4_DC = 2;
+constexpr int Intra_4x4_Diagonal_Down_Left = 3;
+constexpr int Intra_4x4_Diagonal_Down_Right = 4;
+constexpr int Intra_4x4_Vertical_Right = 5;
+constexpr int Intra_4x4_Horizontal_Down = 6;
+constexpr int Intra_4x4_Vertical_Left = 7;
+constexpr int Intra_4x4_Horizontal_Up = 8;
+
+//enum class Intra4x4PredMode :int
+//{
+//	Intra_4x4_Vertical,
+//	Intra_4x4_Horizontal,
+//	Intra_4x4_DC,
+//	Intra_4x4_Diagonal_Down_Left,
+//	Intra_4x4_Diagonal_Down_Right,
+//	Intra_4x4_Vertical_Right,
+//	Intra_4x4_Horizontal_Down,
+//	Intra_4x4_Vertical_Left,
+//	Intra_4x4_Horizontal_Up,
+//	NA = NA
+//};

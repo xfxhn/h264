@@ -30,7 +30,7 @@ ParsePPS::ParsePPS()
 	pic_init_qs_minus26 = 0;
 	chroma_qp_index_offset = 0;
 	deblocking_filter_control_present_flag = 0;
-	constrained_intra_pred_flag = 0;
+	constrained_intra_pred_flag = false;
 	redundant_pic_cnt_present_flag = false;
 	transform_8x8_mode_flag = 0;
 	pic_scaling_matrix_present_flag = false;

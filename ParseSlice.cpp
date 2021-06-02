@@ -75,7 +75,7 @@ void ParseSlice::Intra_4x4_prediction(size_t luma4x4BlkIdx, bool isLuam)
 {
 	//9种帧内4x4预测模式
 	getIntra4x4PredMode(luma4x4BlkIdx, isLuam);
-
+	macroblock[CurrMbAddr]->Intra4x4PredMode;
 
 }
 //Intra4x4PredMode的推导过程
@@ -101,7 +101,7 @@ void ParseSlice::getIntra4x4PredMode(size_t luma4x4BlkIdx, bool isLuam)
 	}
 
 
-	
+
 
 	//不考虑帧场自适应
 	//等于CurrMbAddr或等于包含（xN，yN）的相邻宏块的地址，及其可用性状态
@@ -121,20 +121,93 @@ void ParseSlice::getIntra4x4PredMode(size_t luma4x4BlkIdx, bool isLuam)
 
 	if (mbAddrA != NA)
 	{
+		//左侧宏块索引
 		luma4x4BlkIdxA = 8 * (yW / 8) + 4 * (xW / 8) + 2 * ((yW % 8) / 4) + ((xW % 8) / 4);
 	}
+
 	getMbAddrNAndLuma4x4BlkIdxN(luma4x4BlkIdx, isLuam, mbAddrB, x + 0, y + (-1), maxW, maxH, xW, yW);
 	if (mbAddrB != NA)
 	{
+		//上侧宏块索引
 		luma4x4BlkIdxB = 8 * (yW / 8) + 4 * (xW / 8) + 2 * ((yW % 8) / 4) + ((xW % 8) / 4);
 	}
 
 
 	bool dcPredModePredictedFlag = false;
-	if (true)
+	/*在 P 和 B 片中，帧内编码的宏块的邻近宏块可能是采用的帧间编码。
+		当本句法元素等于 1 时，表示帧内编码的宏块不能用帧间编码的宏块的像素作为自己的预测，
+		即帧内编码的宏块只能用邻近帧内编码的宏块的像素作为自己的预测；而本句法元素等于 0 时，表示不存在这种限制。*/
+	if (mbAddrA == NA ||
+		mbAddrB == NA ||
+		(mbAddrA != NA && isInterframe(macroblock[mbAddrA]->mode) && sHeader->pps.constrained_intra_pred_flag) ||
+		(mbAddrB != NA && isInterframe(macroblock[mbAddrB]->mode)) && sHeader->pps.constrained_intra_pred_flag)
 	{
-
+		dcPredModePredictedFlag = true;
 	}
+
+	int intraMxMPredModeA = NA;
+	int intraMxMPredModeB = NA;
+
+
+	if (dcPredModePredictedFlag ||
+		(mbAddrA != NA && macroblock[mbAddrA]->mode != H264_MB_PART_PRED_MODE::Intra_4x4 && macroblock[mbAddrA]->mode != H264_MB_PART_PRED_MODE::Intra_8x8)
+		)
+	{
+		intraMxMPredModeA = Intra_4x4_DC;
+	}
+	else
+	{
+		//选择当前宏块4*4的左侧宏块4*4子块的预测模式
+		if (macroblock[mbAddrA]->mode == H264_MB_PART_PRED_MODE::Intra_4x4)
+		{
+			intraMxMPredModeA = macroblock[mbAddrA]->Intra4x4PredMode[luma4x4BlkIdxA];
+		}
+		else  //8*8
+		{
+			intraMxMPredModeA = macroblock[mbAddrA]->Intra4x4PredMode[luma4x4BlkIdxA >> 2];
+		}
+	}
+
+	if (dcPredModePredictedFlag ||
+		(mbAddrB != NA && macroblock[mbAddrB]->mode != H264_MB_PART_PRED_MODE::Intra_4x4 && macroblock[mbAddrB]->mode != H264_MB_PART_PRED_MODE::Intra_8x8)
+		)
+	{
+		intraMxMPredModeB = Intra_4x4_DC;
+	}
+	else
+	{
+		//选择当前宏块4*4的上侧宏块 4*4子块的预测模式
+		if (macroblock[mbAddrB]->mode == H264_MB_PART_PRED_MODE::Intra_4x4)
+		{
+			intraMxMPredModeB = macroblock[mbAddrB]->Intra4x4PredMode[luma4x4BlkIdxB];
+		}
+		else //8*8
+		{
+			intraMxMPredModeB = macroblock[mbAddrB]->Intra4x4PredMode[luma4x4BlkIdxB >> 2];
+		}
+	}
+
+	//从左侧和上方相邻块的预测模式中选取较小的一个作为预先定义模式
+	int predIntra4x4PredMode = min(intraMxMPredModeA, intraMxMPredModeB);
+
+	//码流中指定了要不要用这个预测值。如果用，那么这个预测值就是当前块的帧内预测模式；否则就从后续读取的预测模式中计算。
+	if (macroblock[CurrMbAddr]->prev_intra4x4_pred_mode_flag[luma4x4BlkIdx])
+	{
+		//判断码流中读取的标志位prev_intra4x4_pred_mode_flag，如果该标志位为1，则预先定义模式就是当前块的预测模式
+		macroblock[CurrMbAddr]->Intra4x4PredMode[luma4x4BlkIdx] = predIntra4x4PredMode;
+	}
+	else
+	{
+		if (macroblock[CurrMbAddr]->rem_intra4x4_pred_mode[luma4x4BlkIdx] < predIntra4x4PredMode)
+		{
+			macroblock[CurrMbAddr]->Intra4x4PredMode[luma4x4BlkIdx] = macroblock[CurrMbAddr]->rem_intra4x4_pred_mode[luma4x4BlkIdx];
+		}
+		else
+		{
+			macroblock[CurrMbAddr]->Intra4x4PredMode[luma4x4BlkIdx] = macroblock[CurrMbAddr]->rem_intra4x4_pred_mode[luma4x4BlkIdx] + 1;
+		}
+	}
+
 }
 //mbAddrN 和luma4x4BlkIdxN（N 等于A or B）推导如下
 void ParseSlice::getMbAddrNAndLuma4x4BlkIdxN(

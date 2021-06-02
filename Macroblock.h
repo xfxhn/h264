@@ -123,6 +123,9 @@ public:
 
 	bool TransformBypassModeFlag;
 
+
+	uint8_t Intra4x4PredMode[16];//存储当前宏块的16个4x4子宏块预测模式的值，范围[0,8]
+
 public:
 	Macroblock(ParseSlice& slice);
 	bool macroblock_layer(BitStream& bs);

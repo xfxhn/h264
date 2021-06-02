@@ -100,8 +100,12 @@ Macroblock::Macroblock(ParseSlice& slice) :sliceBase(slice)
 	memset(rem_intra8x8_pred_mode, 0, sizeof(uint8_t) * 4);
 
 
+
+
 	memset(mb_luma_4x4_non_zero_count_coeff, 0, sizeof(uint8_t) * 16);
 	memset(mb_luma_8x8_non_zero_count_coeff, 0, sizeof(uint8_t) * 4);
+
+	memset(Intra4x4PredMode, 0, sizeof(uint8_t) * 16);
 
 	intra_chroma_pred_mode = 0;
 }
@@ -310,7 +314,7 @@ bool Macroblock::macroblock_layer(BitStream& bs)
 	{
 		TransformBypassModeFlag = true;
 	}
-	else 
+	else
 	{
 		TransformBypassModeFlag = false;
 	}
@@ -334,7 +338,7 @@ bool Macroblock::mb_pred(BitStream& bs, uint32_t mb_type, uint32_t numMbPart)
 				}
 				else
 				{
-					//用来表示我当前用的模式和前面的是不是一样的
+					//表示帧内预测模式预测标识。如果该标识位为1，表示帧内预测模式的预测值就是实际的模式，否则就需要另外传递实际的帧内预测模式。
 					prev_intra4x4_pred_mode_flag[luma4x4BlkIdx] = bs.readBit();
 				}
 
@@ -350,6 +354,7 @@ bool Macroblock::mb_pred(BitStream& bs, uint32_t mb_type, uint32_t numMbPart)
 						  模式1：水平模式，条件：I~L可用。
 						  模式2：DC模式，条件：A~D或I~L可用。
 						  模式3~8：方向模式，各个像素是由A到L像素通过权重不等的公式加权计算的。*/
+						  //表示额外传递的实际帧内预测模式。
 						rem_intra4x4_pred_mode[luma4x4BlkIdx] = bs.readMultiBit(3);
 					}
 
