@@ -77,14 +77,19 @@ void ParseSlice::Intra_4x4_prediction(size_t luma4x4BlkIdx, bool isLuam)
 	getIntra4x4PredMode(luma4x4BlkIdx, isLuam);
 	macroblock[CurrMbAddr]->Intra4x4PredMode;
 
+	int Intra4x4PredMode = macroblock[CurrMbAddr]->Intra4x4PredMode[luma4x4BlkIdx];
+	cout << "Intra4x4PredMode" << Intra4x4PredMode << endl;
+
+
+
 }
 //Intra4x4PredMode的推导过程
 void ParseSlice::getIntra4x4PredMode(size_t luma4x4BlkIdx, bool isLuam)
 {
 
 	//计算当前亮度块左上角亮度样点距离当前宏块左上角亮度样点的相对位置
-	int x = InverseRasterScan(luma4x4BlkIdx / 4, 8, 8, 16, 0) + InverseRasterScan(luma4x4BlkIdx / 4, 4, 8, 8, 0);
-	int y = InverseRasterScan(luma4x4BlkIdx / 4, 8, 8, 16, 1) + InverseRasterScan(luma4x4BlkIdx / 4, 4, 8, 8, 1);
+	int x = InverseRasterScan(luma4x4BlkIdx / 4, 8, 8, 16, 0) + InverseRasterScan(luma4x4BlkIdx % 4, 4, 4, 8, 0);
+	int y = InverseRasterScan(luma4x4BlkIdx / 4, 8, 8, 16, 1) + InverseRasterScan(luma4x4BlkIdx % 4, 4, 4, 8, 1);
 
 
 	int maxW = 0;
@@ -99,9 +104,6 @@ void ParseSlice::getIntra4x4PredMode(size_t luma4x4BlkIdx, bool isLuam)
 		maxH = sHeader->sps.MbHeightC;
 		maxW = sHeader->sps.MbWidthC;
 	}
-
-
-
 
 	//不考虑帧场自适应
 	//等于CurrMbAddr或等于包含（xN，yN）的相邻宏块的地址，及其可用性状态
@@ -294,8 +296,8 @@ void ParseSlice::transformDecode4x4LuamResidualProcess()
 			//scalingTransformProcess(c, r, true, false);
 
 			//计算当前亮度块左上角亮度样点距离当前宏块左上角亮度样点的相对位置
-			int x = InverseRasterScan(luma4x4BlkIdx / 4, 8, 8, 16, 0) + InverseRasterScan(luma4x4BlkIdx / 4, 4, 8, 8, 0);
-			int y = InverseRasterScan(luma4x4BlkIdx / 4, 8, 8, 16, 1) + InverseRasterScan(luma4x4BlkIdx / 4, 4, 8, 8, 1);
+			int x = InverseRasterScan(luma4x4BlkIdx / 4, 8, 8, 16, 0) + InverseRasterScan(luma4x4BlkIdx % 4, 4, 4, 8, 0);
+			int y = InverseRasterScan(luma4x4BlkIdx / 4, 8, 8, 16, 1) + InverseRasterScan(luma4x4BlkIdx % 4, 4, 4, 8, 1);
 
 
 			//4*4预测过程
