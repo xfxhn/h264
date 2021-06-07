@@ -151,12 +151,14 @@ bool ParseSPS::seq_parameter_set_data(BitStream& bs)
 		//缩放标志位
 		seq_scaling_matrix_present_flag = bs.readBit();
 
+
+		const size_t length = (this->chroma_format_idc != 3) ? 8 : 12;
 		if (this->seq_scaling_matrix_present_flag)
 		{
-			for (size_t i = 0; i < ((this->chroma_format_idc != 3) ? 8 : 12); i++)
+			for (size_t i = 0; i < length; i++)
 			{
 				this->seq_scaling_list_present_flag[i] = bs.readBit(); //seq_scaling_list_present_flag[ i ] 0 u(1)
-				if (this->seq_scaling_list_present_flag[i] == 1)
+				if (this->seq_scaling_list_present_flag[i])
 				{
 					if (i < 6)
 					{
@@ -169,7 +171,26 @@ bool ParseSPS::seq_parameter_set_data(BitStream& bs)
 						// RETURN_IF_FAILED(ret != 0, ret);
 					}
 				}
+				else
+				{
+
+				}
+
 			}
+		}
+		else
+		{
+			//i = 0..5时将推断Flat_4x4_16指定的序列级缩放列表
+			constexpr int Flat_4x4_16[16] = { 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16 };
+
+			for (size_t i = 0; i < length; i++)
+			{
+				if (i < 6)
+				{
+					memcpy(ScalingList4x4[i], Flat_4x4_16, sizeof(int) * 16);
+				}
+			}
+
 		}
 
 	}

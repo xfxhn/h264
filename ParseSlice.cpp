@@ -75,7 +75,6 @@ void ParseSlice::Intra_4x4_prediction(size_t luma4x4BlkIdx, bool isLuam)
 {
 	//9种帧内4x4预测模式
 	getIntra4x4PredMode(luma4x4BlkIdx, isLuam);
-	macroblock[CurrMbAddr]->Intra4x4PredMode;
 
 	int Intra4x4PredMode = macroblock[CurrMbAddr]->Intra4x4PredMode[luma4x4BlkIdx];
 	cout << "Intra4x4PredMode" << Intra4x4PredMode << endl;
@@ -279,12 +278,14 @@ void ParseSlice::getMbAddrNAndLuma4x4BlkIdxN(
 
 
 }
+
+
 void ParseSlice::transformDecode4x4LuamResidualProcess()
 {
 
 	if (macroblock[CurrMbAddr]->mode != H264_MB_PART_PRED_MODE::Intra_16x16)
 	{
-		//scaling();
+		scaling(true, false);
 		for (size_t luma4x4BlkIdx = 0; luma4x4BlkIdx < 16; luma4x4BlkIdx++)
 		{
 			//int c[4][4] = { 0 };
@@ -313,7 +314,7 @@ void ParseSlice::transformDecode4x4LuamResidualProcess()
 
 }
 
-void ParseSlice::inverseScannerProcess(int level4x4Luam[16], int c[4][4])
+void ParseSlice::inverseScannerProcess(int value[16], int c[4][4])
 {
 
 	//还有一个反域扫描，应该是在场编码的时候才会用到
@@ -487,9 +488,14 @@ void ParseSlice::getChromaQuantisationParameters(bool isChromaCb)
 
 
 
-
+//经过大量研究，权衡复杂度和压缩效率之后发现，HEVC的变换核应当满足如下条件：
+//1.变换核中的系数都能用8bit表示（包括符号位）；2.变换核的第一个基础向量元（第一个行向量）应当都等于64。
+//基于以上两个前提，HEVC中对DCT变换核进行了缩放：对每个变换核中的系数左移 6 + log2(N) / 2 bit并取整，
+//最后再对个别系数进行一定的调整之后（调整的原则在于：使得调整后的变换核满足上部分提到的原则4 - 6，并在原则1 - 3之间找到一个最好的平衡点），得到不同尺寸块的变换核。
+//————————————————
+//原文链接：https ://blog.csdn.net/ftlisdcr/article/details/54345151
 //缩放函数的推导过程
-void ParseSlice::scaling()
+void ParseSlice::scaling(bool isLuam, bool isChromaCb)
 {
 
 
@@ -505,10 +511,27 @@ void ParseSlice::scaling()
 	//separate_colour_plane_flag=1 分开编码
 	if (sHeader->sps.separate_colour_plane_flag)
 	{
+		//colour_plane_id等于0、1和2分别对应于Y、Cb和Cr平面。
 		iYCbCr = sHeader->colour_plane_id;
 	}
 	else
 	{
-
+		if (isLuam)
+		{
+			iYCbCr = 0;
+		}
+		else if (isChromaCb)
+		{
+			iYCbCr = 1;
+		}
+		else
+		{
+			iYCbCr = 2;
+		}
 	}
+
+	int weightScale4x4[4][4] = { 0 };
+
+	inverseScannerProcess();
+
 }

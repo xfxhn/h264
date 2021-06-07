@@ -157,6 +157,9 @@ bool ParsePPS::pic_parameter_set_rbsp(BitStream& bs, const ParseSPS spsCache[32]
 
 	//当second_chroma_qp_index_offset 不存在时，默认其值等于 chroma_qp_index_offset
 	second_chroma_qp_index_offset = chroma_qp_index_offset;
+
+
+
 	if (bs.more_rbsp_data())
 	{
 		//等于1表示8x8变换解码过程可能正在使用（参见 8.5 节）。transform_8x8_mode_flag 等于 0 表示未使用 8x8 变换解码过程。
@@ -167,6 +170,7 @@ bool ParsePPS::pic_parameter_set_rbsp(BitStream& bs, const ParseSPS spsCache[32]
 		//等于 1 表示存在用来修改在序列参数集中指定的缩放比例列表的参数。 
 		//pic_scaling_matrix_present_flag 等于 0 表示用于该图像中的缩放比例列表应等于那些由序列参数集规定的。
 		//当 pic_scaling_matrix_present_flag 不存在时，默认其值为0。
+		//基准档次不应该出现这个元素
 		pic_scaling_matrix_present_flag = bs.readBit();
 
 		if (pic_scaling_matrix_present_flag)
@@ -180,7 +184,7 @@ bool ParsePPS::pic_parameter_set_rbsp(BitStream& bs, const ParseSPS spsCache[32]
 				pic_scaling_list_present_flag[i] = bs.readBit(); //1 u(1)
 
 
-				if (pic_scaling_list_present_flag[i] == 1)
+				if (pic_scaling_list_present_flag[i])
 				{
 					if (i < 6)
 					{
@@ -206,7 +210,6 @@ ParsePPS::~ParsePPS()
 {
 	if (slice_group_id)
 	{
-		/*my_free(slice_group_id);*/
 		delete[] slice_group_id;
 		slice_group_id = NULL;
 	}

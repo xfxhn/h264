@@ -41,7 +41,7 @@ public:
 
 	void transformDecode4x4LuamResidualProcess();
 
-	void inverseScannerProcess(int level4x4Luam[16], int c[4][4]);
+	void inverseScannerProcess(int value[16], int c[4][4]);
 
 	void scalingTransformProcess(int c[4][4], int r[4][4], bool isLuam, bool isChromaCb);
 
@@ -50,6 +50,6 @@ public:
 
 	void getMbAddrNAndLuma4x4BlkIdxN(size_t luma4x4BlkIdx, bool isLuam, int& mbAddrN, const int xN, const int yN, const int maxW, const int maxH, int& xW, int& yW);
 
-	void scaling();
+	void scaling(bool isLuam, bool isChromaCb);
 };
 

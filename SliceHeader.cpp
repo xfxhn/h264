@@ -120,8 +120,8 @@ bool SliceHeader::slice_header(BitStream& bs, const ParsePPS ppsCache[256], cons
 
 	if (sps.separate_colour_plane_flag)
 	{
-		//处理的哪一个颜色的分量
-		//则表示 UV 与 Y 分开编码。而对于分开编码的模式，我们采用和单色模式一样的规则。
+		//指定与当前切片RBSP关联的颜色平面。colour_plane_id的值应该在0到2的范围内，包括。
+		//colour_plane_id等于0、1和2分别对应于Y、Cb和Cr平面。
 		colour_plane_id = bs.readMultiBit(2); //2 u(2)
 	}
 	// 用作一个图像标识符 ，在比特流中应由 log2_max_frame_num_minus4 + 4 个比特表示
