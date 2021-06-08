@@ -38,7 +38,7 @@ public:
 	bool     redundant_pic_cnt_present_flag; // 1 u(1)
 	bool     transform_8x8_mode_flag; // 1 u(1)
 	bool     pic_scaling_matrix_present_flag; // 1 u(1)
-	int      pic_scaling_list_present_flag[12]; //[ i ] 1 u(1)
+	bool      pic_scaling_list_present_flag[12]; //[ i ] 1 u(1)
 	int		 second_chroma_qp_index_offset; // 1 se(v) //-12 µ½ +12
 
 	int32_t     ScalingList4x4[6][16];

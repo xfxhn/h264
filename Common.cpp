@@ -31,7 +31,7 @@ int h264_log2(int32_t value)
 	return log2;
 }
 
-int scaling_list(BitStream& bs, int32_t* scalingList, int sizeOfScalingList, int32_t& useDefaultScalingMatrixFlag)
+void scaling_list(BitStream& bs, int32_t* scalingList, int sizeOfScalingList, int32_t& useDefaultScalingMatrixFlag)
 {
 
 	int lastScale = 8;
@@ -52,7 +52,6 @@ int scaling_list(BitStream& bs, int32_t* scalingList, int sizeOfScalingList, int
 		lastScale = scalingList[j];
 
 	}
-	return 0;
 }
 
 bool byte_aligned(BitStream& bs)

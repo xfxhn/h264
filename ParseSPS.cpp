@@ -155,6 +155,24 @@ bool ParseSPS::seq_parameter_set_data(BitStream& bs)
 		const size_t length = (this->chroma_format_idc != 3) ? 8 : 12;
 		if (this->seq_scaling_matrix_present_flag)
 		{
+			constexpr int Default_4x4_Intra[16] = { 6, 13, 13, 20, 20, 20, 28, 28, 28, 28, 32, 32, 32, 37, 37, 42 };
+			constexpr int Default_4x4_Inter[16] = { 10, 14, 14, 20, 20, 20, 24, 24, 24, 24, 27, 27, 27, 30, 30, 34 };
+
+			constexpr int Default_8x8_Intra[64] =
+			{
+				6, 10, 10, 13, 11, 13, 16, 16, 16, 16, 18, 18, 18, 18, 18, 23,
+				23, 23, 23, 23, 23, 25, 25, 25, 25, 25, 25, 25, 27, 27, 27, 27,
+				27, 27, 27, 27, 29, 29, 29, 29, 29, 29, 29, 31, 31, 31, 31, 31,
+				31, 33, 33, 33, 33, 33, 36, 36, 36, 36, 38, 38, 38, 40, 40, 42,
+			};
+
+			constexpr int Default_8x8_Inter[64] =
+			{
+				9, 13, 13, 15, 13, 15, 17, 17, 17, 17, 19, 19, 19, 19, 19, 21,
+				21, 21, 21, 21, 21, 22, 22, 22, 22, 22, 22, 22, 24, 24, 24, 24,
+				24, 24, 24, 24, 25, 25, 25, 25, 25, 25, 25, 27, 27, 27, 27, 27,
+				27, 28, 28, 28, 28, 28, 30, 30, 30, 30, 32, 32, 32, 33, 33, 35,
+			};
 			for (size_t i = 0; i < length; i++)
 			{
 				this->seq_scaling_list_present_flag[i] = bs.readBit(); //seq_scaling_list_present_flag[ i ] 0 u(1)
@@ -162,18 +180,63 @@ bool ParseSPS::seq_parameter_set_data(BitStream& bs)
 				{
 					if (i < 6)
 					{
-						ret = scaling_list(bs, ScalingList4x4[i], 16, UseDefaultScalingMatrix4x4Flag[i]);
-						//RETURN_IF_FAILED(ret != 0, ret);
+						scaling_list(bs, ScalingList4x4[i], 16, UseDefaultScalingMatrix4x4Flag[i]);
+						//通过UseDefaultScalingMatrix4x4Flag判断采用编码器传送过来的量化系数的缩放值
+
+						if (UseDefaultScalingMatrix4x4Flag[i])
+						{
+							if (i == 0 || i == 1 || i == 2)
+							{
+								memcpy(ScalingList4x4[i], Default_4x4_Intra, sizeof(int) * 16);
+							}
+							else //if (i >= 3)
+							{
+								memcpy(ScalingList4x4[i], Default_4x4_Inter, sizeof(int) * 16);
+							}
+						}
 					}
 					else
 					{
-						ret = scaling_list(bs, ScalingList8x8[i - 6], 64, UseDefaultScalingMatrix8x8Flag[i - 6]);
-						// RETURN_IF_FAILED(ret != 0, ret);
+						scaling_list(bs, ScalingList8x8[i - 6], 64, UseDefaultScalingMatrix8x8Flag[i - 6]);
+
+						if (UseDefaultScalingMatrix8x8Flag[i - 6])
+						{
+							if (i == 6 || i == 8 || i == 10)
+							{
+								memcpy(ScalingList8x8[i - 6], Default_8x8_Intra, sizeof(int) * 64);
+							}
+							else
+							{
+								memcpy(ScalingList8x8[i - 6], Default_8x8_Inter, sizeof(int) * 64);
+							}
+						}
 					}
 				}
 				else
 				{
 
+					if (i < 6)
+					{
+						if (i == 0 || i == 1 || i == 2)
+						{
+							memcpy(ScalingList4x4[i], Default_4x4_Intra, sizeof(int) * 16);
+						}
+						else
+						{
+							memcpy(ScalingList4x4[i], Default_4x4_Inter, sizeof(int) * 16);
+						}
+					}
+					else
+					{
+						if (i == 6 || i == 8 || i == 10)
+						{
+							memcpy(ScalingList8x8[i - 6], Default_8x8_Intra, sizeof(int) * 64);
+						}
+						else if (i == 7 || i == 9 || i == 11)
+						{
+							memcpy(ScalingList8x8[i - 6], Default_8x8_Inter, sizeof(int) * 64);
+						}
+					}
 				}
 
 			}
@@ -182,12 +245,22 @@ bool ParseSPS::seq_parameter_set_data(BitStream& bs)
 		{
 			//i = 0..5时将推断Flat_4x4_16指定的序列级缩放列表
 			constexpr int Flat_4x4_16[16] = { 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16 };
+			constexpr int Flat_8x8_16[64] = {
+					16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+					16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+					16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+					16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+			};
 
 			for (size_t i = 0; i < length; i++)
 			{
 				if (i < 6)
 				{
 					memcpy(ScalingList4x4[i], Flat_4x4_16, sizeof(int) * 16);
+				}
+				else
+				{
+					memcpy(ScalingList8x8[i - 6], Flat_8x8_16, sizeof(int32_t) * 64);
 				}
 			}
 

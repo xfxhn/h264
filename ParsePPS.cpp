@@ -172,10 +172,29 @@ bool ParsePPS::pic_parameter_set_rbsp(BitStream& bs, const ParseSPS spsCache[32]
 		//当 pic_scaling_matrix_present_flag 不存在时，默认其值为0。
 		//基准档次不应该出现这个元素
 		pic_scaling_matrix_present_flag = bs.readBit();
-
+		const length = 6 + ((sps.chroma_format_idc != 3) ? 2 : 6) * transform_8x8_mode_flag;
 		if (pic_scaling_matrix_present_flag)
 		{
-			for (size_t i = 0; i < 6 + ((sps.chroma_format_idc != 3) ? 2 : 6) * transform_8x8_mode_flag; i++)
+
+			constexpr int Default_4x4_Intra[16] = { 6, 13, 13, 20, 20, 20, 28, 28, 28, 28, 32, 32, 32, 37, 37, 42 };
+			constexpr int Default_4x4_Inter[16] = { 10, 14, 14, 20, 20, 20, 24, 24, 24, 24, 27, 27, 27, 30, 30, 34 };
+
+			constexpr int Default_8x8_Intra[64] =
+			{
+				6, 10, 10, 13, 11, 13, 16, 16, 16, 16, 18, 18, 18, 18, 18, 23,
+				23, 23, 23, 23, 23, 25, 25, 25, 25, 25, 25, 25, 27, 27, 27, 27,
+				27, 27, 27, 27, 29, 29, 29, 29, 29, 29, 29, 31, 31, 31, 31, 31,
+				31, 33, 33, 33, 33, 33, 36, 36, 36, 36, 38, 38, 38, 40, 40, 42,
+			};
+
+			constexpr int Default_8x8_Inter[64] =
+			{
+				9, 13, 13, 15, 13, 15, 17, 17, 17, 17, 19, 19, 19, 19, 19, 21,
+				21, 21, 21, 21, 21, 22, 22, 22, 22, 22, 22, 22, 24, 24, 24, 24,
+				24, 24, 24, 24, 25, 25, 25, 25, 25, 25, 25, 27, 27, 27, 27, 27,
+				27, 28, 28, 28, 28, 28, 30, 30, 30, 30, 32, 32, 32, 33, 33, 35,
+			};
+			for (size_t i = 0; i < length; i++)
 			{
 
 				/*等于1表示存在缩放比例列表的语法结构并用于指定序号为i的缩放比例列 表。
@@ -197,10 +216,71 @@ bool ParsePPS::pic_parameter_set_rbsp(BitStream& bs, const ParseSPS spsCache[32]
 						//RETURN_IF_FAILED(ret != 0, ret);
 					}
 				}
+				else
+				{
+
+					if (i < 6)
+					{
+						if (i == 0 || i == 1 || i == 2)
+						{
+
+							if (sps.seq_scaling_matrix_present_flag) //表7-2 B
+							{
+								//memcpy(ScalingList4x4[i], Default_4x4_Intra, sizeof(int32_t) * 16);
+							}
+							else//表7-2 A
+							{
+
+							}
+
+							//memcpy(ScalingList4x4[i], Default_4x4_Intra, sizeof(int) * 16);
+						}
+						else
+						{
+							//memcpy(ScalingList4x4[i], Default_4x4_Inter, sizeof(int) * 16);
+						}
+					}
+					else
+					{
+						if (i == 6 || i == 8 || i == 10)
+						{
+							memcpy(ScalingList8x8[i - 6], Default_8x8_Intra, sizeof(int) * 64);
+						}
+						else if (i == 7 || i == 9 || i == 11)
+						{
+							memcpy(ScalingList8x8[i - 6], Default_8x8_Inter, sizeof(int) * 64);
+						}
+					}
+				}
 			}
 			//表示为在 QPC 值的表格中寻找 Cr 色度分量而应加到参数 QPY 和 QSY 上的偏移。second_chroma_qp_index_offset 的值应在-12 到 +12 范围内（包括边界值）
 			second_chroma_qp_index_offset = bs.readSE();
 		}
+		else
+		{
+			//i = 0..5时将推断Flat_4x4_16指定的序列级缩放列表
+			constexpr int Flat_4x4_16[16] = { 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16 };
+			constexpr int Flat_8x8_16[64] = {
+					16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+					16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+					16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+					16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+			};
+
+			for (size_t i = 0; i < length; i++)
+			{
+				if (i < 6)
+				{
+					memcpy(ScalingList4x4[i], Flat_4x4_16, sizeof(int) * 16);
+				}
+				else
+				{
+					memcpy(ScalingList8x8[i - 6], Flat_8x8_16, sizeof(int32_t) * 64);
+				}
+			}
+
+		}
+
 	}
 
 	return false;
