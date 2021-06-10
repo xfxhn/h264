@@ -98,7 +98,8 @@ public:
 	//当我们得到mapUnitToSliceGroupMap[]后，就可以根据宏块与“mapUnit(映射单元)”的对应关系
 	uint32_t* MbToSliceGroupMap; //MbToSliceGroupMap[PicSizeInMbs];
 
-
+	int ScalingList4x4[6][16];
+	int ScalingList8x8[6][64];
 
 public:
 
@@ -116,6 +117,8 @@ public:
 private:
 	bool setMapUnitToSliceGroupMap();
 	bool setMbToSliceGroupMap();
+
+	void setScallingList();
 
 };
 

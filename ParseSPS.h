@@ -41,7 +41,7 @@ public:
 	uint32_t bit_depth_luma_minus8;   // 0 ue(v)当bit_depth_luma_minus8不存在时，它将被推断为等于0。bit_depth_luma_minus8的取值范围为0到6(包括6)。
 	uint32_t bit_depth_chroma_minus8;   // 0 ue(v)
 	bool qpprime_y_zero_transform_bypass_flag;  // 0 u(1)
-	uint32_t seq_scaling_matrix_present_flag;  // 0 u(1)
+	bool seq_scaling_matrix_present_flag;  // 0 u(1)
 	bool  seq_scaling_list_present_flag[12]; //seq_scaling_list_present_flag[ i ] 0 u(1)
 	uint32_t log2_max_frame_num_minus4;  // 0 ue(v)
 	uint32_t pic_order_cnt_type;  // 0 ue(v)
@@ -79,8 +79,8 @@ public:
 	int32_t     ScalingList8x8[6][64];
 
 
-	int32_t     UseDefaultScalingMatrix4x4Flag[6];
-	int32_t     UseDefaultScalingMatrix8x8Flag[6];
+	bool     UseDefaultScalingMatrix4x4Flag[6];
+	bool     UseDefaultScalingMatrix8x8Flag[6];
 
 
 

@@ -97,10 +97,11 @@ SliceHeader::SliceHeader(ParseNalu& nalu) :nalu(nalu)
 	FilterOffsetA = 0;
 	FilterOffsetB = 0;
 
-	memset(ScalingList4x4, 0, sizeof(int32_t) * 6 * 16);
-	memset(ScalingList8x8, 0, sizeof(int32_t) * 6 * 64);
 	m_picture_coded_type = H264_PICTURE_CODED_TYPE_UNKNOWN;
 	m_is_malloc_mem_self = 0;*/
+
+	memset(ScalingList4x4, 0, sizeof(int) * 6 * 16);
+	memset(ScalingList8x8, 0, sizeof(int) * 6 * 64);
 }
 
 
@@ -307,7 +308,7 @@ bool SliceHeader::slice_header(BitStream& bs, const ParsePPS ppsCache[256], cons
 	}
 
 
-	
+
 	//是否是帧场自适应编码
 	MbaffFrameFlag = (sps.mb_adaptive_frame_field_flag && !field_pic_flag);
 
@@ -322,11 +323,11 @@ bool SliceHeader::slice_header(BitStream& bs, const ParsePPS ppsCache[256], cons
 	MaxPicNum = (field_pic_flag == 0) ? m_sps.MaxFrameNum : (2 * m_sps.MaxFrameNum);
 	CurrPicNum = (field_pic_flag == 0) ? frame_num : (2 * frame_num + 1);
 	MapUnitsInSliceGroup0 = MIN(slice_group_change_cycle * SliceGroupChangeRate, m_sps.PicSizeInMapUnits);
-	
+
 
 	FilterOffsetA = slice_alpha_c0_offset_div2 << 1;
 	FilterOffsetB = slice_beta_offset_div2 << 1;*/
-	
+
 
 	if (mapUnitToSliceGroupMap == nullptr)
 	{
@@ -358,6 +359,10 @@ bool SliceHeader::slice_header(BitStream& bs, const ParsePPS ppsCache[256], cons
 		setMbToSliceGroupMap();
 
 	}
+
+
+	//ScalingList 存储每个TU单元中每个点对应的量化、反量化系数
+	setScallingList();
 	return false;
 }
 
@@ -550,6 +555,49 @@ bool SliceHeader::setMbToSliceGroupMap()
 		}
 	}
 	return true;
+}
+void SliceHeader::setScallingList()
+{
+	if (!sps.seq_scaling_matrix_present_flag && !pps.pic_scaling_matrix_present_flag)
+	{
+		constexpr int Flat_4x4_16[16] = { 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16 };
+		constexpr int Flat_8x8_16[64] = {
+				16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+				16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+				16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+				16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+		};
+		//如果编码器未给出缩放矩阵值，则缩放矩阵值全部默认为16
+
+		//4x4TU的量化矩阵 应用于4x4intraYUV、4x4inter YUV
+		for (size_t i = 0; i < 12; i++)
+		{
+			if (i < 6)
+			{
+				memcpy(ScalingList4x4[i], Flat_4x4_16, sizeof(int) * 16);
+			}
+			else
+			{
+				memcpy(ScalingList8x8[i - 6], Flat_8x8_16, sizeof(int) * 64);
+			}
+		}
+	}
+	else
+	{
+		if (sps.seq_scaling_matrix_present_flag)
+		{
+			memcpy(ScalingList4x4, sps.ScalingList4x4, sizeof(int) * 6 * 16);
+			memcpy(ScalingList8x8, sps.ScalingList8x8, sizeof(int) * 6 * 64);
+		}
+
+		//pps里面的值，可能会覆盖之前sps得到的值
+		if (pps.pic_scaling_matrix_present_flag)
+		{
+			memcpy(ScalingList4x4, pps.ScalingList4x4, sizeof(int) * 6 * 16);
+			memcpy(ScalingList8x8, pps.ScalingList8x8, sizeof(int) * 6 * 64);
+		}
+	}
+
 }
 SliceHeader::~SliceHeader()
 {

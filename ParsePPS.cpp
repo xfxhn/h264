@@ -157,9 +157,7 @@ bool ParsePPS::pic_parameter_set_rbsp(BitStream& bs, const ParseSPS spsCache[32]
 
 	//当second_chroma_qp_index_offset 不存在时，默认其值等于 chroma_qp_index_offset
 	second_chroma_qp_index_offset = chroma_qp_index_offset;
-
-
-
+	
 	if (bs.more_rbsp_data())
 	{
 		//等于1表示8x8变换解码过程可能正在使用（参见 8.5 节）。transform_8x8_mode_flag 等于 0 表示未使用 8x8 变换解码过程。
@@ -172,7 +170,7 @@ bool ParsePPS::pic_parameter_set_rbsp(BitStream& bs, const ParseSPS spsCache[32]
 		//当 pic_scaling_matrix_present_flag 不存在时，默认其值为0。
 		//基准档次不应该出现这个元素
 		pic_scaling_matrix_present_flag = bs.readBit();
-		const length = 6 + ((sps.chroma_format_idc != 3) ? 2 : 6) * transform_8x8_mode_flag;
+		const int length = 6 + ((sps.chroma_format_idc != 3) ? 2 : 6) * transform_8x8_mode_flag;
 		if (pic_scaling_matrix_present_flag)
 		{
 
@@ -196,7 +194,6 @@ bool ParsePPS::pic_parameter_set_rbsp(BitStream& bs, const ParseSPS spsCache[32]
 			};
 			for (size_t i = 0; i < length; i++)
 			{
-
 				/*等于1表示存在缩放比例列表的语法结构并用于指定序号为i的缩放比例列 表。
 				pic_scaling_list_present_flag[i]等于0 表示在图像参数集中不存在缩放比例列表 i 的语法结构，
 				并且根据 seq_scaling_matrix_present_flag 的值，应用下列条款*/
@@ -207,16 +204,37 @@ bool ParsePPS::pic_parameter_set_rbsp(BitStream& bs, const ParseSPS spsCache[32]
 				{
 					if (i < 6)
 					{
-						bool ret = scaling_list(bs, ScalingList4x4[i], 16, UseDefaultScalingMatrix4x4Flag[i]);
-						//RETURN_IF_FAILED(ret != 0, ret);
+						scaling_list(bs, ScalingList4x4[i], 16, UseDefaultScalingMatrix4x4Flag[i]);
+						if (UseDefaultScalingMatrix4x4Flag[i])
+						{
+							if (i == 0 || i == 1 || i == 2)
+							{
+								memcpy(ScalingList4x4[i], Default_4x4_Intra, sizeof(int) * 16);
+							}
+							else //if (i >= 3)
+							{
+								memcpy(ScalingList4x4[i], Default_4x4_Inter, sizeof(int) * 16);
+							}
+						}
 					}
 					else
 					{
-						bool ret = scaling_list(bs, ScalingList8x8[i - 6], 64, UseDefaultScalingMatrix8x8Flag[i - 6]);
-						//RETURN_IF_FAILED(ret != 0, ret);
+						scaling_list(bs, ScalingList8x8[i - 6], 64, UseDefaultScalingMatrix8x8Flag[i - 6]);
+						//当计算出 useDefaultScalingMatrixFlag 等于 1 时，应推定缩放比例列表等于表 7 - 2 给出的默认的缩放比例列 表。
+						if (UseDefaultScalingMatrix8x8Flag[i - 6])
+						{
+							if (i == 6 || i == 8 || i == 10)
+							{
+								memcpy(ScalingList8x8[i - 6], Default_8x8_Intra, sizeof(int) * 64);
+							}
+							else
+							{
+								memcpy(ScalingList8x8[i - 6], Default_8x8_Inter, sizeof(int) * 64);
+							}
+						}
 					}
 				}
-				else
+				else//视频序列参数集中不存在缩放比例列表
 				{
 
 					if (i < 6)
@@ -224,61 +242,56 @@ bool ParsePPS::pic_parameter_set_rbsp(BitStream& bs, const ParseSPS spsCache[32]
 						if (i == 0 || i == 1 || i == 2)
 						{
 
-							if (sps.seq_scaling_matrix_present_flag) //表7-2 B
+							if (sps.seq_scaling_matrix_present_flag) //表7-2 B   不知道sequence-level scaling list这个是什么东西
 							{
-								//memcpy(ScalingList4x4[i], Default_4x4_Intra, sizeof(int32_t) * 16);
 							}
-							else//表7-2 A
+							else//表7-2 A 
 							{
-
+								memcpy(ScalingList4x4[i], Default_4x4_Intra, sizeof(int32_t) * 16);
 							}
 
-							//memcpy(ScalingList4x4[i], Default_4x4_Intra, sizeof(int) * 16);
 						}
 						else
 						{
-							//memcpy(ScalingList4x4[i], Default_4x4_Inter, sizeof(int) * 16);
+							if (sps.seq_scaling_matrix_present_flag) //表7-2 B   不知道sequence-level scaling list这个是什么东西
+							{
+							}
+							else//表7-2 A
+							{
+								memcpy(ScalingList4x4[i], Default_4x4_Inter, sizeof(int32_t) * 16);
+							}
 						}
 					}
 					else
 					{
 						if (i == 6 || i == 8 || i == 10)
 						{
-							memcpy(ScalingList8x8[i - 6], Default_8x8_Intra, sizeof(int) * 64);
+
+							if (sps.seq_scaling_matrix_present_flag) //表7-2 B   不知道sequence-level scaling list这个是什么东西
+							{
+							}
+							else//表7-2 A 
+							{
+								memcpy(ScalingList8x8[i - 6], Default_8x8_Intra, sizeof(int) * 64);
+							}
+
 						}
 						else if (i == 7 || i == 9 || i == 11)
 						{
-							memcpy(ScalingList8x8[i - 6], Default_8x8_Inter, sizeof(int) * 64);
+							if (sps.seq_scaling_matrix_present_flag) //表7-2 B   不知道sequence-level scaling list这个是什么东西
+							{
+							}
+							else//表7-2 A 
+							{
+								memcpy(ScalingList8x8[i - 6], Default_8x8_Inter, sizeof(int) * 64);
+							}
+
 						}
 					}
 				}
 			}
 			//表示为在 QPC 值的表格中寻找 Cr 色度分量而应加到参数 QPY 和 QSY 上的偏移。second_chroma_qp_index_offset 的值应在-12 到 +12 范围内（包括边界值）
 			second_chroma_qp_index_offset = bs.readSE();
-		}
-		else
-		{
-			//i = 0..5时将推断Flat_4x4_16指定的序列级缩放列表
-			constexpr int Flat_4x4_16[16] = { 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16 };
-			constexpr int Flat_8x8_16[64] = {
-					16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
-					16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
-					16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
-					16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
-			};
-
-			for (size_t i = 0; i < length; i++)
-			{
-				if (i < 6)
-				{
-					memcpy(ScalingList4x4[i], Flat_4x4_16, sizeof(int) * 16);
-				}
-				else
-				{
-					memcpy(ScalingList8x8[i - 6], Flat_8x8_16, sizeof(int32_t) * 64);
-				}
-			}
-
 		}
 
 	}

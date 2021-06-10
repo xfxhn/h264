@@ -43,8 +43,8 @@ public:
 
 	int32_t     ScalingList4x4[6][16];
 	int32_t     ScalingList8x8[6][64];
-	int32_t     UseDefaultScalingMatrix4x4Flag[6];
-	int32_t     UseDefaultScalingMatrix8x8Flag[6];
+	bool     UseDefaultScalingMatrix4x4Flag[6];
+	bool     UseDefaultScalingMatrix8x8Flag[6];
 public:
 	ParsePPS();
 

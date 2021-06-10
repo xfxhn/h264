@@ -35,7 +35,7 @@ ParseSPS::ParseSPS()
 	bit_depth_luma_minus8 = 0;
 	bit_depth_chroma_minus8 = 0;
 	qpprime_y_zero_transform_bypass_flag = false;
-	seq_scaling_matrix_present_flag = 0;
+	seq_scaling_matrix_present_flag = false;
 	memset(seq_scaling_list_present_flag, 0, sizeof(int32_t) * 12);
 	log2_max_frame_num_minus4 = 0;
 	pic_order_cnt_type = 0;
@@ -181,8 +181,8 @@ bool ParseSPS::seq_parameter_set_data(BitStream& bs)
 					if (i < 6)
 					{
 						scaling_list(bs, ScalingList4x4[i], 16, UseDefaultScalingMatrix4x4Flag[i]);
-						//通过UseDefaultScalingMatrix4x4Flag判断采用编码器传送过来的量化系数的缩放值
 
+						//当计算出 useDefaultScalingMatrixFlag 等于 1 时，应推定缩放比例列表等于表 7 - 2 给出的默认的缩放比例列 表。
 						if (UseDefaultScalingMatrix4x4Flag[i])
 						{
 							if (i == 0 || i == 1 || i == 2)
@@ -199,6 +199,7 @@ bool ParseSPS::seq_parameter_set_data(BitStream& bs)
 					{
 						scaling_list(bs, ScalingList8x8[i - 6], 64, UseDefaultScalingMatrix8x8Flag[i - 6]);
 
+						//当计算出 useDefaultScalingMatrixFlag 等于 1 时，应推定缩放比例列表等于表 7 - 2 给出的默认的缩放比例列 表。
 						if (UseDefaultScalingMatrix8x8Flag[i - 6])
 						{
 							if (i == 6 || i == 8 || i == 10)
@@ -212,9 +213,9 @@ bool ParseSPS::seq_parameter_set_data(BitStream& bs)
 						}
 					}
 				}
-				else
+				else//视频序列参数集中不存在缩放比例列表
 				{
-
+					//表7-2的规定 集 A
 					if (i < 6)
 					{
 						if (i == 0 || i == 1 || i == 2)
@@ -241,30 +242,7 @@ bool ParseSPS::seq_parameter_set_data(BitStream& bs)
 
 			}
 		}
-		else
-		{
-			//i = 0..5时将推断Flat_4x4_16指定的序列级缩放列表
-			constexpr int Flat_4x4_16[16] = { 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16 };
-			constexpr int Flat_8x8_16[64] = {
-					16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
-					16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
-					16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
-					16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
-			};
 
-			for (size_t i = 0; i < length; i++)
-			{
-				if (i < 6)
-				{
-					memcpy(ScalingList4x4[i], Flat_4x4_16, sizeof(int) * 16);
-				}
-				else
-				{
-					memcpy(ScalingList8x8[i - 6], Flat_8x8_16, sizeof(int32_t) * 64);
-				}
-			}
-
-		}
 
 	}
 

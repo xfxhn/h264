@@ -320,25 +320,25 @@ void ParseSlice::inverseScannerProcess(int value[16], int c[4][4])
 	//还有一个反域扫描，应该是在场编码的时候才会用到
 	//zig-zag
 
-	c[0][0] = level4x4Luam[0];
-	c[0][1] = level4x4Luam[1];
-	c[1][0] = level4x4Luam[2];
-	c[2][0] = level4x4Luam[3];
+	c[0][0] = value[0];
+	c[0][1] = value[1];
+	c[1][0] = value[2];
+	c[2][0] = value[3];
 
-	c[1][1] = level4x4Luam[4];
-	c[0][2] = level4x4Luam[5];
-	c[0][3] = level4x4Luam[6];
-	c[1][2] = level4x4Luam[7];
+	c[1][1] = value[4];
+	c[0][2] = value[5];
+	c[0][3] = value[6];
+	c[1][2] = value[7];
 
-	c[2][1] = level4x4Luam[8];
-	c[3][0] = level4x4Luam[9];
-	c[3][1] = level4x4Luam[10];
-	c[2][2] = level4x4Luam[11];
+	c[2][1] = value[8];
+	c[3][0] = value[9];
+	c[3][1] = value[10];
+	c[2][2] = value[11];
 
-	c[1][3] = level4x4Luam[12];
-	c[2][3] = level4x4Luam[13];
-	c[3][2] = level4x4Luam[14];
-	c[3][3] = level4x4Luam[15];
+	c[1][3] = value[12];
+	c[2][3] = value[13];
+	c[3][2] = value[14];
+	c[3][3] = value[15];
 
 }
 
@@ -532,6 +532,8 @@ void ParseSlice::scaling(bool isLuam, bool isChromaCb)
 
 	int weightScale4x4[4][4] = { 0 };
 
-	inverseScannerProcess();
+	inverseScannerProcess(sHeader->ScalingList4x4[iYCbCr + ((mbIsInterFlag) ? 3 : 0)], weightScale4x4);
+
+	//LevelScale4x4( m, i, j ) = weightScale4x4( i, j ) * normAdjust4x4( m, i, j )
 
 }

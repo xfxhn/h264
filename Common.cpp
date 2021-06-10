@@ -31,7 +31,7 @@ int h264_log2(int32_t value)
 	return log2;
 }
 
-void scaling_list(BitStream& bs, int32_t* scalingList, int sizeOfScalingList, int32_t& useDefaultScalingMatrixFlag)
+void scaling_list(BitStream& bs, int32_t* scalingList, int sizeOfScalingList, bool& useDefaultScalingMatrixFlag)
 {
 
 	int lastScale = 8;
@@ -41,6 +41,7 @@ void scaling_list(BitStream& bs, int32_t* scalingList, int sizeOfScalingList, in
 	{
 		if (nextScale != 0)
 		{
+			//delta_scale 是用于计算缩放比例列表中的第 j 个元素
 			int delta_scale = bs.readSE();
 
 			nextScale = (lastScale + delta_scale + 256) % 256;
