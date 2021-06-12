@@ -288,11 +288,11 @@ void ParseSlice::transformDecode4x4LuamResidualProcess()
 		scaling(true, false);
 		for (size_t luma4x4BlkIdx = 0; luma4x4BlkIdx < 16; luma4x4BlkIdx++)
 		{
-			//int c[4][4] = { 0 };
-			//int r[4][4] = { 0 };
+			int c[4][4] = { 0 };
+			int r[4][4] = { 0 };
 
-			//逆扫描过程
-			//inverseScannerProcess(macroblock[CurrMbAddr]->level4x4[i], c);
+			//逆扫描过程  在解码器端则需要将这个一维数据转换成二维数组或矩阵进行运算
+			inverseScanner4x4Process(macroblock[CurrMbAddr]->level4x4[luma4x4BlkIdx], c);
 			//调用4*4残差缩放以及变换过程，c 为输入，r 为输出。输出是残差样点值
 			//scalingTransformProcess(c, r, true, false);
 
@@ -314,7 +314,7 @@ void ParseSlice::transformDecode4x4LuamResidualProcess()
 
 }
 
-void ParseSlice::inverseScannerProcess(int value[16], int c[4][4])
+void ParseSlice::inverseScanner4x4Process(int value[16], int c[4][4])
 {
 
 	//还有一个反域扫描，应该是在场编码的时候才会用到
@@ -340,6 +340,79 @@ void ParseSlice::inverseScannerProcess(int value[16], int c[4][4])
 	c[3][2] = value[14];
 	c[3][3] = value[15];
 
+}
+
+void ParseSlice::inverseScanner8x8Process(int values[64], int c[8][8])
+{
+
+	//8x8 zig-zag scan
+	c[0][0] = values[0];
+	c[0][1] = values[1];
+	c[1][0] = values[2];
+	c[2][0] = values[3];
+	c[1][1] = values[4];
+	c[0][2] = values[5];
+	c[0][3] = values[6];
+	c[1][2] = values[7];
+	c[2][1] = values[8];
+	c[3][0] = values[9];
+	c[4][0] = values[10];
+	c[3][1] = values[11];
+	c[2][2] = values[12];
+	c[1][3] = values[13];
+	c[0][4] = values[14];
+	c[0][5] = values[15];
+
+	c[1][4] = values[16];
+	c[2][3] = values[17];
+	c[3][2] = values[18];
+	c[4][1] = values[19];
+	c[5][0] = values[20];
+	c[6][0] = values[21];
+	c[5][1] = values[22];
+	c[4][2] = values[23];
+	c[3][3] = values[24];
+	c[2][4] = values[25];
+	c[1][5] = values[26];
+	c[0][6] = values[27];
+	c[0][7] = values[28];
+	c[1][6] = values[29];
+	c[2][5] = values[30];
+	c[3][4] = values[31];
+
+	c[4][3] = values[32];
+	c[5][2] = values[33];
+	c[6][1] = values[34];
+	c[7][0] = values[35];
+	c[7][1] = values[36];
+	c[6][2] = values[37];
+	c[5][3] = values[38];
+	c[4][4] = values[39];
+	c[3][5] = values[40];
+	c[2][6] = values[41];
+	c[1][7] = values[42];
+	c[2][7] = values[43];
+	c[3][6] = values[44];
+	c[4][5] = values[45];
+	c[5][4] = values[46];
+	c[6][3] = values[47];
+
+	c[7][2] = values[48];
+	c[7][3] = values[49];
+	c[6][4] = values[50];
+	c[5][5] = values[51];
+	c[4][6] = values[52];
+	c[3][7] = values[53];
+	c[4][7] = values[54];
+	c[5][6] = values[55];
+	c[6][5] = values[56];
+	c[7][4] = values[57];
+	c[7][5] = values[58];
+	c[6][6] = values[59];
+	c[5][7] = values[60];
+	c[6][7] = values[61];
+	c[7][6] = values[62];
+	c[7][7] = values[63];
 }
 
 //用于残差4x4块的缩放和变换过程
@@ -504,7 +577,7 @@ void ParseSlice::scaling(bool isLuam, bool isChromaCb)
 	//帧间
 	if (isInterframe(macroblock[CurrMbAddr]->mode))
 	{
-		mbIsInterFlag = 1;
+		mbIsInterFlag = true;
 	}
 	//通过下述方式得到变量iYCbCr
 	int iYCbCr = 0;
@@ -531,9 +604,94 @@ void ParseSlice::scaling(bool isLuam, bool isChromaCb)
 	}
 
 	int weightScale4x4[4][4] = { 0 };
-
-	inverseScannerProcess(sHeader->ScalingList4x4[iYCbCr + ((mbIsInterFlag) ? 3 : 0)], weightScale4x4);
+	//取哪一个scalinglist,在BP/MP/EP中，weightScale4x4是全为16的4x4矩阵
+	//是否是帧间还是帧内，取对应量化缩放矩阵  <3=帧内，>3<=6对应的帧间   mbIsInterFlag ？3:0
+	inverseScanner4x4Process(sHeader->ScalingList4x4[iYCbCr + ((mbIsInterFlag) ? 3 : 0)], weightScale4x4);
 
 	//LevelScale4x4( m, i, j ) = weightScale4x4( i, j ) * normAdjust4x4( m, i, j )
 
+	int v4x4[6][3] =
+	{
+		{10, 16, 13},
+		{11, 18, 14},
+		{13, 20, 16},
+		{14, 23, 18},
+		{16, 25, 20},
+		{18, 29, 23},
+	};
+
+	//normAdjust4x4
+	for (size_t m = 0; m < 6; m++)
+	{
+		for (size_t i = 0; i < 4; i++)
+		{
+			for (size_t j = 0; j < 4; j++)
+			{
+				if (i % 2 == 0 && j % 2 == 0)
+				{
+					LevelScale4x4[m][i][j] = weightScale4x4[i][j] * v4x4[m][0];
+				}
+				else if (i % 2 == 1 && j % 2 == 1)
+				{
+					LevelScale4x4[m][i][j] = weightScale4x4[i][j] * v4x4[m][1];
+				}
+				else
+				{
+					LevelScale4x4[m][i][j] = weightScale4x4[i][j] * v4x4[m][2];
+				}
+			}
+		}
+	}
+
+
+	int weightScale8x8[8][8] = { 0 };
+	//是否是帧间还是帧内，取对应量化缩放矩阵  0=帧内，1=对应的帧间   mbIsInterFlag
+	inverseScanner8x8Process(sHeader->ScalingList8x8[2 * iYCbCr + mbIsInterFlag], weightScale8x8);
+
+
+	int v8x8[6][6] =
+	{
+		{20, 18, 32, 19, 25, 24},
+		{22, 19, 35, 21, 28, 26},
+		{26, 23, 42, 24, 33, 31},
+		{28, 25, 45, 26, 35, 33},
+		{32, 28, 51, 30, 40, 38},
+		{36, 32, 58, 34, 46, 43},
+	};
+
+	//LevelScale8x8( m, i, j ) = weightScale8x8( i, j ) * normAdjust8x8( m, i, j )
+
+	for (size_t m = 0; m < 6; m++)
+	{
+		for (size_t i = 0; i < 8; i++)
+		{
+			for (size_t j = 0; j < 8; j++)
+			{
+				if (i % 4 && j % 4 == 0)
+				{
+					LevelScale8x8[m][i][j] = weightScale8x8[i][j] * v8x8[m][0];
+				}
+				else if (i % 2 == 1 && j % 2 == 1)
+				{
+					LevelScale8x8[m][i][j] = weightScale8x8[i][j] * v8x8[m][1];
+				}
+				else if (i % 4 == 2 && j % 4 == 2)
+				{
+					LevelScale8x8[m][i][j] = weightScale8x8[i][j] * v8x8[m][2];
+				}
+				else if ((i % 4 == 0 && j % 2 == 1) || (i % 2 == 1 && j % 4 == 0))
+				{
+					LevelScale8x8[m][i][j] = weightScale8x8[i][j] * v8x8[m][3];
+				}
+				else if ((i % 4 == 0 && j % 4 == 2) || (i % 4 == 2 && j % 4 == 0))
+				{
+					LevelScale8x8[m][i][j] = weightScale8x8[i][j] * v8x8[m][4];
+				}
+				else
+				{
+					LevelScale8x8[m][i][j] = weightScale8x8[i][j] * v8x8[m][5];
+				}
+			}
+		}
+	}
 }

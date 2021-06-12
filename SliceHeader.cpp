@@ -360,6 +360,7 @@ bool SliceHeader::slice_header(BitStream& bs, const ParsePPS ppsCache[256], cons
 
 	}
 
+	//TU是transform unit的缩写，是变换量化的单位（是针对DCT变换的一个基本单元），
 
 	//ScalingList 存储每个TU单元中每个点对应的量化、反量化系数
 	setScallingList();
