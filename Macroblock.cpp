@@ -301,15 +301,16 @@ bool Macroblock::macroblock_layer(BitStream& bs)
 			residual(bs, 0, 15);
 		}
 	}
-	//其中 QPY,PREV  是当前条带中按解码顺序排列的前一个宏块的亮度量化参数 QPY,对于条带中的第一个宏块，QPY, PREV 的初始值为SliceQPY
 	//QPY = ( ( QPY,PREV + mb_qp_delta + 52 + 2 * QpBdOffsetY ) % ( 52 + QpBdOffsetY ) ) －QpBdOffsetY
 	//QpBdOffsetY  亮度偏移
 	QPY = ((sHeader->QPY_prev + mb_qp_delta + 52 + 2 * sHeader->sps.QpBdOffsetY) % (52 + sHeader->sps.QpBdOffsetY) - sHeader->sps.QpBdOffsetY);
+	//对于条带中的第一个宏块，QPY_prev 的初始值为SliceQPY,QPY_prev是当前条带中按解码顺序排列的前一个宏块的亮度量化参数 QPY
 	sHeader->QPY_prev = QPY;
 
 	QP1Y = QPY + sHeader->sps.QpBdOffsetY;
 
-
+	//只有HP模式下才有qpprime_y_zero_transform_bypass_flag这个变量
+	//qpprime_y_zero_transform_bypass_flag 等于 1 是指当 QP1Y 等于 0 时变换系数解码过程的变换旁路操作和图像构建过程将会在第8.5 节给出的去块效应滤波过程之前执行
 	if (sHeader->sps.qpprime_y_zero_transform_bypass_flag && QP1Y == 0)
 	{
 		TransformBypassModeFlag = true;

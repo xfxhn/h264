@@ -39,7 +39,6 @@
 int main()
 {
 
-
 	AnnexBReader reader;
 	bool isOpen = reader.open("./test.264");
 

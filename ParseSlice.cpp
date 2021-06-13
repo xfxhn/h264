@@ -1,4 +1,4 @@
-#include "ParseSlice.h"
+ï»¿#include "ParseSlice.h"
 
 
 
@@ -22,11 +22,11 @@ bool ParseSlice::parse(BitStream& bs, const ParsePPS* ppsCache, const ParseSPS* 
 	sHeader->slice_header(bs, ppsCache, spsCache);
 
 
-	////×Ü¹²¶àÉÙ×Ö½Ú
+	////æ€»å…±å¤šå°‘å­—èŠ‚
 	//size_t size = bs.size;
-	////¶ÁÈ¡µ½µÚ¼¸bitÎ»
+	////è¯»å–åˆ°ç¬¬å‡ bitä½
 	//size_t bitOffset = (8 - bs.bitsLeft);
-	////¶ÁÈ¡µ½µÚ¼¸×Ö½Ú
+	////è¯»å–åˆ°ç¬¬å‡ å­—èŠ‚
 	//uint8_t* data = bs.currentPtr;
 
 
@@ -73,7 +73,7 @@ ParseSlice::~ParseSlice()
 
 void ParseSlice::Intra_4x4_prediction(size_t luma4x4BlkIdx, bool isLuam)
 {
-	//9ÖÖÖ¡ÄÚ4x4Ô¤²âÄ£Ê½
+	//9ç§å¸§å†…4x4é¢„æµ‹æ¨¡å¼
 	getIntra4x4PredMode(luma4x4BlkIdx, isLuam);
 
 	int Intra4x4PredMode = macroblock[CurrMbAddr]->Intra4x4PredMode[luma4x4BlkIdx];
@@ -82,11 +82,11 @@ void ParseSlice::Intra_4x4_prediction(size_t luma4x4BlkIdx, bool isLuam)
 
 
 }
-//Intra4x4PredModeµÄÍÆµ¼¹ı³Ì
+//Intra4x4PredModeçš„æ¨å¯¼è¿‡ç¨‹
 void ParseSlice::getIntra4x4PredMode(size_t luma4x4BlkIdx, bool isLuam)
 {
 
-	//¼ÆËãµ±Ç°ÁÁ¶È¿é×óÉÏ½ÇÁÁ¶ÈÑùµã¾àÀëµ±Ç°ºê¿é×óÉÏ½ÇÁÁ¶ÈÑùµãµÄÏà¶ÔÎ»ÖÃ
+	//è®¡ç®—å½“å‰äº®åº¦å—å·¦ä¸Šè§’äº®åº¦æ ·ç‚¹è·ç¦»å½“å‰å®å—å·¦ä¸Šè§’äº®åº¦æ ·ç‚¹çš„ç›¸å¯¹ä½ç½®
 	int x = InverseRasterScan(luma4x4BlkIdx / 4, 8, 8, 16, 0) + InverseRasterScan(luma4x4BlkIdx % 4, 4, 4, 8, 0);
 	int y = InverseRasterScan(luma4x4BlkIdx / 4, 8, 8, 16, 1) + InverseRasterScan(luma4x4BlkIdx % 4, 4, 4, 8, 1);
 
@@ -99,45 +99,45 @@ void ParseSlice::getIntra4x4PredMode(size_t luma4x4BlkIdx, bool isLuam)
 	}
 	else
 	{
-		//É«¶È¿é¸ß¶ÈºÍ¿í¶È
+		//è‰²åº¦å—é«˜åº¦å’Œå®½åº¦
 		maxH = sHeader->sps.MbHeightC;
 		maxW = sHeader->sps.MbWidthC;
 	}
 
-	//²»¿¼ÂÇÖ¡³¡×ÔÊÊÓ¦
-	//µÈÓÚCurrMbAddr»òµÈÓÚ°üº¬£¨xN£¬yN£©µÄÏàÁÚºê¿éµÄµØÖ·£¬¼°Æä¿ÉÓÃĞÔ×´Ì¬
+	//ä¸è€ƒè™‘å¸§åœºè‡ªé€‚åº”
+	//ç­‰äºCurrMbAddræˆ–ç­‰äºåŒ…å«ï¼ˆxNï¼ŒyNï¼‰çš„ç›¸é‚»å®å—çš„åœ°å€ï¼ŒåŠå…¶å¯ç”¨æ€§çŠ¶æ€
 	int mbAddrA = NA;
 	int mbAddrB = NA;
 
-	//Î»ÓÚ4¡Á4¿éluma4x4BlkIdx×ó²àºÍÉÏ²àµÄ4¡Á4ÁÁ¶È¿éµÄË÷Òı¼°Æä¿ÉÓÃĞÔ×´Ì¬
+	//ä½äº4Ã—4å—luma4x4BlkIdxå·¦ä¾§å’Œä¸Šä¾§çš„4Ã—4äº®åº¦å—çš„ç´¢å¼•åŠå…¶å¯ç”¨æ€§çŠ¶æ€
 	int luma4x4BlkIdxA = NA;
 	int luma4x4BlkIdxB = NA;
-	//±íÊ¾Óëºê¿émbAddrN×óÉÏ½ÇµÄÏà¶Ô£¨²»ÊÇÏà¶ÔÓÚµ±Ç°ºê¿é×óÉÏ½Ç£©Î»ÖÃ£¨xN£¬yN£©¡£
+	//è¡¨ç¤ºä¸å®å—mbAddrNå·¦ä¸Šè§’çš„ç›¸å¯¹ï¼ˆä¸æ˜¯ç›¸å¯¹äºå½“å‰å®å—å·¦ä¸Šè§’ï¼‰ä½ç½®ï¼ˆxNï¼ŒyNï¼‰ã€‚
 	int xW = NA;
 	int yW = NA;
 
-	//ÁÁ¶ÈÎ»ÖÃµÄ²î·ÖÖµ ±í6-2£¨ xD, yD £©
-	//ÁÁ¶ÈÎ»ÖÃ£¨ xN, yN)
+	//äº®åº¦ä½ç½®çš„å·®åˆ†å€¼ è¡¨6-2ï¼ˆ xD, yD ï¼‰
+	//äº®åº¦ä½ç½®ï¼ˆ xN, yN)
 	getMbAddrNAndLuma4x4BlkIdxN(luma4x4BlkIdx, isLuam, mbAddrA, x + (-1), y + 0, maxW, maxH, xW, yW);
 
 	if (mbAddrA != NA)
 	{
-		//×ó²àºê¿éË÷Òı
+		//å·¦ä¾§å®å—ç´¢å¼•
 		luma4x4BlkIdxA = 8 * (yW / 8) + 4 * (xW / 8) + 2 * ((yW % 8) / 4) + ((xW % 8) / 4);
 	}
 
 	getMbAddrNAndLuma4x4BlkIdxN(luma4x4BlkIdx, isLuam, mbAddrB, x + 0, y + (-1), maxW, maxH, xW, yW);
 	if (mbAddrB != NA)
 	{
-		//ÉÏ²àºê¿éË÷Òı
+		//ä¸Šä¾§å®å—ç´¢å¼•
 		luma4x4BlkIdxB = 8 * (yW / 8) + 4 * (xW / 8) + 2 * ((yW % 8) / 4) + ((xW % 8) / 4);
 	}
 
 
 	bool dcPredModePredictedFlag = false;
-	/*ÔÚ P ºÍ B Æ¬ÖĞ£¬Ö¡ÄÚ±àÂëµÄºê¿éµÄÁÚ½üºê¿é¿ÉÄÜÊÇ²ÉÓÃµÄÖ¡¼ä±àÂë¡£
-		µ±±¾¾ä·¨ÔªËØµÈÓÚ 1 Ê±£¬±íÊ¾Ö¡ÄÚ±àÂëµÄºê¿é²»ÄÜÓÃÖ¡¼ä±àÂëµÄºê¿éµÄÏñËØ×÷Îª×Ô¼ºµÄÔ¤²â£¬
-		¼´Ö¡ÄÚ±àÂëµÄºê¿éÖ»ÄÜÓÃÁÚ½üÖ¡ÄÚ±àÂëµÄºê¿éµÄÏñËØ×÷Îª×Ô¼ºµÄÔ¤²â£»¶ø±¾¾ä·¨ÔªËØµÈÓÚ 0 Ê±£¬±íÊ¾²»´æÔÚÕâÖÖÏŞÖÆ¡£*/
+	/*åœ¨ P å’Œ B ç‰‡ä¸­ï¼Œå¸§å†…ç¼–ç çš„å®å—çš„é‚»è¿‘å®å—å¯èƒ½æ˜¯é‡‡ç”¨çš„å¸§é—´ç¼–ç ã€‚
+		å½“æœ¬å¥æ³•å…ƒç´ ç­‰äº 1 æ—¶ï¼Œè¡¨ç¤ºå¸§å†…ç¼–ç çš„å®å—ä¸èƒ½ç”¨å¸§é—´ç¼–ç çš„å®å—çš„åƒç´ ä½œä¸ºè‡ªå·±çš„é¢„æµ‹ï¼Œ
+		å³å¸§å†…ç¼–ç çš„å®å—åªèƒ½ç”¨é‚»è¿‘å¸§å†…ç¼–ç çš„å®å—çš„åƒç´ ä½œä¸ºè‡ªå·±çš„é¢„æµ‹ï¼›è€Œæœ¬å¥æ³•å…ƒç´ ç­‰äº 0 æ—¶ï¼Œè¡¨ç¤ºä¸å­˜åœ¨è¿™ç§é™åˆ¶ã€‚*/
 	if (mbAddrA == NA ||
 		mbAddrB == NA ||
 		(mbAddrA != NA && isInterframe(macroblock[mbAddrA]->mode) && sHeader->pps.constrained_intra_pred_flag) ||
@@ -158,7 +158,7 @@ void ParseSlice::getIntra4x4PredMode(size_t luma4x4BlkIdx, bool isLuam)
 	}
 	else
 	{
-		//Ñ¡Ôñµ±Ç°ºê¿é4*4µÄ×ó²àºê¿é4*4×Ó¿éµÄÔ¤²âÄ£Ê½
+		//é€‰æ‹©å½“å‰å®å—4*4çš„å·¦ä¾§å®å—4*4å­å—çš„é¢„æµ‹æ¨¡å¼
 		if (macroblock[mbAddrA]->mode == H264_MB_PART_PRED_MODE::Intra_4x4)
 		{
 			intraMxMPredModeA = macroblock[mbAddrA]->Intra4x4PredMode[luma4x4BlkIdxA];
@@ -177,7 +177,7 @@ void ParseSlice::getIntra4x4PredMode(size_t luma4x4BlkIdx, bool isLuam)
 	}
 	else
 	{
-		//Ñ¡Ôñµ±Ç°ºê¿é4*4µÄÉÏ²àºê¿é 4*4×Ó¿éµÄÔ¤²âÄ£Ê½
+		//é€‰æ‹©å½“å‰å®å—4*4çš„ä¸Šä¾§å®å— 4*4å­å—çš„é¢„æµ‹æ¨¡å¼
 		if (macroblock[mbAddrB]->mode == H264_MB_PART_PRED_MODE::Intra_4x4)
 		{
 			intraMxMPredModeB = macroblock[mbAddrB]->Intra4x4PredMode[luma4x4BlkIdxB];
@@ -188,13 +188,13 @@ void ParseSlice::getIntra4x4PredMode(size_t luma4x4BlkIdx, bool isLuam)
 		}
 	}
 
-	//´Ó×ó²àºÍÉÏ·½ÏàÁÚ¿éµÄÔ¤²âÄ£Ê½ÖĞÑ¡È¡½ÏĞ¡µÄÒ»¸ö×÷ÎªÔ¤ÏÈ¶¨ÒåÄ£Ê½
+	//ä»å·¦ä¾§å’Œä¸Šæ–¹ç›¸é‚»å—çš„é¢„æµ‹æ¨¡å¼ä¸­é€‰å–è¾ƒå°çš„ä¸€ä¸ªä½œä¸ºé¢„å…ˆå®šä¹‰æ¨¡å¼
 	int predIntra4x4PredMode = min(intraMxMPredModeA, intraMxMPredModeB);
 
-	//ÂëÁ÷ÖĞÖ¸¶¨ÁËÒª²»ÒªÓÃÕâ¸öÔ¤²âÖµ¡£Èç¹ûÓÃ£¬ÄÇÃ´Õâ¸öÔ¤²âÖµ¾ÍÊÇµ±Ç°¿éµÄÖ¡ÄÚÔ¤²âÄ£Ê½£»·ñÔò¾Í´ÓºóĞø¶ÁÈ¡µÄÔ¤²âÄ£Ê½ÖĞ¼ÆËã¡£
+	//ç æµä¸­æŒ‡å®šäº†è¦ä¸è¦ç”¨è¿™ä¸ªé¢„æµ‹å€¼ã€‚å¦‚æœç”¨ï¼Œé‚£ä¹ˆè¿™ä¸ªé¢„æµ‹å€¼å°±æ˜¯å½“å‰å—çš„å¸§å†…é¢„æµ‹æ¨¡å¼ï¼›å¦åˆ™å°±ä»åç»­è¯»å–çš„é¢„æµ‹æ¨¡å¼ä¸­è®¡ç®—ã€‚
 	if (macroblock[CurrMbAddr]->prev_intra4x4_pred_mode_flag[luma4x4BlkIdx])
 	{
-		//ÅĞ¶ÏÂëÁ÷ÖĞ¶ÁÈ¡µÄ±êÖ¾Î»prev_intra4x4_pred_mode_flag£¬Èç¹û¸Ã±êÖ¾Î»Îª1£¬ÔòÔ¤ÏÈ¶¨ÒåÄ£Ê½¾ÍÊÇµ±Ç°¿éµÄÔ¤²âÄ£Ê½
+		//åˆ¤æ–­ç æµä¸­è¯»å–çš„æ ‡å¿—ä½prev_intra4x4_pred_mode_flagï¼Œå¦‚æœè¯¥æ ‡å¿—ä½ä¸º1ï¼Œåˆ™é¢„å…ˆå®šä¹‰æ¨¡å¼å°±æ˜¯å½“å‰å—çš„é¢„æµ‹æ¨¡å¼
 		macroblock[CurrMbAddr]->Intra4x4PredMode[luma4x4BlkIdx] = predIntra4x4PredMode;
 	}
 	else
@@ -210,17 +210,17 @@ void ParseSlice::getIntra4x4PredMode(size_t luma4x4BlkIdx, bool isLuam)
 	}
 
 }
-//mbAddrN ºÍluma4x4BlkIdxN£¨N µÈÓÚA or B£©ÍÆµ¼ÈçÏÂ
+//mbAddrN å’Œluma4x4BlkIdxNï¼ˆN ç­‰äºA or Bï¼‰æ¨å¯¼å¦‚ä¸‹
 void ParseSlice::getMbAddrNAndLuma4x4BlkIdxN(
 	size_t luma4x4BlkIdx, bool isLuam, int& mbAddrN, const int xN, const int yN, const int maxW, const int maxH, int& xW, int& yW
 )
 {
 	if (xN < 0 && yN < 0)
 	{
-		//6.4.5 ½Ú¹æ¶¨µÄ¹ı³ÌµÄÊäÈëÎª mbAddrD = CurrMbAddr ¨C PicWidthInMbs ¨C 1£¬Êä³öÎª mbAddrD ÊÇ·ñ¿ÉÓÃ¡£
-		//Áí Íâ£¬µ±CurrMbAddr % PicWidthInMbs µÈÓÚ0 Ê±mbAddrD ½«±»±êÊ¶Îª²»¿ÉÓÃ¡£
+		//6.4.5 èŠ‚è§„å®šçš„è¿‡ç¨‹çš„è¾“å…¥ä¸º mbAddrD = CurrMbAddr â€“ PicWidthInMbs â€“ 1ï¼Œè¾“å‡ºä¸º mbAddrD æ˜¯å¦å¯ç”¨ã€‚
+		//å¦ å¤–ï¼Œå½“CurrMbAddr % PicWidthInMbs ç­‰äº0 æ—¶mbAddrD å°†è¢«æ ‡è¯†ä¸ºä¸å¯ç”¨ã€‚
 		int mbAddrD = CurrMbAddr - sHeader->sps.PicWidthInMbs - 1;
-		//²»¿ÉÓÃ
+		//ä¸å¯ç”¨
 		if (isMbUsable(mbAddrD, CurrMbAddr) || CurrMbAddr % sHeader->sps.PicWidthInMbs == 0)
 		{
 
@@ -272,7 +272,7 @@ void ParseSlice::getMbAddrNAndLuma4x4BlkIdxN(
 		mbAddrN = CurrMbAddr;
 	}
 
-	//±íÊ¾Óëºê¿émbAddrN×óÉÏ½ÇµÄÏà¶Ô£¨²»ÊÇÏà¶ÔÓÚµ±Ç°ºê¿é×óÉÏ½Ç£©Î»ÖÃ£¨xN£¬yN£©¡£
+	//è¡¨ç¤ºä¸å®å—mbAddrNå·¦ä¸Šè§’çš„ç›¸å¯¹ï¼ˆä¸æ˜¯ç›¸å¯¹äºå½“å‰å®å—å·¦ä¸Šè§’ï¼‰ä½ç½®ï¼ˆxNï¼ŒyNï¼‰ã€‚
 	xW = (xN + maxW) % maxW;
 	yW = (yN + maxH) % maxH;
 
@@ -291,21 +291,22 @@ void ParseSlice::transformDecode4x4LuamResidualProcess()
 			int c[4][4] = { 0 };
 			int r[4][4] = { 0 };
 
-			//ÄæÉ¨Ãè¹ı³Ì  ÔÚ½âÂëÆ÷¶ËÔòĞèÒª½«Õâ¸öÒ»Î¬Êı¾İ×ª»»³É¶şÎ¬Êı×é»ò¾ØÕó½øĞĞÔËËã
+			//é€†æ‰«æè¿‡ç¨‹  åœ¨è§£ç å™¨ç«¯åˆ™éœ€è¦å°†è¿™ä¸ªä¸€ç»´æ•°æ®è½¬æ¢æˆäºŒç»´æ•°ç»„æˆ–çŸ©é˜µè¿›è¡Œè¿ç®—
 			inverseScanner4x4Process(macroblock[CurrMbAddr]->level4x4[luma4x4BlkIdx], c);
-			//µ÷ÓÃ4*4²Ğ²îËõ·ÅÒÔ¼°±ä»»¹ı³Ì£¬c ÎªÊäÈë£¬r ÎªÊä³ö¡£Êä³öÊÇ²Ğ²îÑùµãÖµ
-			//scalingTransformProcess(c, r, true, false);
+			//è°ƒç”¨4*4æ®‹å·®ç¼©æ”¾ä»¥åŠå˜æ¢è¿‡ç¨‹ï¼Œc ä¸ºè¾“å…¥ï¼Œr ä¸ºè¾“å‡ºã€‚è¾“å‡ºæ˜¯æ®‹å·®æ ·ç‚¹å€¼
+			scalingTransformProcess(c, r, true, false);
 
-			//¼ÆËãµ±Ç°ÁÁ¶È¿é×óÉÏ½ÇÁÁ¶ÈÑùµã¾àÀëµ±Ç°ºê¿é×óÉÏ½ÇÁÁ¶ÈÑùµãµÄÏà¶ÔÎ»ÖÃ
+			//è®¡ç®—å½“å‰äº®åº¦å—å·¦ä¸Šè§’äº®åº¦æ ·ç‚¹è·ç¦»å½“å‰å®å—å·¦ä¸Šè§’äº®åº¦æ ·ç‚¹çš„ç›¸å¯¹ä½ç½®
 			int x = InverseRasterScan(luma4x4BlkIdx / 4, 8, 8, 16, 0) + InverseRasterScan(luma4x4BlkIdx % 4, 4, 4, 8, 0);
 			int y = InverseRasterScan(luma4x4BlkIdx / 4, 8, 8, 16, 1) + InverseRasterScan(luma4x4BlkIdx % 4, 4, 4, 8, 1);
+			//å¯¹è¿‘ä¼¼å‡åŒ€åˆ†å¸ƒçš„è¯­æ³•å…ƒç´ ï¼Œåœ¨ç¼–ç å’Œè§£ç æ—¶é€‰æ‹©æ—è·¯ï¼ˆbypassï¼‰æ¨¡å¼ï¼Œå¯ä»¥å…é™¤ä¸Šä¸‹æ–‡å»ºæ¨¡ï¼Œæé«˜ç¼–è§£ç çš„é€Ÿåº¦ã€‚
 
 
-			//4*4Ô¤²â¹ı³Ì
+			//4*4é¢„æµ‹è¿‡ç¨‹
 			Intra_4x4_prediction(luma4x4BlkIdx, true);
 
 
-			//»·Â·ÂË²¨Æ÷¹ı³Ì
+			//ç¯è·¯æ»¤æ³¢å™¨è¿‡ç¨‹
 		}
 
 
@@ -317,7 +318,7 @@ void ParseSlice::transformDecode4x4LuamResidualProcess()
 void ParseSlice::inverseScanner4x4Process(int value[16], int c[4][4])
 {
 
-	//»¹ÓĞÒ»¸ö·´ÓòÉ¨Ãè£¬Ó¦¸ÃÊÇÔÚ³¡±àÂëµÄÊ±ºò²Å»áÓÃµ½
+	//è¿˜æœ‰ä¸€ä¸ªååŸŸæ‰«æï¼Œåº”è¯¥æ˜¯åœ¨åœºç¼–ç çš„æ—¶å€™æ‰ä¼šç”¨åˆ°
 	//zig-zag
 
 	c[0][0] = value[0];
@@ -415,7 +416,7 @@ void ParseSlice::inverseScanner8x8Process(int values[64], int c[8][8])
 	c[7][7] = values[63];
 }
 
-//ÓÃÓÚ²Ğ²î4x4¿éµÄËõ·ÅºÍ±ä»»¹ı³Ì
+//ç”¨äºæ®‹å·®4x4å—çš„ç¼©æ”¾å’Œå˜æ¢è¿‡ç¨‹
 void ParseSlice::scalingTransformProcess(int c[4][4], int r[4][4], bool isLuam, bool isChromaCb)
 {
 
@@ -423,7 +424,7 @@ void ParseSlice::scalingTransformProcess(int c[4][4], int r[4][4], bool isLuam, 
 	getChromaQuantisationParameters(isChromaCb);
 	if (isLuam)
 	{
-		//ÁÁ¶ÈÉî¶È£¬Æ«ÒÆ
+		//äº®åº¦æ·±åº¦ï¼Œåç§»
 		bitDepth = sHeader->sps.BitDepthY;
 	}
 	else
@@ -432,13 +433,13 @@ void ParseSlice::scalingTransformProcess(int c[4][4], int r[4][4], bool isLuam, 
 	}
 
 	bool sMbFlag = false;
-	//Èç¹ûmb_type=si£¬»òÕßÎªspÌõ´øµÄÖ¡ÄÚÔ¤²âÄ£Ê½
+	//å¦‚æœmb_type=siï¼Œæˆ–è€…ä¸ºspæ¡å¸¦çš„å¸§å†…é¢„æµ‹æ¨¡å¼
 	if (macroblock[CurrMbAddr]->fix_slice_type == SLIECETYPE::H264_SLIECE_TYPE_SI || (macroblock[CurrMbAddr]->fix_slice_type == SLIECETYPE::H264_SLIECE_TYPE_SP && isInterMode(macroblock[CurrMbAddr]->mode)))
 	{
-		sMbFlag = 1;
+		sMbFlag = true;
 	}
 
-	//±äÁ¿qPµÄÍÆµ¼ÈçÏÂ
+	//å˜é‡qPçš„æ¨å¯¼å¦‚ä¸‹
 
 	int qP = 0;
 	if (isLuam && !sMbFlag)
@@ -447,7 +448,7 @@ void ParseSlice::scalingTransformProcess(int c[4][4], int r[4][4], bool isLuam, 
 	}
 	else if (isLuam && sMbFlag)
 	{
-		////QSY µÄÖµÓÃÓÚ½âÂë mb_type µÈSI µÄSI Ìõ´øµÄËùÓĞºê¿éÒÔ¼°Ô¤²âÄ£Ê½ÎªÖ¡¼äµÄSP Ìõ´øµÄËùÓĞºê¿é¡£
+		////QSY çš„å€¼ç”¨äºè§£ç  mb_type ç­‰SI çš„SI æ¡å¸¦çš„æ‰€æœ‰å®å—ä»¥åŠé¢„æµ‹æ¨¡å¼ä¸ºå¸§é—´çš„SP æ¡å¸¦çš„æ‰€æœ‰å®å—ã€‚
 		qP = sHeader->QSY;
 	}
 	else if (!isLuam && !sMbFlag)
@@ -461,44 +462,55 @@ void ParseSlice::scalingTransformProcess(int c[4][4], int r[4][4], bool isLuam, 
 
 
 
-	//Ëõ·Å¹ı³Ì
-	if (sHeader->sps.qpprime_y_zero_transform_bypass_flag && macroblock[CurrMbAddr]->QP1Y == 0)
+	//ç¼©æ”¾è¿‡ç¨‹
+	if (macroblock[CurrMbAddr]->TransformBypassModeFlag)
 	{
 		memcpy(r, c, sizeof(int) * 16);
 	}
 	else
 	{
-		//8.5.12.1 Scaling process for residual 4x4 blocks
-		int d[4][4] = { 0 };
+		//8.5.12.1 Scaling process for residual 4x4 blocks é‡åŒ–æ“ä½œ
 
-		//for (size_t i = 0; i <= 3; i++)
-		//{
-		//	for (size_t j = 0; j <= 3; j++)
-		//	{
-		//		if (i == 0 && j == 0
-		//			&& ((isLuam && macroblock[CurrMbAddr]->mode == H264_MB_PART_PRED_MODE::Intra_16x16) || !isLuam)
-		//			)
-		//		{
-		//			d[0][0] = c[0][0];
-		//		}
-		//		else
-		//		{
-		//			if (qP >= 24)
-		//			{
-		//				d[i][j] = (c[i][j] * LevelScale4x4[qP % 6][i][j]) << (qP / 6 - 4);
-		//			}
-		//			else //if (qP < 24)
-		//			{
-		//				d[i][j] = (c[i][j] * LevelScale4x4[qP % 6][i][j] + h264_power2(3 - qP / 6)) >> (4 - qP / 6);
-		//			}
-		//		}
-		//	}
-		//}
+		//é‡åŒ–æ˜¯æŠŠè¿ç»­çš„ä¿¡å·æ¯éš”ä¸€æ®µå–ä¸€ä¸ªç‚¹ï¼Œè¿™æ ·å˜æˆç¦»æ•£çš„äº†ï¼Œæ‰èƒ½åœ¨è®¡ç®—æœºé‡Œå­˜å‚¨ï¼Œ
+		//åé‡åŒ–æŠŠç¦»æ•£çš„æ•°æ®å˜æˆè¿ç»­çš„ï¼Œè¿™ä¸ªè·ç¦»å–å¤šé•¿ï¼Œä¸è‡³äºå¤±çœŸï¼Œå¯ä»¥å‚è€ƒé¦™å†œé‡‡æ ·å®šå¾‹
+		int d[4][4] = { 0 };
+		for (size_t i = 0; i < 4; i++)
+		{
+			for (size_t j = 0; j < 4; j++)
+			{
+				if (i == 0 && j == 0
+					&& ((isLuam && macroblock[CurrMbAddr]->mode == H264_MB_PART_PRED_MODE::Intra_16x16) || !isLuam)
+					)
+				{
+					d[0][0] = c[0][0];
+				}
+				else
+				{
+					//é‡åŒ–å‚æ•°QPæ˜¯é‡åŒ–æ­¥é•¿Qstepçš„åºå·ã€‚
+					//å¯¹äºäº®åº¦ï¼ˆLumaï¼‰ç¼–ç è€Œè¨€ï¼Œé‡åŒ–æ­¥é•¿Qstepå…±æœ‰52ä¸ªå€¼ï¼ŒQPå–å€¼0~51ï¼Œå¯¹äºè‰²åº¦ï¼ˆChromaï¼‰ç¼–ç ï¼ŒQçš„å–å€¼0~39ã€‚
+
+					//FQ Â· Qstep
+					if (qP >= 24)
+					{
+						//è¿™é‡Œ-4æ˜¯å› ä¸ºåé‡åŒ–ç³»æ•°æ¨å¯¼è¿‡ç¨‹é‚£é‡Œå¤šä¹˜ä»¥äº†16,(2çš„å››æ¬¡æ–¹æ˜¯16ï¼Œæ‰€ä»¥-4)
+						d[i][j] = (c[i][j] * LevelScale4x4[qP % 6][i][j]) << (qP / 6 - 4);
+					}
+					else //if (qP < 24)
+					{
+						d[i][j] = (c[i][j] * LevelScale4x4[qP % 6][i][j] + static_cast<int>(pow(2, 3 - qP / 6))) >> (4 - qP / 6);
+					}
+				}
+			}
+		}
+
+		cout << 1 << endl;
+
+		//d[i][j]çš„èŒƒå›´åº”è¯¥åœ¨âˆ’2(7 + bitDepth) å’Œ2(7 + bitDepth) âˆ’ 1
 	}
 
 
 }
-//É«¶ÈÁ¿»¯²ÎÊıºÍËõ·Å¹¦ÄÜµÄÍÆµ¼¹ı³Ì
+//è‰²åº¦é‡åŒ–å‚æ•°å’Œç¼©æ”¾åŠŸèƒ½çš„æ¨å¯¼è¿‡ç¨‹
 void ParseSlice::getChromaQuantisationParameters(bool isChromaCb)
 {
 	//CbCr
@@ -507,14 +519,14 @@ void ParseSlice::getChromaQuantisationParameters(bool isChromaCb)
 
 	if (isChromaCb)
 	{
-		//¼ÆËãÉ«¶ÈÁ¿»¯²ÎÊıµÄÆ«ÒÆÁ¿Öµ
+		//è®¡ç®—è‰²åº¦é‡åŒ–å‚æ•°çš„åç§»é‡å€¼
 		qPOffset = sHeader->pps.chroma_qp_index_offset;
 	}
 	else
 	{
 		qPOffset = sHeader->pps.second_chroma_qp_index_offset;
 	}
-	//Ã¿¸öÉ«¶È·ÖÁ¿µÄqPI ÖµÍ¨¹ıÏÂÊö·½Ê½»ñµÃ  //QpBdOffsetC É«¶ÈÆ«ÒÆ
+	//æ¯ä¸ªè‰²åº¦åˆ†é‡çš„qPI å€¼é€šè¿‡ä¸‹è¿°æ–¹å¼è·å¾—  //QpBdOffsetC è‰²åº¦åç§»
 	int qPI = Clip3(-(int)sHeader->sps.QpBdOffsetC, 51, macroblock[CurrMbAddr]->QPY + qPOffset);
 
 
@@ -541,7 +553,7 @@ void ParseSlice::getChromaQuantisationParameters(bool isChromaCb)
 
 	if ((SLIECETYPE)sHeader->slice_type == SLIECETYPE::H264_SLIECE_TYPE_SP || (SLIECETYPE)sHeader->slice_type == SLIECETYPE::H264_SLIECE_TYPE_SI)
 	{
-		//ÓÃQSY ´úÌæ QPY£¬QSC ´úÌæ QPC
+		//ç”¨QSY ä»£æ›¿ QPYï¼ŒQSC ä»£æ›¿ QPC
 		macroblock[CurrMbAddr]->QSY = macroblock[CurrMbAddr]->QPY;
 		macroblock[CurrMbAddr]->QSC = macroblock[CurrMbAddr]->QPC;
 	}
@@ -561,30 +573,30 @@ void ParseSlice::getChromaQuantisationParameters(bool isChromaCb)
 
 
 
-//¾­¹ı´óÁ¿ÑĞ¾¿£¬È¨ºâ¸´ÔÓ¶ÈºÍÑ¹ËõĞ§ÂÊÖ®ºó·¢ÏÖ£¬HEVCµÄ±ä»»ºËÓ¦µ±Âú×ãÈçÏÂÌõ¼ş£º
-//1.±ä»»ºËÖĞµÄÏµÊı¶¼ÄÜÓÃ8bit±íÊ¾£¨°üÀ¨·ûºÅÎ»£©£»2.±ä»»ºËµÄµÚÒ»¸ö»ù´¡ÏòÁ¿Ôª£¨µÚÒ»¸öĞĞÏòÁ¿£©Ó¦µ±¶¼µÈÓÚ64¡£
-//»ùÓÚÒÔÉÏÁ½¸öÇ°Ìá£¬HEVCÖĞ¶ÔDCT±ä»»ºË½øĞĞÁËËõ·Å£º¶ÔÃ¿¸ö±ä»»ºËÖĞµÄÏµÊı×óÒÆ 6 + log2(N) / 2 bit²¢È¡Õû£¬
-//×îºóÔÙ¶Ô¸ö±ğÏµÊı½øĞĞÒ»¶¨µÄµ÷ÕûÖ®ºó£¨µ÷ÕûµÄÔ­ÔòÔÚÓÚ£ºÊ¹µÃµ÷ÕûºóµÄ±ä»»ºËÂú×ãÉÏ²¿·ÖÌáµ½µÄÔ­Ôò4 - 6£¬²¢ÔÚÔ­Ôò1 - 3Ö®¼äÕÒµ½Ò»¸ö×îºÃµÄÆ½ºâµã£©£¬µÃµ½²»Í¬³ß´ç¿éµÄ±ä»»ºË¡£
-//¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª
-//Ô­ÎÄÁ´½Ó£ºhttps ://blog.csdn.net/ftlisdcr/article/details/54345151
-//Ëõ·Åº¯ÊıµÄÍÆµ¼¹ı³Ì
+//ç»è¿‡å¤§é‡ç ”ç©¶ï¼Œæƒè¡¡å¤æ‚åº¦å’Œå‹ç¼©æ•ˆç‡ä¹‹åå‘ç°ï¼ŒHEVCçš„å˜æ¢æ ¸åº”å½“æ»¡è¶³å¦‚ä¸‹æ¡ä»¶ï¼š
+//1.å˜æ¢æ ¸ä¸­çš„ç³»æ•°éƒ½èƒ½ç”¨8bitè¡¨ç¤ºï¼ˆåŒ…æ‹¬ç¬¦å·ä½ï¼‰ï¼›2.å˜æ¢æ ¸çš„ç¬¬ä¸€ä¸ªåŸºç¡€å‘é‡å…ƒï¼ˆç¬¬ä¸€ä¸ªè¡Œå‘é‡ï¼‰åº”å½“éƒ½ç­‰äº64ã€‚
+//åŸºäºä»¥ä¸Šä¸¤ä¸ªå‰æï¼ŒHEVCä¸­å¯¹DCTå˜æ¢æ ¸è¿›è¡Œäº†ç¼©æ”¾ï¼šå¯¹æ¯ä¸ªå˜æ¢æ ¸ä¸­çš„ç³»æ•°å·¦ç§» 6 + log2(N) / 2 bitå¹¶å–æ•´ï¼Œ
+//æœ€åå†å¯¹ä¸ªåˆ«ç³»æ•°è¿›è¡Œä¸€å®šçš„è°ƒæ•´ä¹‹åï¼ˆè°ƒæ•´çš„åŸåˆ™åœ¨äºï¼šä½¿å¾—è°ƒæ•´åçš„å˜æ¢æ ¸æ»¡è¶³ä¸Šéƒ¨åˆ†æåˆ°çš„åŸåˆ™4 - 6ï¼Œå¹¶åœ¨åŸåˆ™1 - 3ä¹‹é—´æ‰¾åˆ°ä¸€ä¸ªæœ€å¥½çš„å¹³è¡¡ç‚¹ï¼‰ï¼Œå¾—åˆ°ä¸åŒå°ºå¯¸å—çš„å˜æ¢æ ¸ã€‚
+//â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”
+//åŸæ–‡é“¾æ¥ï¼šhttps ://blog.csdn.net/ftlisdcr/article/details/54345151
+//åé‡åŒ–ç³»æ•°æ¨å¯¼è¿‡ç¨‹
 void ParseSlice::scaling(bool isLuam, bool isChromaCb)
 {
 
 
-	//±äÁ¿mbIsInterFlagµÄÅÉÉú·½·¨ÈçÏÂ
+	//å˜é‡mbIsInterFlagçš„æ´¾ç”Ÿæ–¹æ³•å¦‚ä¸‹
 	bool mbIsInterFlag = false;
-	//Ö¡¼ä
+	//å¸§é—´
 	if (isInterframe(macroblock[CurrMbAddr]->mode))
 	{
 		mbIsInterFlag = true;
 	}
-	//Í¨¹ıÏÂÊö·½Ê½µÃµ½±äÁ¿iYCbCr
+	//é€šè¿‡ä¸‹è¿°æ–¹å¼å¾—åˆ°å˜é‡iYCbCr
 	int iYCbCr = 0;
-	//separate_colour_plane_flag=1 ·Ö¿ª±àÂë
+	//separate_colour_plane_flag=1 åˆ†å¼€ç¼–ç 
 	if (sHeader->sps.separate_colour_plane_flag)
 	{
-		//colour_plane_idµÈÓÚ0¡¢1ºÍ2·Ö±ğ¶ÔÓ¦ÓÚY¡¢CbºÍCrÆ½Ãæ¡£
+		//colour_plane_idç­‰äº0ã€1å’Œ2åˆ†åˆ«å¯¹åº”äºYã€Cbå’ŒCrå¹³é¢ã€‚
 		iYCbCr = sHeader->colour_plane_id;
 	}
 	else
@@ -604,8 +616,8 @@ void ParseSlice::scaling(bool isLuam, bool isChromaCb)
 	}
 
 	int weightScale4x4[4][4] = { 0 };
-	//È¡ÄÄÒ»¸öscalinglist,ÔÚBP/MP/EPÖĞ£¬weightScale4x4ÊÇÈ«Îª16µÄ4x4¾ØÕó
-	//ÊÇ·ñÊÇÖ¡¼ä»¹ÊÇÖ¡ÄÚ£¬È¡¶ÔÓ¦Á¿»¯Ëõ·Å¾ØÕó  <3=Ö¡ÄÚ£¬>3<=6¶ÔÓ¦µÄÖ¡¼ä   mbIsInterFlag £¿3:0
+	//å–å“ªä¸€ä¸ªscalinglist,åœ¨BP/MP/EPä¸­ï¼ŒweightScale4x4æ˜¯å…¨ä¸º16çš„4x4çŸ©é˜µ
+	//æ˜¯å¦æ˜¯å¸§é—´è¿˜æ˜¯å¸§å†…ï¼Œå–å¯¹åº”é‡åŒ–ç¼©æ”¾çŸ©é˜µ  <3=å¸§å†…ï¼Œ>3<=6å¯¹åº”çš„å¸§é—´   mbIsInterFlag ï¼Ÿ3:0
 	inverseScanner4x4Process(sHeader->ScalingList4x4[iYCbCr + ((mbIsInterFlag) ? 3 : 0)], weightScale4x4);
 
 	//LevelScale4x4( m, i, j ) = weightScale4x4( i, j ) * normAdjust4x4( m, i, j )
@@ -645,7 +657,7 @@ void ParseSlice::scaling(bool isLuam, bool isChromaCb)
 
 
 	int weightScale8x8[8][8] = { 0 };
-	//ÊÇ·ñÊÇÖ¡¼ä»¹ÊÇÖ¡ÄÚ£¬È¡¶ÔÓ¦Á¿»¯Ëõ·Å¾ØÕó  0=Ö¡ÄÚ£¬1=¶ÔÓ¦µÄÖ¡¼ä   mbIsInterFlag
+	//æ˜¯å¦æ˜¯å¸§é—´è¿˜æ˜¯å¸§å†…ï¼Œå–å¯¹åº”é‡åŒ–ç¼©æ”¾çŸ©é˜µ  0=å¸§å†…ï¼Œ1=å¯¹åº”çš„å¸§é—´   mbIsInterFlag
 	inverseScanner8x8Process(sHeader->ScalingList8x8[2 * iYCbCr + mbIsInterFlag], weightScale8x8);
 
 
