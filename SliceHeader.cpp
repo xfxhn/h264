@@ -73,7 +73,6 @@ SliceHeader::SliceHeader(ParseNalu& nalu) :nalu(nalu)
 	syntax_element_categories = 0;
 	slice_type_fixed = 0;
 	mb_cnt = 0;
-	QPY_prev = 0;
 	SliceQPY = 0;
 	MbaffFrameFlag = 0;
 	PicHeightInMbs = 0;

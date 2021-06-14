@@ -448,7 +448,7 @@ void ParseSlice::scalingTransformProcess(int c[4][4], int r[4][4], bool isLuam, 
 	}
 	else if (isLuam && sMbFlag)
 	{
-		////QSY 的值用于解码 mb_type 等SI 的SI 条带的所有宏块以及预测模式为帧间的SP 条带的所有宏块。
+		////QSY 的值用于解码 mb_type 等SI 的SI条带的所有宏块以及预测模式为帧间的SP条带的所有宏块。
 		qP = sHeader->QSY;
 	}
 	else if (!isLuam && !sMbFlag)
@@ -492,7 +492,9 @@ void ParseSlice::scalingTransformProcess(int c[4][4], int r[4][4], bool isLuam, 
 					//FQ · Qstep
 					if (qP >= 24)
 					{
+						//这里通过qp查表的方式获得qstep
 						//这里-4是因为反量化系数推导过程那里多乘以了16,(2的四次方是16，所以-4)
+						//这里qP / 6是计算有几倍，因为qp每增加6 qstep增加一倍，所以左移qp / 6
 						d[i][j] = (c[i][j] * LevelScale4x4[qP % 6][i][j]) << (qP / 6 - 4);
 					}
 					else //if (qP < 24)
@@ -503,9 +505,46 @@ void ParseSlice::scalingTransformProcess(int c[4][4], int r[4][4], bool isLuam, 
 			}
 		}
 
-		cout << 1 << endl;
-
 		//d[i][j]的范围应该在−2(7 + bitDepth) 和2(7 + bitDepth) − 1
+
+		//dct变换
+		int f[4][4] = { 0 };
+		int h[4][4] = { 0 };
+		//1 维反变换将缩放变换系数的每行（水平的）进行变换。
+		for (size_t i = 0; i < 4; i++)
+		{
+			int ei0 = d[i][0] + d[i][2];
+			int ei1 = d[i][0] - d[i][2];
+			int ei2 = (d[i][1] >> 1) - d[i][3];
+			int ei3 = d[i][1] + (d[i][3] >> 1);
+
+			f[i][0] = ei0 + ei3;
+			f[i][1] = ei1 + ei2;
+			f[i][2] = ei1 - ei2;
+			f[i][3] = ei0 - ei3;
+		}
+
+		//1 维反变换对得到的矩阵的每列（纵向）进行变换。
+		for (size_t j = 0; j <= 3; j++)
+		{
+			int g0j = f[0][j] + f[2][j];
+			int g1j = f[0][j] - f[2][j];
+			int g2j = (f[1][j] >> 1) - f[3][j];
+			int g3j = f[1][j] + (f[3][j] >> 1);
+
+			h[0][j] = g0j + g3j;
+			h[1][j] = g1j + g2j;
+			h[2][j] = g1j - g2j;
+			h[3][j] = g0j - g3j;
+		}
+
+		for (size_t i = 0; i < 4; i++)
+		{
+			for (size_t j = 0; j < 4; j++)
+			{
+				r[i][j] = (h[i][j] + 32) >> 6;
+			}
+		}
 	}
 
 
