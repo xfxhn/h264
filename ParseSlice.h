@@ -51,7 +51,7 @@ public:
 	void getChromaQuantisationParameters(bool isChromaCb);
 	void getIntra4x4PredMode(size_t luma4x4BlkIdx, bool isLuam);
 
-	void getMbAddrNAndLuma4x4BlkIdxN(size_t luma4x4BlkIdx, bool isLuam, int& mbAddrN, const int xN, const int yN, const int maxW, const int maxH, int& xW, int& yW);
+	void getMbAddrNAndLuma4x4BlkIdxN(bool isLuam, int& mbAddrN, const int xN, const int yN, const int maxW, const int maxH, int& xW, int& yW);
 
 	void scaling(bool isLuam, bool isChromaCb);
 };

@@ -81,6 +81,60 @@ void ParseSlice::Intra_4x4_prediction(size_t luma4x4BlkIdx, bool isLuam)
 
 
 
+	//相对4*4块左上角像素块的位置，13个参考像素x和y的坐标
+	//参考文档https://blog.csdn.net/shaqoneal/article/details/78820128
+	int referenceCoordinateX[13] = { -1, -1, -1, -1, -1, 0,1,2,3,4,5,6,7 };
+	int referenceCoordinateY[13] = { -1,0,1,2,3,-1,-1, -1, -1, -1, -1, -1 , -1 };
+
+
+	int xO = InverseRasterScan(luma4x4BlkIdx / 4, 8, 8, 16, 0) + InverseRasterScan(luma4x4BlkIdx % 4, 4, 4, 8, 0);
+	int yO = InverseRasterScan(luma4x4BlkIdx / 4, 8, 8, 16, 1) + InverseRasterScan(luma4x4BlkIdx % 4, 4, 4, 8, 1);
+	//获取帧内预测参考像素值，有13个值
+	int p[13] = { 0 };
+
+	for (size_t i = 0; i < 13; i++)
+	{
+		int x = referenceCoordinateX[i];
+		int y = referenceCoordinateY[i];
+		int xN = xO + x;
+		int yN = yO + y;
+
+		int maxW = 0;
+		int maxH = 0;
+		if (isLuam)
+		{
+			maxW = maxH = 16;
+		}
+		else
+		{
+			//色度块高度和宽度
+			maxH = sHeader->sps.MbHeightC;
+			maxW = sHeader->sps.MbWidthC;
+		}
+
+		int mbAddrN = NA;
+		int xW = NA;
+		int yW = NA;
+		int luma4x4BlkIdxN = 0;
+		getMbAddrNAndLuma4x4BlkIdxN(isLuam, mbAddrN, xN, yN, maxW, maxH, xW, yW);
+
+		if (mbAddrN != NA)
+		{
+			//参考像素所处宏块的子块索引
+			luma4x4BlkIdxN = 8 * (yW / 8) + 4 * (xW / 8) + 2 * ((yW % 8) / 4) + ((xW % 8) / 4);
+		}
+
+		if (mbAddrN == NA
+			|| (isInterframe(macroblock[mbAddrN]->mode) && sHeader->pps.constrained_intra_pred_flag)
+			|| (macroblock[CurrMbAddr]->fix_slice_type == SLIECETYPE::H264_SLIECE_TYPE_SI && sHeader->pps.constrained_intra_pred_flag)
+			|| (x > 3) && (luma4x4BlkIdx == 3 || luma4x4BlkIdx == 11)
+			)
+		{
+
+		}
+	}
+
+
 }
 //Intra4x4PredMode的推导过程
 void ParseSlice::getIntra4x4PredMode(size_t luma4x4BlkIdx, bool isLuam)
@@ -118,18 +172,18 @@ void ParseSlice::getIntra4x4PredMode(size_t luma4x4BlkIdx, bool isLuam)
 
 	//亮度位置的差分值 表6-2（ xD, yD ）
 	//亮度位置（ xN, yN)
-	getMbAddrNAndLuma4x4BlkIdxN(luma4x4BlkIdx, isLuam, mbAddrA, x + (-1), y + 0, maxW, maxH, xW, yW);
+	getMbAddrNAndLuma4x4BlkIdxN(isLuam, mbAddrA, x + (-1), y + 0, maxW, maxH, xW, yW);
 
 	if (mbAddrA != NA)
 	{
-		//左侧宏块索引
+		//左侧宏块子块索引
 		luma4x4BlkIdxA = 8 * (yW / 8) + 4 * (xW / 8) + 2 * ((yW % 8) / 4) + ((xW % 8) / 4);
 	}
 
-	getMbAddrNAndLuma4x4BlkIdxN(luma4x4BlkIdx, isLuam, mbAddrB, x + 0, y + (-1), maxW, maxH, xW, yW);
+	getMbAddrNAndLuma4x4BlkIdxN(isLuam, mbAddrB, x + 0, y + (-1), maxW, maxH, xW, yW);
 	if (mbAddrB != NA)
 	{
-		//上侧宏块索引
+		//上侧宏块子块索引
 		luma4x4BlkIdxB = 8 * (yW / 8) + 4 * (xW / 8) + 2 * ((yW % 8) / 4) + ((xW % 8) / 4);
 	}
 
@@ -212,7 +266,7 @@ void ParseSlice::getIntra4x4PredMode(size_t luma4x4BlkIdx, bool isLuam)
 }
 //mbAddrN 和luma4x4BlkIdxN（N 等于A or B）推导如下
 void ParseSlice::getMbAddrNAndLuma4x4BlkIdxN(
-	size_t luma4x4BlkIdx, bool isLuam, int& mbAddrN, const int xN, const int yN, const int maxW, const int maxH, int& xW, int& yW
+	bool isLuam, int& mbAddrN, const int xN, const int yN, const int maxW, const int maxH, int& xW, int& yW
 )
 {
 	if (xN < 0 && yN < 0)
