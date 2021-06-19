@@ -64,6 +64,7 @@ ParseSPS::ParseSPS()
 	memset(ScalingList4x4, 0, sizeof(int32_t) * 6 * 16);
 	memset(ScalingList8x8, 0, sizeof(int32_t) * 6 * 64);
 	PicWidthInMbs = 0;
+	PicWidthInSamplesL = 0;
 	PicHeightInMapUnits = 0;
 	PicSizeInMapUnits = 0;
 	ChromaArrayType = 0;
@@ -317,6 +318,8 @@ bool ParseSPS::seq_parameter_set_data(BitStream& bs)
 
 
 	PicWidthInMbs = pic_width_in_mbs_minus1 + 1;
+	//亮度分量的图像宽度
+	PicWidthInSamplesL = PicWidthInMbs * 16;
 	PicHeightInMapUnits = pic_height_in_map_units_minus1 + 1;
 	//总共有多少宏块
 	PicSizeInMapUnits = PicWidthInMbs * PicHeightInMapUnits;

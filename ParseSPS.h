@@ -85,6 +85,7 @@ public:
 
 
 	int32_t     PicWidthInMbs; // PicWidthInMbs = pic_width_in_mbs_minus1 + 1;
+	uint32_t PicWidthInSamplesL;
 	int32_t     FrameHeightInMbs; //FrameHeightInMbs = ( 2 - frame_mbs_only_flag ) * PicHeightInMapUnits;
 	int32_t     PicHeightInMapUnits; //PicHeightInMapUnits = pic_height_in_map_units_minus1 + 1;
 	int32_t     PicSizeInMapUnits; //PicSizeInMapUnits = PicWidthInMbs * PicHeightInMapUnits;
