@@ -11,6 +11,8 @@ ParseSlice::ParseSlice(ParseNalu& nalu) :nalu(nalu)
 	mbY = 0;
 	this->sHeader = nullptr;
 	macroblock = nullptr;
+	lumaData = nullptr;
+
 	CurrMbAddr = 0;
 }
 
@@ -21,13 +23,7 @@ bool ParseSlice::parse(BitStream& bs, const ParsePPS* ppsCache, const ParseSPS* 
 	this->sHeader = new SliceHeader(nalu);
 	sHeader->slice_header(bs, ppsCache, spsCache);
 
-
-	////总共多少字节
-	//size_t size = bs.size;
-	////读取到第几bit位
-	//size_t bitOffset = (8 - bs.bitsLeft);
-	////读取到第几字节
-	//uint8_t* data = bs.currentPtr;
+	lumaData = new uint8_t[sHeader->sps.PicWidthInSamplesL * sHeader->sps.PicHeightInSamplesL];
 
 
 
@@ -67,6 +63,13 @@ ParseSlice::~ParseSlice()
 	if (sHeader)
 	{
 		delete sHeader;
+		sHeader = nullptr;
+	}
+
+	if (lumaData)
+	{
+		delete lumaData;
+		lumaData = nullptr;
 	}
 
 }
@@ -77,7 +80,6 @@ void ParseSlice::Intra_4x4_prediction(size_t luma4x4BlkIdx, bool isLuam)
 	getIntra4x4PredMode(luma4x4BlkIdx, isLuam);
 
 	int Intra4x4PredMode = macroblock[CurrMbAddr]->Intra4x4PredMode[luma4x4BlkIdx];
-	cout << "Intra4x4PredMode" << Intra4x4PredMode << endl;
 
 
 
@@ -85,23 +87,20 @@ void ParseSlice::Intra_4x4_prediction(size_t luma4x4BlkIdx, bool isLuam)
 	//参考文档https://blog.csdn.net/shaqoneal/article/details/78820128
 
 
-	/*int referenceCoordinateX[13] = { -1, -1, -1, -1, -1,  0,  1,  2,  3,  4,  5,  6,  7 };
-	int referenceCoordinateY[13] = { -1,  0,  1,  2,  3, -1, -1, -1, -1, -1, -1, -1, -1 };*/
-
 	int referenceCoordinateX[13] = { -1, -1, -1, -1, -1,  0,  1,  2,  3,  4,  5,  6,  7 };
-	int referenceCoordinateY[13] = { 3,  2,  1,  0, -1,   1,  -1, -1, -1, -1, -1, -1, -1 };
+	int referenceCoordinateY[13] = { -1,  0,  1,  2,  3, -1, -1, -1, -1, -1, -1, -1, -1 };
+
+	/*int referenceCoordinateX[13] = { -1, -1, -1, -1, -1,  0,  1,  2,  3,  4,  5,  6,  7 };
+	int referenceCoordinateY[13] = { 3,  2,  1,  0, -1,   1,  -1, -1, -1, -1, -1, -1, -1 };*/
 
 	//获取宏块所在相对左上角像素点的x坐标和y坐标
 	int xO = InverseRasterScan(luma4x4BlkIdx / 4, 8, 8, 16, 0) + InverseRasterScan(luma4x4BlkIdx % 4, 4, 4, 8, 0);
 	int yO = InverseRasterScan(luma4x4BlkIdx / 4, 8, 8, 16, 1) + InverseRasterScan(luma4x4BlkIdx % 4, 4, 4, 8, 1);
 	//存储相对4*4子块左上角像素点13个参考样点值，坐标对应值
-	//这里取45是为了让对应的坐标取到相对应的值，而不会重复
-	int p[13];
-
-
-	memset(p, -1, sizeof(int) * 13);
-
-
+	//这里取最小45是为了让对应的坐标取到相对应的值，而不会重复
+	int samples[45];
+	memset(samples, -1, sizeof(int) * 45);
+#define P(x, y)  samples[((y) + 1) * 9 + ((x) + 1)]
 
 	for (size_t i = 0; i < 13; i++)
 	{
@@ -141,7 +140,7 @@ void ParseSlice::Intra_4x4_prediction(size_t luma4x4BlkIdx, bool isLuam)
 			|| (x > 3) && (luma4x4BlkIdx == 3 || luma4x4BlkIdx == 11)
 			)
 		{
-			p[i] = -1;
+			P(x, y) = -1;
 		}
 		else
 		{
@@ -151,12 +150,12 @@ void ParseSlice::Intra_4x4_prediction(size_t luma4x4BlkIdx, bool isLuam)
 	}
 
 	//如果p(4,-1)、p(5,-1)、p(6,-1)、p(7,-1)都不可获得，那么p(4,-1)、p(5,-1)、p(6,-1)、p(7,-1)这4个无效点都将替换为p(3,-1)的值参与预测运算。
-	if (p[9] < 0 && p[10] < 0 && p[11] < 0 && p[12] < 0 && p[8] >= 0)
+	if (P(4, -1) < 0 && P(5, -1) < 0 && P(6, -1) < 0 && P(7, -1) < 0 && P(3, -1) >= 0)
 	{
-		p[9] = p[8];
-		p[10] = p[8];
-		p[11] = p[8];
-		p[12] = p[8];
+		P(4, -1) = P(3, -1);
+		P(5, -1) = P(3, -1);
+		P(6, -1) = P(3, -1);
+		P(7, -1) = P(3, -1);
 	}
 
 
@@ -164,15 +163,14 @@ void ParseSlice::Intra_4x4_prediction(size_t luma4x4BlkIdx, bool isLuam)
 
 	if (Intra4x4PredMode == Intra_4x4_Vertical)//垂直
 	{
-		if (p[5] > -1 && p[6] > -1 && p[7] > -1 && p[8] > -1)
+		if (P(0, -1) >= 0 && P(1, -1) >= 0 && P(2, -1) >= 0 && P(3, -1) >= 0)
 		{
 			for (size_t y = 0; y < 4; y++)
 			{
 				for (size_t x = 0; x < 4; x++)
 				{
 					//pred4x4L[ x, y ] = p[ x, −1 ], with x, y = 0..3
-
-					macroblock[CurrMbAddr]->lumaPredSamples[luma4x4BlkIdx][x][y] = p[5 + y];
+					macroblock[CurrMbAddr]->lumaPredSamples[luma4x4BlkIdx][x][y] = P(x, -1);
 				}
 			}
 
@@ -181,35 +179,38 @@ void ParseSlice::Intra_4x4_prediction(size_t luma4x4BlkIdx, bool isLuam)
 	}
 	else if (Intra4x4PredMode == Intra_4x4_Horizontal)//水平
 	{
-		for (size_t y = 0; y < 4; y++)
+		if (P(-1, 0) >= 0 && P(-1, 1) >= 0 && P(-1, 2) >= 0 && P(-1, 3) >= 0)
 		{
-			for (size_t x = 0; x < 4; x++)
+			for (size_t y = 0; y < 4; y++)
 			{
-				//pred4x4L[ x, y ] = p[ −1, y ], with x,y = 0..3
-				//因为这里是相对于4*4块左上角往下的，所以3-y
-				macroblock[CurrMbAddr]->lumaPredSamples[luma4x4BlkIdx][x][y] = p[3 - y];
+				for (size_t x = 0; x < 4; x++)
+				{
+					//pred4x4L[ x, y ] = p[ −1, y ], with x,y = 0..3
+					macroblock[CurrMbAddr]->lumaPredSamples[luma4x4BlkIdx][x][y] = P(-1, y);
+				}
 			}
 		}
+
 	}
 	else if (Intra4x4PredMode == Intra_4x4_DC)//均值
 	{
 		//四舍五入求平均数
 		int val = 0;
-		if (p[5] > -1 && p[6] > -1 && p[7] > -1 && p[8] > -1 && p[0] > -1 && p[1] > -1 && p[2] > -1 && p[3] > -1)
+		if (P(0, -1) >= 0 && P(1, -1) >= 0 && P(2, -1) >= 0 && P(3, -1) >= 0 && P(-1, 0) >= 0 && P(-1, 1) >= 0 && P(-1, 2) >= 0 && P(-1, 3) >= 0)
 		{
-			val = (p[0] + p[1] + p[2] + p[3] + p[5] + p[6] + p[7] + p[8] + 4) >> 3;
+			val = (P(0, -1) + P(1, -1) + P(2, -1) + P(3, -1) + P(-1, 0) + P(-1, 1) + P(-1, 2) + P(-1, 3) + 4) >> 3;
 		}
-		else if (p[0] > -1 && p[1] > -1 && p[2] > -1 && p[3] > -1)
+		else if ((P(0, -1) < 0 || P(1, -1) < 0 || P(2, -1) < 0 || P(3, -1) < 0) && (P(-1, 0) >= 0 && P(-1, 1) >= 0 && P(-1, 2) >= 0 && P(-1, 3) >= 0))
 		{
-			val = (p[0] + p[1] + p[2] + p[3] + 2) >> 2;
+			val = (P(-1, 0) + P(-1, 1) + P(-1, 2) + P(-1, 3) + 2) >> 2;
 		}
-		else if (p[5] > -1 && p[6] > -1 && p[7] > -1 && p[8] > -1)
+		else if ((P(0, -1) >= 0 && P(1, -1) >= 0 && P(2, -1) >= 0 && P(3, -1) >= 0) && (P(-1, 0) < 0 || P(-1, 1) < 0 || P(-1, 2) < 0 || P(-1, 3) < 0))
 		{
-			val = (p[5] + p[6] + p[7] + p[8] + 2) >> 2;
+			val = (P(0, -1) + P(1, -1) + P(2, -1) + P(3, -1) + 2) >> 2;
 		}
 		else
 		{
-			//一个亮度像素都是8个bit
+			//h264一个亮度像素都是8个bit
 			val = 1 << (sHeader->sps.BitDepthY - 1); //128 在h264
 		}
 
@@ -225,19 +226,20 @@ void ParseSlice::Intra_4x4_prediction(size_t luma4x4BlkIdx, bool isLuam)
 	}
 	else if (Intra4x4PredMode == Intra_4x4_Diagonal_Down_Left)
 	{
-		if (p[5] > -1 && p[6] > -1 && p[7] > -1 && p[8] > -1 && p[9] > -1 && p[10] > -1 && p[11] > -1 && p[12] > -1)
+		//加权预测
+		if (P(0, -1) >= 0 && P(1, -1) >= 0 && P(2, -1) >= 0 && P(3, -1) >= 0 && P(4, -1) >= 0 && P(5, -1) >= 0 && P(6, -1) >= 0 && P(7, -1) >= 0)
 		{
-			for (size_t x = 0; x < 4; x++)
+			for (size_t y = 0; y < 4; y++)
 			{
-				for (size_t y = 0; y < 4; y++)
+				for (size_t x = 0; x < 4; x++)
 				{
 					if (x == 3 && y == 3)
 					{
-						macroblock[CurrMbAddr]->lumaPredSamples[luma4x4BlkIdx][x][y] = (p[11] + 3 * p[12] + 2) >> 2; //pred4x4L[y * 4 + x]
+						macroblock[CurrMbAddr]->lumaPredSamples[luma4x4BlkIdx][x][y] = (P(6, -1) + 3 * P(7, -1) + 2) >> 2;
 					}
 					else
 					{
-						cSL(x, y) = (P(x + y, -1) + 2 * P(x + y + 1, -1) + P(x + y + 2, -1) + 2) >> 2; //pred4x4L[y * 4 + x]
+						macroblock[CurrMbAddr]->lumaPredSamples[luma4x4BlkIdx][x][y] = (P(x + y, -1) + 2 * P(x + y + 1, -1) + P(x + y + 2, -1) + 2) >> 2;
 					}
 				}
 			}
@@ -245,24 +247,140 @@ void ParseSlice::Intra_4x4_prediction(size_t luma4x4BlkIdx, bool isLuam)
 	}
 	else if (Intra4x4PredMode == Intra_4x4_Diagonal_Down_Right)
 	{
-
+		if (P(0, -1) >= 0 && P(1, -1) >= 0 && P(2, -1) >= 0 && P(3, -1) >= 0 && P(-1, -1) >= 0 && P(-1, 0) >= 0 && P(-1, 1) >= 0 && P(-1, 2) >= 0 && P(-1, 3) >= 0)
+		{
+			for (size_t y = 0; y <= 3; y++)
+			{
+				for (size_t x = 0; x <= 3; x++)
+				{
+					if (x > y)
+					{
+						macroblock[CurrMbAddr]->lumaPredSamples[luma4x4BlkIdx][x][y] = (P(x - y - 2, -1) + 2 * P(x - y - 1, -1) + P(x - y, -1) + 2) >> 2; //pred4x4L[y * 4 + x]
+					}
+					else if (x < y)
+					{
+						macroblock[CurrMbAddr]->lumaPredSamples[luma4x4BlkIdx][x][y] = (P(-1, y - x - 2) + 2 * P(-1, y - x - 1) + P(-1, y - x) + 2) >> 2; //pred4x4L[y * 4 + x]
+					}
+					else //if (x == y)
+					{
+						macroblock[CurrMbAddr]->lumaPredSamples[luma4x4BlkIdx][x][y] = (P(0, -1) + 2 * P(-1, -1) + P(-1, 0) + 2) >> 2; //pred4x4L[y * 4 + x]
+					}
+				}
+			}
+		}
 	}
 	else if (Intra4x4PredMode == Intra_4x4_Vertical_Right)
 	{
+		if (P(0, -1) >= 0 && P(1, -1) >= 0 && P(2, -1) >= 0 && P(3, -1) >= 0 && P(-1, -1) >= 0 && P(-1, 0) >= 0 && P(-1, 1) >= 0 && P(-1, 2) >= 0 && P(-1, 3) >= 0)
+		{
+			for (size_t y = 0; y <= 3; y++)
+			{
+				for (size_t x = 0; x <= 3; x++)
+				{
+					int zVR = 2 * x - y;
 
+					if (zVR == 0 || zVR == 2 || zVR == 4 || zVR == 6)
+					{
+						macroblock[CurrMbAddr]->lumaPredSamples[luma4x4BlkIdx][x][y] = (P(x - (y >> 1) - 1, -1) + P(x - (y >> 1), -1) + 1) >> 1;
+					}
+					else if (zVR == 1 || zVR == 3 || zVR == 5)
+					{
+						macroblock[CurrMbAddr]->lumaPredSamples[luma4x4BlkIdx][x][y] = (P(x - (y >> 1) - 2, -1) + 2 * P(x - (y >> 1) - 1, -1) + P(x - (y >> 1), -1) + 2) >> 2;
+					}
+					else if (zVR == -1)
+					{
+						macroblock[CurrMbAddr]->lumaPredSamples[luma4x4BlkIdx][x][y] = (P(-1, 0) + 2 * P(-1, -1) + P(0, -1) + 2) >> 2;
+					}
+					else //if (zVR == -2 || zVR == -3)
+					{
+						macroblock[CurrMbAddr]->lumaPredSamples[luma4x4BlkIdx][x][y] = (P(-1, y - 1) + 2 * P(-1, y - 2) + P(-1, y - 3) + 2) >> 2;
+					}
+				}
+			}
+		}
 	}
 	else if (Intra4x4PredMode == Intra_4x4_Horizontal_Down)
 	{
+		if (P(0, -1) >= 0 && P(1, -1) >= 0 && P(2, -1) >= 0 && P(3, -1) >= 0 && P(-1, -1) >= 0 && P(-1, 0) >= 0 && P(-1, 1) >= 0 && P(-1, 2) >= 0 && P(-1, 3) >= 0)
+		{
+			for (size_t y = 0; y <= 3; y++)
+			{
+				for (size_t x = 0; x <= 3; x++)
+				{
+					int zHD = 2 * y - x;
 
+					if (zHD == 0 || zHD == 2 || zHD == 4 || zHD == 6)
+					{
+						macroblock[CurrMbAddr]->lumaPredSamples[luma4x4BlkIdx][x][y] = (P(-1, y - (x >> 1) - 1) + P(-1, y - (x >> 1)) + 1) >> 1;
+					}
+					else if (zHD == 1 || zHD == 3 || zHD == 5)
+					{
+						macroblock[CurrMbAddr]->lumaPredSamples[luma4x4BlkIdx][x][y] = (P(-1, y - (x >> 1) - 2) + 2 * P(-1, y - (x >> 1) - 1) + P(-1, y - (x >> 1)) + 2) >> 2;
+					}
+					else if (zHD == -1)
+					{
+						macroblock[CurrMbAddr]->lumaPredSamples[luma4x4BlkIdx][x][y] = (P(-1, 0) + 2 * P(-1, -1) + P(0, -1) + 2) >> 2;
+					}
+					else //if (zHD == -2 || zHD == -3)
+					{
+						macroblock[CurrMbAddr]->lumaPredSamples[luma4x4BlkIdx][x][y] = (P(x - 1, -1) + 2 * P(x - 2, -1) + P(x - 3, -1) + 2) >> 2;
+					}
+				}
+			}
+		}
 	}
 	else if (Intra4x4PredMode == Intra_4x4_Vertical_Left)
 	{
-
+		if (P(0, -1) >= 0 && P(1, -1) >= 0 && P(2, -1) >= 0 && P(3, -1) >= 0 && P(4, -1) >= 0 && P(5, -1) >= 0 && P(6, -1) >= 0 && P(7, -1) >= 0)
+		{
+			for (size_t y = 0; y <= 3; y++)
+			{
+				for (size_t x = 0; x <= 3; x++)
+				{
+					if (y == 0 || y == 2)
+					{
+						macroblock[CurrMbAddr]->lumaPredSamples[luma4x4BlkIdx][x][y] = (P(x + (y >> 1), -1) + P(x + (y >> 1) + 1, -1) + 1) >> 1;
+					}
+					else //if (y == 1 || y == 3)
+					{
+						macroblock[CurrMbAddr]->lumaPredSamples[luma4x4BlkIdx][x][y] = (P(x + (y >> 1), -1) + 2 * P(x + (y >> 1) + 1, -1) + P(x + (y >> 1) + 2, -1) + 2) >> 2;
+					}
+				}
+			}
+		}
 	}
 	else if (Intra4x4PredMode == Intra_4x4_Horizontal_Up)
 	{
+		if (P(-1, 0) >= 0 && P(-1, 1) >= 0 && P(-1, 2) >= 0 && P(-1, 3) >= 0)
+		{
+			for (size_t y = 0; y <= 3; y++)
+			{
+				for (size_t x = 0; x <= 3; x++)
+				{
+					int zHU = x + 2 * y;
 
+					if (zHU == 0 || zHU == 2 || zHU == 4)
+					{
+						macroblock[CurrMbAddr]->lumaPredSamples[luma4x4BlkIdx][x][y] = (P(-1, y + (x >> 1)) + P(-1, y + (x >> 1) + 1) + 1) >> 1;
+					}
+					else if (zHU == 1 || zHU == 3)
+					{
+						macroblock[CurrMbAddr]->lumaPredSamples[luma4x4BlkIdx][x][y] = (P(-1, y + (x >> 1)) + 2 * P(-1, y + (x >> 1) + 1) + P(-1, y + (x >> 1) + 2) + 2) >> 2;
+					}
+					else if (zHU == 5)
+					{
+						macroblock[CurrMbAddr]->lumaPredSamples[luma4x4BlkIdx][x][y] = (P(-1, 2) + 3 * P(-1, 3) + 2) >> 2;
+					}
+					else //if (zHU > 5)
+					{
+						macroblock[CurrMbAddr]->lumaPredSamples[luma4x4BlkIdx][x][y] = P(-1, 3);
+					}
+				}
+			}
+		}
 	}
+
+#undef P;
 
 }
 //Intra4x4PredMode的推导过程
@@ -480,16 +598,26 @@ void ParseSlice::transformDecode4x4LuamResidualProcess()
 			scalingTransformProcess(c, r, true, false);
 
 			//计算当前亮度块左上角亮度样点距离当前宏块左上角亮度样点的相对位置
-			int x = InverseRasterScan(luma4x4BlkIdx / 4, 8, 8, 16, 0) + InverseRasterScan(luma4x4BlkIdx % 4, 4, 4, 8, 0);
-			int y = InverseRasterScan(luma4x4BlkIdx / 4, 8, 8, 16, 1) + InverseRasterScan(luma4x4BlkIdx % 4, 4, 4, 8, 1);
+			int xO = InverseRasterScan(luma4x4BlkIdx / 4, 8, 8, 16, 0) + InverseRasterScan(luma4x4BlkIdx % 4, 4, 4, 8, 0);
+			int yO = InverseRasterScan(luma4x4BlkIdx / 4, 8, 8, 16, 1) + InverseRasterScan(luma4x4BlkIdx % 4, 4, 4, 8, 1);
 			//对近似均匀分布的语法元素，在编码和解码时选择旁路（bypass）模式，可以免除上下文建模，提高编解码的速度。
 
 
 			//4*4预测过程
 			Intra_4x4_prediction(luma4x4BlkIdx, true);
 
+			int u[16] = { 0 };
+			for (size_t i = 0; i < 4; i++)
+			{
+				for (size_t j = 0; i < 4; j++)
+				{
+					//Clip1Y( x ) = Clip3( 0， ( 1 << BitDepthY ) − 1 ， x ) 
+					Clip3(0, (1 << sHeader->sps.BitDepthY) - 1, 2);
+				}
+			}
 
-			//环路滤波器过程
+			//环路滤波器之前的图像生成
+			Picture_construction_process_prior_to_deblocking_filter_process(u, "4*4", luma4x4BlkIdx, true);
 		}
 
 
@@ -784,6 +912,47 @@ void ParseSlice::getChromaQuantisationParameters(bool isChromaCb)
 
 
 
+
+void ParseSlice::Picture_construction_process_prior_to_deblocking_filter_process(int* u, const char* type, const size_t BlkIdx, const bool isLuam)
+{
+	int xP = InverseRasterScan(CurrMbAddr, 16, 16, sHeader->sps.PicWidthInSamplesL, 0);
+	int yP = InverseRasterScan(CurrMbAddr, 16, 16, sHeader->sps.PicWidthInSamplesL, 1);
+	int xO = 0;
+	int yO = 0;
+	if (isLuam)
+	{
+		int nE = 0;
+		if (type == "16*16")
+		{
+			xO = yO = 0;
+			nE = 16;
+		}
+		else if (type == "4*4")
+		{
+			xO = InverseRasterScan(BlkIdx / 4, 8, 8, 16, 0) + InverseRasterScan(BlkIdx % 4, 4, 4, 8, 0);
+			yO = InverseRasterScan(BlkIdx / 4, 8, 8, 16, 1) + InverseRasterScan(BlkIdx % 4, 4, 4, 8, 1);
+			nE = 4;
+		}
+		else
+		{
+			xO = InverseRasterScan(BlkIdx, 8, 8, 16, 0);
+			yO = InverseRasterScan(BlkIdx, 8, 8, 16, 1);
+			nE = 8;
+		}
+
+		//S′L[ xP + xO + j, yP + yO + i ] = uij    with i, j = 0..nE -  1
+		for (size_t i = 0; i < nE - 1; i++)
+		{
+			for (size_t j = 0; j < nE - 1; j++)
+			{
+
+			}
+		}
+	}
+
+
+
+}
 
 //经过大量研究，权衡复杂度和压缩效率之后发现，HEVC的变换核应当满足如下条件：
 //1.变换核中的系数都能用8bit表示（包括符号位）；2.变换核的第一个基础向量元（第一个行向量）应当都等于64。

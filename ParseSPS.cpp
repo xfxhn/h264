@@ -318,9 +318,12 @@ bool ParseSPS::seq_parameter_set_data(BitStream& bs)
 
 
 	PicWidthInMbs = pic_width_in_mbs_minus1 + 1;
+	PicHeightInMapUnits = pic_height_in_map_units_minus1 + 1;
 	//亮度分量的图像宽度
 	PicWidthInSamplesL = PicWidthInMbs * 16;
-	PicHeightInMapUnits = pic_height_in_map_units_minus1 + 1;
+	//亮度分量的图像高度
+	PicHeightInSamplesL = PicHeightInMapUnits * 16;
+
 	//总共有多少宏块
 	PicSizeInMapUnits = PicWidthInMbs * PicHeightInMapUnits;
 	//如果是场编码要*2

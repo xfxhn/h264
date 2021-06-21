@@ -27,6 +27,7 @@ public:
 
 	int LevelScale4x4[6][4][4];
 	int LevelScale8x8[6][8][8];
+	uint8_t* lumaData;//存储解码后图片的Y分量数据
 
 public:
 	ParseSlice(ParseNalu& nalu);
@@ -52,6 +53,9 @@ public:
 	void getIntra4x4PredMode(size_t luma4x4BlkIdx, bool isLuam);
 
 	void getMbAddrNAndLuma4x4BlkIdxN(bool isLuam, int& mbAddrN, const int xN, const int yN, const int maxW, const int maxH, int& xW, int& yW);
+
+
+	void Picture_construction_process_prior_to_deblocking_filter_process(int* u, const char* type, const size_t BlkIdx, const bool isLuam);
 
 	void scaling(bool isLuam, bool isChromaCb);
 };
