@@ -23,8 +23,14 @@ bool ParseSlice::parse(BitStream& bs, const ParsePPS* ppsCache, const ParseSPS* 
 	this->sHeader = new SliceHeader(nalu);
 	sHeader->slice_header(bs, ppsCache, spsCache);
 
-	lumaData = new uint8_t[sHeader->sps.PicWidthInSamplesL * sHeader->sps.PicHeightInSamplesL];
+	//lumaData = new uint8_t[sHeader->sps.PicWidthInSamplesL][sHeader->sps.PicHeightInSamplesL];
 
+
+	lumaData = new uint8_t * [sHeader->sps.PicWidthInSamplesL];
+	for (size_t i = 0; i < sHeader->sps.PicWidthInSamplesL; i++)
+	{
+		lumaData[i] = new uint8_t[sHeader->sps.PicHeightInSamplesL]();
+	}
 
 
 	this->macroblock = new Macroblock * [sHeader->PicSizeInMbs];
@@ -68,7 +74,15 @@ ParseSlice::~ParseSlice()
 
 	if (lumaData)
 	{
-		delete lumaData;
+		for (size_t i = 0; i < sHeader->sps.PicWidthInSamplesL; i++)
+		{
+			if (lumaData[i])
+			{
+				delete[] lumaData[i];
+				lumaData[i] = nullptr;
+			}
+		}
+		delete[] lumaData;
 		lumaData = nullptr;
 	}
 
@@ -144,8 +158,11 @@ void ParseSlice::Intra_4x4_prediction(size_t luma4x4BlkIdx, bool isLuam)
 		}
 		else
 		{
+			//mbAddrN宏块 左上角亮度样点的位置
 			int xM = InverseRasterScan(mbAddrN, 16, 16, sHeader->sps.PicWidthInSamplesL, 0);
 			int yM = InverseRasterScan(mbAddrN, 16, 16, sHeader->sps.PicWidthInSamplesL, 1);
+
+			P(x, y) = lumaData[xM + xW][yM + yW];
 		}
 	}
 
@@ -606,18 +623,30 @@ void ParseSlice::transformDecode4x4LuamResidualProcess()
 			//4*4预测过程
 			Intra_4x4_prediction(luma4x4BlkIdx, true);
 
+			macroblock[CurrMbAddr]->lumaPredSamples;
+
+			for (size_t x = 0; x < 4; x++)
+			{
+				for (size_t y = 0; y < 4; y++)
+				{
+					macroblock[CurrMbAddr]->predL[xO + x][yO + y] = macroblock[CurrMbAddr]->lumaPredSamples[luma4x4BlkIdx][x][y];
+				}
+			}
+			int a = 1;
+
+
 			int u[16] = { 0 };
 			for (size_t i = 0; i < 4; i++)
 			{
 				for (size_t j = 0; i < 4; j++)
 				{
 					//Clip1Y( x ) = Clip3( 0， ( 1 << BitDepthY ) − 1 ， x ) 
-					Clip3(0, (1 << sHeader->sps.BitDepthY) - 1, 2);
+					u[i * 4 + j] = Clip3(0, (1 << sHeader->sps.BitDepthY) - 1, macroblock[CurrMbAddr]->predL[xO + j][yO + i] + r[i][j]);
 				}
 			}
 
-			//环路滤波器之前的图像生成
-			Picture_construction_process_prior_to_deblocking_filter_process(u, "4*4", luma4x4BlkIdx, true);
+			////环路滤波器之前的图像生成
+			//Picture_construction_process_prior_to_deblocking_filter_process(u, "4*4", luma4x4BlkIdx, true);
 		}
 
 
@@ -915,13 +944,15 @@ void ParseSlice::getChromaQuantisationParameters(bool isChromaCb)
 
 void ParseSlice::Picture_construction_process_prior_to_deblocking_filter_process(int* u, const char* type, const size_t BlkIdx, const bool isLuam)
 {
+	//当前宏块 左上角亮度样点的位置
 	int xP = InverseRasterScan(CurrMbAddr, 16, 16, sHeader->sps.PicWidthInSamplesL, 0);
 	int yP = InverseRasterScan(CurrMbAddr, 16, 16, sHeader->sps.PicWidthInSamplesL, 1);
+
 	int xO = 0;
 	int yO = 0;
 	if (isLuam)
 	{
-		int nE = 0;
+		size_t nE = 0;
 		if (type == "16*16")
 		{
 			xO = yO = 0;
@@ -929,25 +960,31 @@ void ParseSlice::Picture_construction_process_prior_to_deblocking_filter_process
 		}
 		else if (type == "4*4")
 		{
+			//得到在宏块中的索引为luma4x4BlkIdx的4x4亮度块左上 角样点的位置。
 			xO = InverseRasterScan(BlkIdx / 4, 8, 8, 16, 0) + InverseRasterScan(BlkIdx % 4, 4, 4, 8, 0);
 			yO = InverseRasterScan(BlkIdx / 4, 8, 8, 16, 1) + InverseRasterScan(BlkIdx % 4, 4, 4, 8, 1);
 			nE = 4;
 		}
 		else
 		{
+			//得到在宏块中的索引为luma8x8BlkIdx的8x8亮度块左 上角样点的位置。
 			xO = InverseRasterScan(BlkIdx, 8, 8, 16, 0);
 			yO = InverseRasterScan(BlkIdx, 8, 8, 16, 1);
 			nE = 8;
 		}
 
 		//S′L[ xP + xO + j, yP + yO + i ] = uij    with i, j = 0..nE -  1
-		for (size_t i = 0; i < nE - 1; i++)
+		for (size_t i = 0; i < nE; i++)
 		{
-			for (size_t j = 0; j < nE - 1; j++)
+			for (size_t j = 0; j < nE; j++)
 			{
-
+				//lumaData[xP + xO + j + yP + yO + i] = u[i * nE + j];
 			}
 		}
+	}
+	else
+	{
+
 	}
 
 

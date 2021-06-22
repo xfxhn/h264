@@ -107,6 +107,8 @@ Macroblock::Macroblock(ParseSlice& slice) :sliceBase(slice)
 
 	memset(Intra4x4PredMode, 0, sizeof(uint8_t) * 16);
 
+	memset(predL, 0, sizeof(uint8_t) * 16 * 16);
+
 	intra_chroma_pred_mode = 0;
 }
 //slice type 五种类型

@@ -27,7 +27,7 @@ public:
 
 	int LevelScale4x4[6][4][4];
 	int LevelScale8x8[6][8][8];
-	uint8_t* lumaData;//存储解码后图片的Y分量数据
+	uint8_t** lumaData;//存储解码后图片的Y分量数据
 
 public:
 	ParseSlice(ParseNalu& nalu);
