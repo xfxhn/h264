@@ -452,7 +452,8 @@ H264_MB_PART_PRED_MODE Macroblock::MbPartPredMode(uint32_t mb_type, SLIECETYPE s
 			else {
 				mode = mb_type_slices_I[mb_type + 1].MbPartPredMode;
 				CodedBlockPatternLuma = mb_type_slices_I[mb_type + 1].CodedBlockPatternLuma;
-				CodedBlockPatternChroma = mb_type_slices_I[mb_type + 1].CodedBlockPatternChroma;;
+				CodedBlockPatternChroma = mb_type_slices_I[mb_type + 1].CodedBlockPatternChroma;
+				Intra16x16PredMode = mb_type_slices_I[mb_type + 1].Intra16x16PredMode;
 			}
 		}
 		else
@@ -594,9 +595,11 @@ bool Macroblock::residual(BitStream& bs, int startIdx, int endIdx)
 	//chroma_format_idc = 3	YUV 4 : 4 : 4
 
 	//CodedBlockPatternChroma 只会有0,1,2三个值
+	//解析色度
 	if (sHeader->sps.ChromaArrayType == 1 || sHeader->sps.ChromaArrayType == 2)
 	{
-		//2,  1		//422
+		//sps.SubWidthC=2,  sHeader->sps.SubHeightC=1		//422
+		//sps.SubWidthC=2,  sHeader->sps.SubHeightC=2		//420
 		int NumC8x8 = 4 / (sHeader->sps.SubWidthC * sHeader->sps.SubHeightC);
 		//420对应一个u，一个v
 		for (size_t iCbCr = 0; iCbCr < 2; iCbCr++)
@@ -677,7 +680,7 @@ int Macroblock::residual_luma(BitStream& bs, int i16x16DClevel[16], int i16x16AC
 	SliceHeader* sHeader = sliceBase.sHeader;
 	int TotalCoeff = 0;
 
-	//先解析16*16的DC
+	//先解析16*16的DC直流分量
 	if (startIdx == 0 && mode == H264_MB_PART_PRED_MODE::Intra_16x16)
 	{
 		if (isAe)
@@ -692,7 +695,7 @@ int Macroblock::residual_luma(BitStream& bs, int i16x16DClevel[16], int i16x16AC
 	//先循环外面四个8x8
 	for (size_t i8x8 = 0; i8x8 < 4; i8x8++)
 	{
-		//不是8x8解码或者cavlc
+		//不是8x8解码或者是cavlc
 		if (!transform_size_8x8_flag || !isAe)
 		{
 			//在循环里面四个4x4
@@ -711,7 +714,8 @@ int Macroblock::residual_luma(BitStream& bs, int i16x16DClevel[16], int i16x16AC
 						}
 						else
 						{
-							residual_block.residual_block_cavlc(bs, level4x4[BlkIdx], startIdx, endIdx, 16, TotalCoeff, RESIDUAL_LEVEL::Intra16x16ACLevel, i4x4, i8x8);
+							//解析16*16AC 交流分量 剩余的最多15个系数
+							residual_block.residual_block_cavlc(bs, i16x16AClevel[BlkIdx], max(0, startIdx - 1), endIdx - 1, 15, TotalCoeff, RESIDUAL_LEVEL::Intra16x16ACLevel, i4x4, i8x8);
 						}
 
 					}

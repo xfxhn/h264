@@ -115,14 +115,24 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice& Slice)
 			Slice.macroblock[Slice.CurrMbAddr]->macroblock_layer(bs);
 
 
-
+			bool isChromaCb = true;
 			if (Slice.macroblock[Slice.CurrMbAddr]->mode == H264_MB_PART_PRED_MODE::Intra_4x4)
 			{
 
 				Slice.transformDecode4x4LuamResidualProcess();
+
+				Slice.transformDecode4x4ChromaResidualProcess(isChromaCb);
+			}
+			else if (Slice.macroblock[Slice.CurrMbAddr]->mode == H264_MB_PART_PRED_MODE::Intra_16x16)
+			{
+
+
+				Slice.transformDecode16x16LuamResidualProcess();
 			}
 
 		}
+
+
 		if (!sHeader->pps.entropy_coding_mode_flag)
 		{
 			moreDataFlag = bs.more_rbsp_data();

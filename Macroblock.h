@@ -10,7 +10,7 @@ struct MB_TYPE_SLICES_I
 	H264_MB_TYPE			name;
 	bool					transform_size_8x8_flag;
 	H264_MB_PART_PRED_MODE  MbPartPredMode;
-	int32_t					Intra16x16PredMode;
+	uint8_t					Intra16x16PredMode;
 	int32_t					CodedBlockPatternChroma;
 	int32_t					CodedBlockPatternLuma;
 };
@@ -125,8 +125,10 @@ public:
 
 
 	uint8_t Intra4x4PredMode[16];//存储当前宏块的16个4x4子宏块预测模式的值，范围[0,8]
+	uint8_t Intra16x16PredMode;//存储当前宏块的1个16x16宏块预测模式的值，范围[0,4]
 
 	uint8_t lumaPredSamples[16][4][4]; //存储字块亮度预测样点值
+	uint8_t luma16x16PredSamples[16][16]; //存储16*16亮度块预测样点值
 
 	uint8_t predL[16][16];  //存储亮度预测样点值
 

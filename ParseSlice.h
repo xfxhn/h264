@@ -38,10 +38,14 @@ public:
 
 
 
-	void Intra_4x4_prediction(size_t luma4x4BlkIdx, bool isLuam);
+	
 
 
 	void transformDecode4x4LuamResidualProcess();
+	void transformDecode4x4ChromaResidualProcess(bool isChromaCb);
+
+	void transformDecode16x16LuamResidualProcess();
+
 
 	void inverseScanner4x4Process(int value[16], int c[4][4]);
 
@@ -58,5 +62,14 @@ public:
 	void Picture_construction_process_prior_to_deblocking_filter_process(int* u, const char* type, const size_t BlkIdx, const bool isLuam);
 
 	void scaling(bool isLuam, bool isChromaCb);
+
+private:
+	void transformDecodeChromaArrayTypeEqualTo3Process(bool isChromaCb);
+
+	void transformDecodeIntra_16x16DCProcess(int c[4][4], int dcY[4][4]);
+
+	void Intra_4x4_prediction(size_t luma4x4BlkIdx, bool isLuam);
+
+	void Intra_16x16_prediction(bool isLuam);
 };
 

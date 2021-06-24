@@ -66,12 +66,6 @@ ParseSlice::~ParseSlice()
 		delete[] macroblock;
 		macroblock = nullptr;
 	}
-	if (sHeader)
-	{
-		delete sHeader;
-		sHeader = nullptr;
-	}
-
 	if (lumaData)
 	{
 		for (size_t i = 0; i < sHeader->sps.PicWidthInSamplesL; i++)
@@ -85,6 +79,14 @@ ParseSlice::~ParseSlice()
 		delete[] lumaData;
 		lumaData = nullptr;
 	}
+
+	if (sHeader)
+	{
+		delete sHeader;
+		sHeader = nullptr;
+	}
+
+
 
 }
 
@@ -140,13 +142,14 @@ void ParseSlice::Intra_4x4_prediction(size_t luma4x4BlkIdx, bool isLuam)
 		int xW = NA;
 		int yW = NA;
 		int luma4x4BlkIdxN = 0;
+		//xW, yW 当前子块距离mbAddrN左上角样点位置的距离
 		getMbAddrNAndLuma4x4BlkIdxN(isLuam, mbAddrN, xN, yN, maxW, maxH, xW, yW);
 
-		if (mbAddrN != NA)
-		{
-			//参考像素所处宏块的子块索引
-			luma4x4BlkIdxN = 8 * (yW / 8) + 4 * (xW / 8) + 2 * ((yW % 8) / 4) + ((xW % 8) / 4);
-		}
+		//if (mbAddrN != NA)
+		//{
+		//	//参考像素所处宏块的子块索引
+		//	luma4x4BlkIdxN = 8 * (yW / 8) + 4 * (xW / 8) + 2 * ((yW % 8) / 4) + ((xW % 8) / 4);
+		//}
 
 		if (mbAddrN == NA
 			|| (isInterframe(macroblock[mbAddrN]->mode) && sHeader->pps.constrained_intra_pred_flag)
@@ -158,7 +161,7 @@ void ParseSlice::Intra_4x4_prediction(size_t luma4x4BlkIdx, bool isLuam)
 		}
 		else
 		{
-			//mbAddrN宏块 左上角亮度样点的位置
+			//xM  yM mbAddrN宏块左上角样点位置到当前图像左上角的距离
 			int xM = InverseRasterScan(mbAddrN, 16, 16, sHeader->sps.PicWidthInSamplesL, 0);
 			int yM = InverseRasterScan(mbAddrN, 16, 16, sHeader->sps.PicWidthInSamplesL, 1);
 
@@ -400,6 +403,154 @@ void ParseSlice::Intra_4x4_prediction(size_t luma4x4BlkIdx, bool isLuam)
 #undef P;
 
 }
+void ParseSlice::Intra_16x16_prediction(bool isLuam)
+{
+	//相对于当前块左上角开始，x和y的坐标
+	int referenceCoordinateX[33] = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15 };
+	int referenceCoordinateY[33] = { -1,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 };
+
+
+	int p[17 * 17] = { -1 };
+	memset(p, -1, sizeof(int) * 17 * 17);
+#define P(x, y)    p[((y) + 1) * 17 + ((x) + 1)]
+	for (size_t i = 0; i < 33; i++)
+	{
+		int maxW = 0;
+		int maxH = 0;
+		if (isLuam)
+		{
+			maxW = 16;
+			maxH = 16;
+		}
+		else //if (isChroma == 1)
+		{
+			//色度块高度和宽度
+			maxH = sHeader->sps.MbHeightC;
+			maxW = sHeader->sps.MbWidthC;
+		}
+
+
+		int x = referenceCoordinateX[i];
+		int y = referenceCoordinateY[i];
+		int mbAddrN = NA;
+		int xW = NA;
+		int yW = NA;
+		int luma4x4BlkIdxN = 0;
+
+		//xW, yW 当前子块距离mbAddrN左上角样点位置的距离
+		getMbAddrNAndLuma4x4BlkIdxN(isLuam, mbAddrN, x, y, maxW, maxH, xW, yW);
+
+
+		if (mbAddrN == NA
+			|| (isInterframe(macroblock[mbAddrN]->mode) && sHeader->pps.constrained_intra_pred_flag)
+			|| (macroblock[CurrMbAddr]->fix_slice_type == SLIECETYPE::H264_SLIECE_TYPE_SI && sHeader->pps.constrained_intra_pred_flag)
+			)
+		{
+			P(x, y) = -1;
+		}
+		else
+		{
+			//xM  yM mbAddrN宏块左上角样点位置到当前图像左上角的距离
+			int xM = InverseRasterScan(mbAddrN, 16, 16, sHeader->sps.PicWidthInSamplesL, 0);
+			int yM = InverseRasterScan(mbAddrN, 16, 16, sHeader->sps.PicWidthInSamplesL, 1);
+
+			P(x, y) = lumaData[xM + xW][yM + yW];
+		}
+	}
+
+
+
+
+	uint8_t Intra16x16PredMode = macroblock[CurrMbAddr]->Intra16x16PredMode;
+	if (Intra16x16PredMode == 0)//垂直
+	{
+		if (P(0, -1) >= 0 && P(1, -1) >= 0 && P(2, -1) >= 0 && P(3, -1) >= 0 && P(4, -1) >= 0 && P(5, -1) >= 0 && P(6, -1) >= 0 && P(7, -1) >= 0
+			&& P(8, -1) >= 0 && P(9, -1) >= 0 && P(10, -1) >= 0 && P(11, -1) >= 0 && P(12, -1) >= 0 && P(13, -1) >= 0 && P(14, -1) >= 0 && P(15, -1) >= 0
+			)
+		{
+			for (size_t y = 0; y < 16; y++)
+			{
+				for (size_t x = 0; x < 16; x++)
+				{
+					macroblock[CurrMbAddr]->luma16x16PredSamples[x][y] = P(x, -1);
+				}
+			}
+		}
+	}
+	else if (Intra16x16PredMode == 1)//水平
+	{
+		if (P(-1, 0) >= 0 && P(-1, 1) >= 0 && P(-1, 2) >= 0 && P(-1, 3) >= 0 && P(-1, 4) >= 0 && P(-1, 5) >= 0 && P(-1, 6) >= 0 && P(-1, 7) >= 0
+			&& P(-1, 8) >= 0 && P(-1, 9) >= 0 && P(-1, 10) >= 0 && P(-1, 11) >= 0 && P(-1, 12) >= 0 && P(-1, 13) >= 0 && P(-1, 14) >= 0 && P(-1, 15) >= 0
+			)
+		{
+			for (size_t y = 0; y < 16; y++)
+			{
+				for (size_t x = 0; x < 16; x++)
+				{
+					macroblock[CurrMbAddr]->luma16x16PredSamples[x][y] = P(-1, y);
+				}
+			}
+		}
+	}
+	else if (Intra16x16PredMode == 2)
+	{
+		//四舍五入求均值
+		int val = 0;
+
+		if (P(0, -1) >= 0 && P(1, -1) >= 0 && P(2, -1) >= 0 && P(3, -1) >= 0 && P(4, -1) >= 0 && P(5, -1) >= 0 && P(6, -1) >= 0 && P(7, -1) >= 0
+			&& P(8, -1) >= 0 && P(9, -1) >= 0 && P(10, -1) >= 0 && P(11, -1) >= 0 && P(12, -1) >= 0 && P(13, -1) >= 0 && P(14, -1) >= 0 && P(15, -1) >= 0
+			&& P(-1, 0) >= 0 && P(-1, 1) >= 0 && P(-1, 2) >= 0 && P(-1, 3) >= 0 && P(-1, 4) >= 0 && P(-1, 5) >= 0 && P(-1, 6) >= 0 && P(-1, 7) >= 0
+			&& P(-1, 8) >= 0 && P(-1, 9) >= 0 && P(-1, 10) >= 0 && P(-1, 11) >= 0 && P(-1, 12) >= 0 && P(-1, 13) >= 0 && P(-1, 14) >= 0 && P(-1, 15) >= 0
+			)
+		{
+			val = (P(0, -1) + P(1, -1) + P(2, -1) + P(3, -1) + P(4, -1) + P(5, -1) + P(6, -1) + P(7, -1)
+				+ P(8, -1) + P(9, -1) + P(10, -1) + P(11, -1) + P(12, -1) + P(13, -1) + P(14, -1) + P(15, -1)
+				+ P(-1, 0) + P(-1, 1) + P(-1, 2) + P(-1, 3) + P(-1, 4) + P(-1, 5) + P(-1, 6) + P(-1, 7)
+				+ P(-1, 8) + P(-1, 9) + P(-1, 10) + P(-1, 11) + P(-1, 12) + P(-1, 13) + P(-1, 14) + P(-1, 15) + 16) >> 5;
+		}
+		else if (!(P(0, -1) >= 0 && P(1, -1) >= 0 && P(2, -1) >= 0 && P(3, -1) >= 0 && P(4, -1) >= 0 && P(5, -1) >= 0 && P(6, -1) >= 0 && P(7, -1) >= 0
+			&& P(8, -1) >= 0 && P(9, -1) >= 0 && P(10, -1) >= 0 && P(11, -1) >= 0 && P(12, -1) >= 0 && P(13, -1) >= 0 && P(14, -1) >= 0 && P(15, -1) >= 0)
+			&& (P(-1, 0) >= 0 && P(-1, 1) >= 0 && P(-1, 2) >= 0 && P(-1, 3) >= 0 && P(-1, 4) >= 0 && P(-1, 5) >= 0 && P(-1, 6) >= 0 && P(-1, 7) >= 0
+				&& P(-1, 8) >= 0 && P(-1, 9) >= 0 && P(-1, 10) >= 0 && P(-1, 11) >= 0 && P(-1, 12) >= 0 && P(-1, 13) >= 0 && P(-1, 14) >= 0 && P(-1, 15) >= 0)
+			)
+		{
+			val = (P(-1, 0) + P(-1, 1) + P(-1, 2) + P(-1, 3) + P(-1, 4) + P(-1, 5) + P(-1, 6) + P(-1, 7)
+				+ P(-1, 8) + P(-1, 9) + P(-1, 10) + P(-1, 11) + P(-1, 12) + P(-1, 13) + P(-1, 14) + P(-1, 15) + 8) >> 4;
+		}
+		else if ((P(0, -1) >= 0 && P(1, -1) >= 0 && P(2, -1) >= 0 && P(3, -1) >= 0 && P(4, -1) >= 0 && P(5, -1) >= 0 && P(6, -1) >= 0 && P(7, -1) >= 0
+			&& P(8, -1) >= 0 && P(9, -1) >= 0 && P(10, -1) >= 0 && P(11, -1) >= 0 && P(12, -1) >= 0 && P(13, -1) >= 0 && P(14, -1) >= 0 && P(15, -1) >= 0)
+			&& !(P(-1, 0) >= 0 && P(-1, 1) >= 0 && P(-1, 2) >= 0 && P(-1, 3) >= 0 && P(-1, 4) >= 0 && P(-1, 5) >= 0 && P(-1, 6) >= 0 && P(-1, 7) >= 0
+				&& P(-1, 8) >= 0 && P(-1, 9) >= 0 && P(-1, 10) >= 0 && P(-1, 11) >= 0 && P(-1, 12) >= 0 && P(-1, 13) >= 0 && P(-1, 14) >= 0 && P(-1, 15) >= 0)
+			)
+		{
+			val = (P(0, -1) + P(1, -1) + P(2, -1) + P(3, -1) + P(4, -1) + P(5, -1) + P(6, -1) + P(7, -1)
+				+ P(8, -1) + P(9, -1) + P(10, -1) + P(11, -1) + P(12, -1) + P(13, -1) + P(14, -1) + P(15, -1) + 8) >> 4;
+		}
+		else
+		{
+			//h264一个亮度像素都是8个bit
+			val = 1 << (sHeader->sps.BitDepthY - 1); //128 在h264
+		}
+
+
+		for (size_t x = 0; x < 16; x++)
+		{
+			for (size_t y = 0; y < 16; y++)
+			{
+				macroblock[CurrMbAddr]->luma16x16PredSamples[x][y] = val;
+			}
+		}
+	}
+	else if (Intra16x16PredMode == 3)
+	{
+
+	}
+
+
+#undef P;
+
+
+}
 //Intra4x4PredMode的推导过程
 void ParseSlice::getIntra4x4PredMode(size_t luma4x4BlkIdx, bool isLuam)
 {
@@ -435,7 +586,7 @@ void ParseSlice::getIntra4x4PredMode(size_t luma4x4BlkIdx, bool isLuam)
 	int yW = NA;
 
 	//亮度位置的差分值 表6-2（ xD, yD ）
-	//亮度位置（ xN, yN)
+	//当前子块距离mbAddrN左上角样点距离（ xW, yW)
 	getMbAddrNAndLuma4x4BlkIdxN(isLuam, mbAddrA, x + (-1), y + 0, maxW, maxH, xW, yW);
 
 	if (mbAddrA != NA)
@@ -617,13 +768,22 @@ void ParseSlice::transformDecode4x4LuamResidualProcess()
 			//计算当前亮度块左上角亮度样点距离当前宏块左上角亮度样点的相对位置
 			int xO = InverseRasterScan(luma4x4BlkIdx / 4, 8, 8, 16, 0) + InverseRasterScan(luma4x4BlkIdx % 4, 4, 4, 8, 0);
 			int yO = InverseRasterScan(luma4x4BlkIdx / 4, 8, 8, 16, 1) + InverseRasterScan(luma4x4BlkIdx % 4, 4, 4, 8, 1);
-			//对近似均匀分布的语法元素，在编码和解码时选择旁路（bypass）模式，可以免除上下文建模，提高编解码的速度。
+
+			//对近似均匀分布的语法元素，在编码和解码时选择旁路（bypass）模式，可以免除上下文建模，提高编解码的速度,不经过量化和dct。
+			if (macroblock[CurrMbAddr]->TransformBypassModeFlag
+				&& macroblock[CurrMbAddr]->mode == H264_MB_PART_PRED_MODE::Intra_4x4
+				&& (macroblock[CurrMbAddr]->Intra4x4PredMode[luma4x4BlkIdx] == 0 || macroblock[CurrMbAddr]->Intra4x4PredMode[luma4x4BlkIdx] == 1)
+				)
+			{
+				printError("不支持旁路变换解码");
+				exit(0);
+			}
 
 
 			//4*4预测过程
 			Intra_4x4_prediction(luma4x4BlkIdx, true);
 
-			macroblock[CurrMbAddr]->lumaPredSamples;
+			/*macroblock[CurrMbAddr]->lumaPredSamples;
 
 			for (size_t x = 0; x < 4; x++)
 			{
@@ -631,27 +791,127 @@ void ParseSlice::transformDecode4x4LuamResidualProcess()
 				{
 					macroblock[CurrMbAddr]->predL[xO + x][yO + y] = macroblock[CurrMbAddr]->lumaPredSamples[luma4x4BlkIdx][x][y];
 				}
-			}
-			int a = 1;
+			}*/
 
 
 			int u[16] = { 0 };
 			for (size_t i = 0; i < 4; i++)
 			{
-				for (size_t j = 0; i < 4; j++)
+				for (size_t j = 0; j < 4; j++)
 				{
+					//macroblock[CurrMbAddr]->predL[xO + j][yO + i]
 					//Clip1Y( x ) = Clip3( 0， ( 1 << BitDepthY ) − 1 ， x ) 
-					u[i * 4 + j] = Clip3(0, (1 << sHeader->sps.BitDepthY) - 1, macroblock[CurrMbAddr]->predL[xO + j][yO + i] + r[i][j]);
+					u[i * 4 + j] = Clip3(0, (1 << sHeader->sps.BitDepthY) - 1, macroblock[CurrMbAddr]->lumaPredSamples[luma4x4BlkIdx][j][i] + r[i][j]);
 				}
 			}
 
 			////环路滤波器之前的图像生成
-			//Picture_construction_process_prior_to_deblocking_filter_process(u, "4*4", luma4x4BlkIdx, true);
+			Picture_construction_process_prior_to_deblocking_filter_process(u, "4*4", luma4x4BlkIdx, true);
 		}
 
 
 	}
 
+
+}
+
+void ParseSlice::transformDecode4x4ChromaResidualProcess(bool isChromaCb)
+{
+	if (sHeader->sps.ChromaArrayType == 0)
+	{
+		printError("ChromaArrayType==0");
+		exit(0);
+	}
+
+
+	if (sHeader->sps.ChromaArrayType == 3)
+	{
+		//对ChromaArrayType等于3的色度样本的转换解码过程的规范
+		transformDecodeChromaArrayTypeEqualTo3Process(isChromaCb);
+	}
+
+}
+
+void ParseSlice::transformDecode16x16LuamResidualProcess()
+{
+
+
+	scaling(true, false);
+	//对宏块中所有4x4 luma块的4x4 luma直流变换系数进行解码。
+
+
+	int c[4][4] = { 0 };
+
+	inverseScanner4x4Process(macroblock[CurrMbAddr]->i16x16DClevel, c);
+
+	//Intra_16x16宏块类型的DC变换系数的缩放和变换过程
+	int dcY[4][4] = { 0 };
+	//最难压缩的直流用哈达玛变换
+	//因为一个宏块里的直流系数一般都相等或者相似的，哈达玛可以归并同类项
+	//哈达玛可以进一步压缩直流分量
+	//先进行Hadamard变换
+	transformDecodeIntra_16x16DCProcess(c, dcY);
+
+
+	int rMb[16][16] = { 0 };
+
+
+	//dcY到luma4x4BlkIdx的索引对应的分配
+	int dcYToLuma[16] = {
+		dcY[0][0], dcY[0][1], dcY[1][0], dcY[1][1],
+		dcY[0][2], dcY[0][3], dcY[1][2], dcY[1][3],
+		dcY[2][0], dcY[2][1], dcY[3][0], dcY[3][1],
+		dcY[2][2], dcY[2][3], dcY[3][2], dcY[3][3]
+	};
+
+
+	//luma4x4BlkIdx or cb4x4BlkIdx or cr4x4BlkIdx
+	for (size_t _4x4BlkIdx = 0; _4x4BlkIdx < 16; _4x4BlkIdx++)
+	{
+		int lumaList[16] = { 0 };
+		lumaList[0] = dcYToLuma[_4x4BlkIdx];  //DC系数
+
+		for (size_t k = 1; k < 16; k++)
+		{
+			lumaList[k] = macroblock[CurrMbAddr]->i16x16AClevel[_4x4BlkIdx][k - 1];//AC系数
+		}
+
+		int c[4][4] = { 0 };
+
+		inverseScanner4x4Process(lumaList, c);
+		int r[4][4] = { 0 };
+		scalingTransformProcess(c, r, true, false);
+
+		int xO = InverseRasterScan(_4x4BlkIdx / 4, 8, 8, 16, 0) + InverseRasterScan(_4x4BlkIdx % 4, 4, 4, 8, 0);
+		int yO = InverseRasterScan(_4x4BlkIdx / 4, 8, 8, 16, 1) + InverseRasterScan(_4x4BlkIdx % 4, 4, 4, 8, 1);
+
+
+		for (size_t i = 0; i <= 3; i++)
+		{
+			for (size_t j = 0; j <= 3; j++)
+			{
+				rMb[xO + j][yO + i] = r[i][j];
+			}
+		}
+	}
+
+	if (macroblock[CurrMbAddr]->TransformBypassModeFlag && (macroblock[CurrMbAddr]->Intra16x16PredMode == 0 || macroblock[CurrMbAddr]->Intra16x16PredMode == 1))
+	{
+		printError("旁路变换过程");
+		exit(0);
+	}
+
+	Intra_16x16_prediction(true);
+
+	int u[16 * 16] = { 0 };
+
+	for (size_t i = 0; i < 16; i++)
+	{
+		for (size_t j = 0; j < 16; j++)
+		{
+			//u[i * 16 + j] = Clip3(0, (1 << sHeader->sps.BitDepthY) - 1, macroblock[CurrMbAddr]->lumaPredSamples[luma4x4BlkIdx][j][i] + rMb[i][j]);
+		}
+	}
 
 }
 
@@ -803,6 +1063,7 @@ void ParseSlice::scalingTransformProcess(int c[4][4], int r[4][4], bool isLuam, 
 
 
 	//缩放过程
+	//这里表示要旁路变换，不用经过量化dct变换过程
 	if (macroblock[CurrMbAddr]->TransformBypassModeFlag)
 	{
 		memcpy(r, c, sizeof(int) * 16);
@@ -978,7 +1239,7 @@ void ParseSlice::Picture_construction_process_prior_to_deblocking_filter_process
 		{
 			for (size_t j = 0; j < nE; j++)
 			{
-				//lumaData[xP + xO + j + yP + yO + i] = u[i * nE + j];
+				lumaData[xP + xO + j][yP + yO + i] = u[i * nE + j];
 			}
 		}
 	}
@@ -1123,5 +1384,97 @@ void ParseSlice::scaling(bool isLuam, bool isChromaCb)
 				}
 			}
 		}
+	}
+}
+//transformDecodeChromaArrayTypeEqualTo3Process
+void ParseSlice::transformDecodeChromaArrayTypeEqualTo3Process(bool isChromaCb)
+{
+
+	if (macroblock[CurrMbAddr]->mode == H264_MB_PART_PRED_MODE::Intra_16x16)
+	{
+		if (isChromaCb)
+		{
+
+		}
+		else
+		{
+
+		}
+	}
+
+
+}
+//Hadamard变换
+void ParseSlice::transformDecodeIntra_16x16DCProcess(int c[4][4], int dcY[4][4])
+{
+
+	int qP = macroblock[CurrMbAddr]->QP1Y;
+	int BitDepth = sHeader->sps.BitDepthY;
+	if (macroblock[CurrMbAddr]->TransformBypassModeFlag)
+	{
+		memcpy(dcY, c, sizeof(int) * 16);
+	}
+	else
+	{
+		//4 × 4 luma直流变换系数的逆变换
+		int a[4][4] = {
+			{1,1,1,1},
+			{1,1,-1,-1},
+			{1,-1,-1,1},
+			{1,-1,1,-1},
+		};
+		int b[4][4] = {
+			{1,1,1,1},
+			{1,1,-1,-1},
+			{1,-1,-1,1},
+			{1,-1,1,-1},
+		};
+		int g[4][4] = { {0} };
+		int f[4][4] = { {0} };
+		for (size_t i = 0; i < 4; i++)
+		{
+			for (size_t j = 0; j < 4; j++)
+			{
+				for (size_t k = 0; k < 4; k++)
+				{
+					g[i][j] += a[i][k] * c[k][j];
+				}
+			}
+		}
+		for (size_t i = 0; i < 4; i++)
+		{
+			for (size_t j = 0; j < 4; j++)
+			{
+				for (size_t k = 0; k < 4; k++)
+				{
+					f[i][j] += b[i][k] * g[k][j];
+				}
+			}
+		}
+
+
+		if (qP >= 36)
+		{
+			for (size_t i = 0; i < 4; i++)
+			{
+				for (size_t j = 0; j < 4; j++)
+				{
+					//dcYij = ( fij * LevelScale4x4( qP % 6, 0, 0 ) ) << ( qP / 6 − 6 );
+					dcY[i][j] = (f[i][j] * LevelScale4x4[qP % 6][0][0]) << (qP / 6 - 6);
+				}
+			}
+		}
+		else //if (qP < 36)
+		{
+			for (size_t i = 0; i < 4; i++)
+			{
+				for (int32_t j = 0; j < 4; j++)
+				{
+					//dcYij = ( fij * LevelScale4x4( qP % 6, 0, 0 ) + ( 1 << ( 5 − qP / 6) ) ) >> ( 6 − qP / 6 );
+					dcY[i][j] = (f[i][j] * LevelScale4x4[qP % 6][0][0] + (1 << (5 - qP / 6))) >> (6 - qP / 6);
+				}
+			}
+		}
+
 	}
 }

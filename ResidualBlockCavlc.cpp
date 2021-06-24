@@ -17,17 +17,16 @@ bool ResidualBlockCavlc::residual_block_cavlc(
 
 	memset(coeffLevel, 0, sizeof(uint32_t) * maxNumCoeff);
 
-
-
 	int coeff_token_length = 0;
 	int TrailingOnes = 0;
 
 	int numberCurrent = getNumberCurrent(residualLevel, i4x4, i8x8);
-	cout << numberCurrent << endl;
+
 	//获取16bit因为token最长只有16bit
 	uint16_t coeff_token = bs.getMultiBit(16);
 
 	getNumCoeffAndTrailingOnes(numberCurrent, coeff_token, coeff_token_length, TrailingOnes, TotalCoeff);
+
 	//读取真正的token长度
 	bs.readMultiBit(coeff_token_length);
 
@@ -198,7 +197,7 @@ int ResidualBlockCavlc::getNumberCurrent(RESIDUAL_LEVEL residualLevel, size_t i4
 
 	if (residualLevel == RESIDUAL_LEVEL::ChromaDCLevel)
 	{
-		//色度固定码表
+		//色度DC固定码表
 		if (sliceBase.sHeader->sps.ChromaArrayType == 1)
 		{
 			nC = -1;
@@ -213,6 +212,9 @@ int ResidualBlockCavlc::getNumberCurrent(RESIDUAL_LEVEL residualLevel, size_t i4
 
 		if (residualLevel == RESIDUAL_LEVEL::Intra16x16DCLevel)
 		{
+
+
+			//解析DC的Number current取相邻块的第一个子块的非0系数
 			if (sliceBase.mbY > 0)
 			{
 				const int topMbIdx = sliceBase.CurrMbAddr - sliceBase.sHeader->sps.PicWidthInMbs;
