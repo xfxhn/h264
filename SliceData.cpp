@@ -127,7 +127,7 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice& Slice)
 			{
 
 
-				Slice.transformDecode16x16LuamResidualProcess();
+				Slice.transformDecode16x16LuamResidualProcess(Slice.macroblock[Slice.CurrMbAddr]->i16x16DClevel, Slice.macroblock[Slice.CurrMbAddr]->i16x16AClevel, true, false);
 			}
 
 		}

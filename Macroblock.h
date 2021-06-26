@@ -155,6 +155,8 @@ private:
 
 	int residual_luma(BitStream& bs, int i16x16DClevel[16], int i16x16AClevel[16][16], int level4x4[16][16],
 		int level8x8[4][64], int startIdx, int endIdx);
+
+	//void getChromaQuantisationParameters();
 private:
 	bool isAe;
 

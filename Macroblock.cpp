@@ -110,6 +110,15 @@ Macroblock::Macroblock(ParseSlice& slice) :sliceBase(slice)
 	memset(predL, 0, sizeof(uint8_t) * 16 * 16);
 
 	intra_chroma_pred_mode = 0;
+	QPY = 0;
+	QP1Y = 0;
+
+	QP1C = 0;
+	QPC = 0;
+
+
+	QSY = 0;
+	QSC = 0;
 }
 //slice type 五种类型
 //I slice中的宏块类型只能是I宏块类型
@@ -323,6 +332,63 @@ bool Macroblock::macroblock_layer(BitStream& bs)
 	}
 	return false;
 }
+
+
+
+//色度量化参数和缩放功能的推导过程
+//void Macroblock::getChromaQuantisationParameters(bool isChromaCb)
+//{
+//	//CbCr
+//	int qPOffset = 0;
+//
+//
+//	if (isChromaCb)
+//	{
+//		//计算色度量化参数的偏移量值
+//		qPOffset = sHeader->pps.chroma_qp_index_offset;
+//	}
+//	else
+//	{
+//		qPOffset = sHeader->pps.second_chroma_qp_index_offset;
+//	}
+//	//每个色度分量的qPI 值通过下述方式获得  //QpBdOffsetC 色度偏移
+//	int qPI = Clip3(-(int)sHeader->sps.QpBdOffsetC, 51, macroblock[CurrMbAddr]->QPY + qPOffset);
+//
+//
+//	int QPC = 0;
+//	if (qPI < 30)
+//	{
+//		QPC = qPI;
+//	}
+//	else
+//	{
+//		//int qPIs[] = { 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51 };
+//		int QPCs[] = { 29, 30, 31, 32, 32, 33, 34, 34, 35, 35, 36, 36, 37, 37, 37, 38, 38, 38, 39, 39, 39, 39 };
+//
+//		QPC = QPCs[qPI - 30];
+//	}
+//
+//
+//	int QP1C = QPC + sHeader->sps.QpBdOffsetC;
+//
+//	macroblock[CurrMbAddr]->QPC = QPC;
+//	macroblock[CurrMbAddr]->QP1C = QP1C;
+//
+//
+//
+//	if ((SLIECETYPE)sHeader->slice_type == SLIECETYPE::H264_SLIECE_TYPE_SP || (SLIECETYPE)sHeader->slice_type == SLIECETYPE::H264_SLIECE_TYPE_SI)
+//	{
+//		//用QSY 代替 QPY，QSC 代替 QPC
+//		macroblock[CurrMbAddr]->QSY = macroblock[CurrMbAddr]->QPY;
+//		macroblock[CurrMbAddr]->QSC = macroblock[CurrMbAddr]->QPC;
+//	}
+//
+//}
+
+
+
+
+
 
 //宏块预测语法
 bool Macroblock::mb_pred(BitStream& bs, uint32_t mb_type, uint32_t numMbPart)

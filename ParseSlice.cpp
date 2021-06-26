@@ -543,6 +543,39 @@ void ParseSlice::Intra_16x16_prediction(bool isLuam)
 	}
 	else if (Intra16x16PredMode == 3)
 	{
+		//由x，y，z轴三个点连接的面，并延伸投影到二维面上，对应的矩阵就是预测值
+
+		if (P(0, -1) >= 0 && P(1, -1) >= 0 && P(2, -1) >= 0 && P(3, -1) >= 0 && P(4, -1) >= 0 && P(5, -1) >= 0 && P(6, -1) >= 0 && P(7, -1) >= 0
+			&& P(8, -1) >= 0 && P(9, -1) >= 0 && P(10, -1) >= 0 && P(11, -1) >= 0 && P(12, -1) >= 0 && P(13, -1) >= 0 && P(14, -1) >= 0 && P(15, -1) >= 0
+			&& P(-1, 0) >= 0 && P(-1, 1) >= 0 && P(-1, 2) >= 0 && P(-1, 3) >= 0 && P(-1, 4) >= 0 && P(-1, 5) >= 0 && P(-1, 6) >= 0 && P(-1, 7) >= 0
+			&& P(-1, 8) >= 0 && P(-1, 9) >= 0 && P(-1, 10) >= 0 && P(-1, 11) >= 0 && P(-1, 12) >= 0 && P(-1, 13) >= 0 && P(-1, 14) >= 0 && P(-1, 15) >= 0
+			)
+		{
+			int32_t H = 0;
+			int32_t V = 0;
+
+			for (int32_t x = 0; x <= 7; x++)
+			{
+				H += (x + 1) * (P(8 + x, -1) - P(6 - x, -1));
+			}
+
+			for (int32_t y = 0; y <= 7; y++)
+			{
+				V += (y + 1) * (P(-1, 8 + y) - P(-1, 6 - y));
+			}
+
+			int32_t a = 16 * (P(-1, 15) + P(15, -1));
+			int32_t b = (5 * H + 32) >> 6;
+			int32_t c = (5 * V + 32) >> 6;
+
+			for (int32_t y = 0; y < 16; y++)
+			{
+				for (int32_t x = 0; x < 16; x++)
+				{
+					macroblock[CurrMbAddr]->luma16x16PredSamples[x][y] = Clip3(0, (1 << sHeader->sps.BitDepthY) - 1, (a + b * (x - 7) + c * (y - 7) + 16) >> 5);
+				}
+			}
+		}
 
 	}
 
@@ -826,23 +859,58 @@ void ParseSlice::transformDecode4x4ChromaResidualProcess(bool isChromaCb)
 
 	if (sHeader->sps.ChromaArrayType == 3)
 	{
-		//对ChromaArrayType等于3的色度样本的转换解码过程的规范
+		//对ChromaArrayType等于3 444 的色度样本的转换解码过程的规范
 		transformDecodeChromaArrayTypeEqualTo3Process(isChromaCb);
+	}
+	else
+	{
+		//420 8 8
+		int numChroma4x4Blks = (sHeader->sps.MbWidthC / 4) * (sHeader->sps.MbHeightC / 4);
+		int iCbCr = (isChromaCb == 1) ? 0 : 1;
+		if (sHeader->sps.ChromaArrayType == 1) //420
+		{
+			int c[2][2] = { 0 };
+
+			//420最大DC系数有4个
+			c[0][0] = macroblock[CurrMbAddr]->ChromaDCLevel[iCbCr][0];
+			c[0][1] = macroblock[CurrMbAddr]->ChromaDCLevel[iCbCr][1];
+			c[1][0] = macroblock[CurrMbAddr]->ChromaDCLevel[iCbCr][2];
+			c[1][1] = macroblock[CurrMbAddr]->ChromaDCLevel[iCbCr][3];
+		}
+		else if (sHeader->sps.ChromaArrayType == 2)  //422
+		{
+			//422最大DC系数有8个
+			/*
+			|0,1|
+			|2,3|
+			|4,5|
+			|6,7|
+			*/
+			int c[4][2] = { 0 };
+			c[0][0] = m_mbs[CurrMbAddr].ChromaDCLevel[iCbCr][0];
+			c[0][1] = m_mbs[CurrMbAddr].ChromaDCLevel[iCbCr][1];
+			c[1][0] = m_mbs[CurrMbAddr].ChromaDCLevel[iCbCr][2];
+			c[1][1] = m_mbs[CurrMbAddr].ChromaDCLevel[iCbCr][3];
+			c[2][0] = m_mbs[CurrMbAddr].ChromaDCLevel[iCbCr][4];
+			c[2][1] = m_mbs[CurrMbAddr].ChromaDCLevel[iCbCr][5];
+			c[3][0] = m_mbs[CurrMbAddr].ChromaDCLevel[iCbCr][6];
+			c[3][1] = m_mbs[CurrMbAddr].ChromaDCLevel[iCbCr][7];
+		}
 	}
 
 }
 
-void ParseSlice::transformDecode16x16LuamResidualProcess()
+void ParseSlice::transformDecode16x16LuamResidualProcess(const int i16x16DClevel[16], const int i16x16AClevel[16][16], bool isLuam, bool isChromaCb)
 {
 
 
-	scaling(true, false);
+	scaling(isLuam, isChromaCb);
 	//对宏块中所有4x4 luma块的4x4 luma直流变换系数进行解码。
 
 
 	int c[4][4] = { 0 };
 
-	inverseScanner4x4Process(macroblock[CurrMbAddr]->i16x16DClevel, c);
+	inverseScanner4x4Process(i16x16DClevel, c);
 
 	//Intra_16x16宏块类型的DC变换系数的缩放和变换过程
 	int dcY[4][4] = { 0 };
@@ -850,7 +918,7 @@ void ParseSlice::transformDecode16x16LuamResidualProcess()
 	//因为一个宏块里的直流系数一般都相等或者相似的，哈达玛可以归并同类项
 	//哈达玛可以进一步压缩直流分量
 	//先进行Hadamard变换
-	transformDecodeIntra_16x16DCProcess(c, dcY);
+	transformDecodeIntra_16x16DCProcess(c, dcY, isLuam, isChromaCb);
 
 
 	int rMb[16][16] = { 0 };
@@ -873,22 +941,22 @@ void ParseSlice::transformDecode16x16LuamResidualProcess()
 
 		for (size_t k = 1; k < 16; k++)
 		{
-			lumaList[k] = macroblock[CurrMbAddr]->i16x16AClevel[_4x4BlkIdx][k - 1];//AC系数
+			lumaList[k] = i16x16AClevel[_4x4BlkIdx][k - 1];//AC系数
 		}
 
 		int c[4][4] = { 0 };
-
 		inverseScanner4x4Process(lumaList, c);
+
 		int r[4][4] = { 0 };
-		scalingTransformProcess(c, r, true, false);
+		scalingTransformProcess(c, r, isLuam, false);
 
 		int xO = InverseRasterScan(_4x4BlkIdx / 4, 8, 8, 16, 0) + InverseRasterScan(_4x4BlkIdx % 4, 4, 4, 8, 0);
 		int yO = InverseRasterScan(_4x4BlkIdx / 4, 8, 8, 16, 1) + InverseRasterScan(_4x4BlkIdx % 4, 4, 4, 8, 1);
 
 
-		for (size_t i = 0; i <= 3; i++)
+		for (size_t i = 0; i < 4; i++)
 		{
-			for (size_t j = 0; j <= 3; j++)
+			for (size_t j = 0; j < 4; j++)
 			{
 				rMb[xO + j][yO + i] = r[i][j];
 			}
@@ -909,13 +977,14 @@ void ParseSlice::transformDecode16x16LuamResidualProcess()
 	{
 		for (size_t j = 0; j < 16; j++)
 		{
-			//u[i * 16 + j] = Clip3(0, (1 << sHeader->sps.BitDepthY) - 1, macroblock[CurrMbAddr]->lumaPredSamples[luma4x4BlkIdx][j][i] + rMb[i][j]);
+			u[i * 16 + j] = Clip3(0, (1 << sHeader->sps.BitDepthY) - 1, macroblock[CurrMbAddr]->luma16x16PredSamples[j][i] + rMb[j][i]);
 		}
 	}
+	Picture_construction_process_prior_to_deblocking_filter_process(u, "16*16", 0, true);
 
 }
 
-void ParseSlice::inverseScanner4x4Process(int value[16], int c[4][4])
+void ParseSlice::inverseScanner4x4Process(const int value[16], int c[4][4])
 {
 
 	//还有一个反域扫描，应该是在场编码的时候才会用到
@@ -1186,6 +1255,7 @@ void ParseSlice::getChromaQuantisationParameters(bool isChromaCb)
 
 	int QP1C = QPC + sHeader->sps.QpBdOffsetC;
 
+	//QPC:各色度分量Cb和Cr的色度量化参数，
 	macroblock[CurrMbAddr]->QPC = QPC;
 	macroblock[CurrMbAddr]->QP1C = QP1C;
 
@@ -1194,7 +1264,9 @@ void ParseSlice::getChromaQuantisationParameters(bool isChromaCb)
 	if ((SLIECETYPE)sHeader->slice_type == SLIECETYPE::H264_SLIECE_TYPE_SP || (SLIECETYPE)sHeader->slice_type == SLIECETYPE::H264_SLIECE_TYPE_SI)
 	{
 		//用QSY 代替 QPY，QSC 代替 QPC
+
 		macroblock[CurrMbAddr]->QSY = macroblock[CurrMbAddr]->QPY;
+		//QSY::解码SP和SI片所需的每个色度分量Cb和Cr的附加色度量化参数(如果适用)。
 		macroblock[CurrMbAddr]->QSC = macroblock[CurrMbAddr]->QPC;
 	}
 
@@ -1205,7 +1277,7 @@ void ParseSlice::getChromaQuantisationParameters(bool isChromaCb)
 
 void ParseSlice::Picture_construction_process_prior_to_deblocking_filter_process(int* u, const char* type, const size_t BlkIdx, const bool isLuam)
 {
-	//当前宏块 左上角亮度样点的位置
+	//当前宏块 左上角亮度样点距离当前帧左上角的位置
 	int xP = InverseRasterScan(CurrMbAddr, 16, 16, sHeader->sps.PicWidthInSamplesL, 0);
 	int yP = InverseRasterScan(CurrMbAddr, 16, 16, sHeader->sps.PicWidthInSamplesL, 1);
 
@@ -1394,7 +1466,7 @@ void ParseSlice::transformDecodeChromaArrayTypeEqualTo3Process(bool isChromaCb)
 	{
 		if (isChromaCb)
 		{
-
+			//transformDecode16x16LuamResidualProcess(macroblock[CurrMbAddr]->CbIntra16x16DCLevel, macroblock[CurrMbAddr]->CbIntra16x16DCLevel, false, isChromaCb)
 		}
 		else
 		{
@@ -1405,11 +1477,25 @@ void ParseSlice::transformDecodeChromaArrayTypeEqualTo3Process(bool isChromaCb)
 
 }
 //Hadamard变换
-void ParseSlice::transformDecodeIntra_16x16DCProcess(int c[4][4], int dcY[4][4])
+void ParseSlice::transformDecodeIntra_16x16DCProcess(int c[4][4], int dcY[4][4], bool isLuam, bool isChromaCb)
 {
 
-	int qP = macroblock[CurrMbAddr]->QP1Y;
-	int BitDepth = sHeader->sps.BitDepthY;
+	int qP = 0;
+	//int BitDepth = sHeader->sps.BitDepthY;
+
+	if (isLuam)
+	{
+		qP = macroblock[CurrMbAddr]->QP1Y;
+		//int BitDepth = sHeader->sps.BitDepthY;
+	}
+	else
+	{
+		getChromaQuantisationParameters(isChromaCb);
+
+
+		qP = macroblock[CurrMbAddr]->QP1C;
+	}
+
 	if (macroblock[CurrMbAddr]->TransformBypassModeFlag)
 	{
 		memcpy(dcY, c, sizeof(int) * 16);

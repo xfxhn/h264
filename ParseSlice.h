@@ -38,16 +38,16 @@ public:
 
 
 
-	
+
 
 
 	void transformDecode4x4LuamResidualProcess();
 	void transformDecode4x4ChromaResidualProcess(bool isChromaCb);
 
-	void transformDecode16x16LuamResidualProcess();
+	void transformDecode16x16LuamResidualProcess(const int i16x16DClevel[16], const int i16x16AClevel[16][16], bool isLuam, bool isChromaCb);
 
 
-	void inverseScanner4x4Process(int value[16], int c[4][4]);
+	void inverseScanner4x4Process(const int value[16], int c[4][4]);
 
 	void inverseScanner8x8Process(int value[64], int c[8][8]);
 
@@ -66,7 +66,7 @@ public:
 private:
 	void transformDecodeChromaArrayTypeEqualTo3Process(bool isChromaCb);
 
-	void transformDecodeIntra_16x16DCProcess(int c[4][4], int dcY[4][4]);
+	void transformDecodeIntra_16x16DCProcess(int c[4][4], int dcY[4][4], bool isLuam, bool isChromaCb);
 
 	void Intra_4x4_prediction(size_t luma4x4BlkIdx, bool isLuam);
 
