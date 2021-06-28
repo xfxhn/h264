@@ -90,6 +90,139 @@ ParseSlice::~ParseSlice()
 
 }
 
+//色度DC哈达玛变换 
+void ParseSlice::transformDecodeChromaDCProcess(int c[4][2], int dcC[4][2], int MbWidthC, int MbHeightC, bool isChromaCb)
+{
+
+	//只有当ChromaArrayType等于1或2时才会调用这个过程。
+
+	int BitDepth = sHeader->sps.BitDepthC;
+
+
+	getChromaQuantisationParameters(isChromaCb);
+
+	int qP = macroblock[CurrMbAddr]->QP1C;
+
+	/*int MbWidthC = sHeader->sps.MbWidthC;
+	int MbHeightC = sHeader->sps.MbHeightC;*/
+	if (macroblock[CurrMbAddr]->TransformBypassModeFlag)
+	{
+		for (size_t i = 0; i < (MbWidthC / 4); i++)
+		{
+			for (size_t j = 0; j < (MbHeightC / 4); j++)
+			{
+				dcC[i][j] = c[i][j];
+			}
+		}
+	}
+	else
+	{
+		if (sHeader->sps.ChromaArrayType == 1)
+		{
+			int a[2][2] = {
+				{1, 1},
+				{1,-1}
+			};
+			int b[2][2] = {
+				{1, 1},
+				{1,-1}
+			};
+
+			int g[2][2] = { {0} };
+			int f[2][2] = { {0} };
+			for (size_t i = 0; i < 2; i++)
+			{
+				for (size_t j = 0; j < 2; j++)
+				{
+					for (size_t k = 0; k < 2; k++)
+					{
+						g[i][j] += a[i][k] * c[k][j];
+					}
+				}
+			}
+			for (size_t i = 0; i < 2; i++)
+			{
+				for (size_t j = 0; j < 2; j++)
+				{
+					for (size_t k = 0; k < 2; k++)
+					{
+						f[i][j] += b[i][k] * g[k][j];
+					}
+				}
+			}
+
+
+
+			for (size_t i = 0; i < 2; i++)
+			{
+				for (size_t j = 0; j < 2; j++)
+				{
+					dcC[i][j] = ((f[i][j] * LevelScale4x4[qP % 6][0][0]) << (qP / 6)) >> 5;
+				}
+			}
+		}
+		else if (sHeader->sps.ChromaArrayType == 2)
+		{
+			int a[4][4] = {
+				{1,1,1,1},
+				{1,1,-1,-1},
+				{1,-1,-1,1},
+				{1,-1,1,-1},
+
+			};
+			int b[2][2] = { {1,1},{1,-1} };
+
+			int g[4][2] = { {0} };
+			int f[4][2] = { {0} };
+			for (size_t i = 0; i < 4; i++)
+			{
+				for (size_t j = 0; j < 2; j++)
+				{
+					for (size_t k = 0; k < 2; k++)
+					{
+						g[i][j] += a[i][k] * c[k][j];
+					}
+				}
+			}
+
+			for (size_t i = 0; i < 4; i++)
+			{
+				for (size_t j = 0; j < 2; j++)
+				{
+					for (size_t k = 0; k < 2; k++)
+					{
+						f[i][j] += b[i][k] * g[k][j];
+					}
+				}
+			}
+
+			int qPDc = qP + 3;
+			if (qPDc >= 36)
+			{
+				for (size_t i = 0; i < 4; i++)
+				{
+					for (size_t j = 0; j < 2; j++)
+					{
+						dcC[i][j] = (f[i][j] * LevelScale4x4[qPDc % 6][0][0]) << (qPDc / 6 - 6);
+					}
+				}
+			}
+			else
+			{
+				for (size_t i = 0; i < 4; i++)
+				{
+					for (size_t j = 0; j < 2; j++)
+					{
+						dcC[i][j] = (f[i][j] * LevelScale4x4[qPDc % 6][0][0] + static_cast<int>(pow(2, 5 - qPDc / 6))) >> (6 - qP / 6);
+					}
+				}
+			}
+
+		}
+	}
+
+}
+
 void ParseSlice::Intra_4x4_prediction(size_t luma4x4BlkIdx, bool isLuam)
 {
 	//9种帧内4x4预测模式
@@ -143,7 +276,7 @@ void ParseSlice::Intra_4x4_prediction(size_t luma4x4BlkIdx, bool isLuam)
 		int yW = NA;
 		int luma4x4BlkIdxN = 0;
 		//xW, yW 当前子块距离mbAddrN左上角样点位置的距离
-		getMbAddrNAndLuma4x4BlkIdxN(isLuam, mbAddrN, xN, yN, maxW, maxH, xW, yW);
+		getMbAddrNAndLuma4x4BlkIdxN(mbAddrN, xN, yN, maxW, maxH, xW, yW);
 
 		//if (mbAddrN != NA)
 		//{
@@ -403,6 +536,7 @@ void ParseSlice::Intra_4x4_prediction(size_t luma4x4BlkIdx, bool isLuam)
 #undef P;
 
 }
+
 void ParseSlice::Intra_16x16_prediction(bool isLuam)
 {
 	//相对于当前块左上角开始，x和y的坐标
@@ -438,7 +572,7 @@ void ParseSlice::Intra_16x16_prediction(bool isLuam)
 		int luma4x4BlkIdxN = 0;
 
 		//xW, yW 当前子块距离mbAddrN左上角样点位置的距离
-		getMbAddrNAndLuma4x4BlkIdxN(isLuam, mbAddrN, x, y, maxW, maxH, xW, yW);
+		getMbAddrNAndLuma4x4BlkIdxN(mbAddrN, x, y, maxW, maxH, xW, yW);
 
 
 		if (mbAddrN == NA
@@ -584,6 +718,99 @@ void ParseSlice::Intra_16x16_prediction(bool isLuam)
 
 
 }
+void ParseSlice::Intra_chroma_prediction()
+{
+	if (sHeader->sps.ChromaArrayType == 3)
+	{
+
+	}
+	else
+	{
+		const int MbWidthC = sHeader->sps.MbWidthC;
+		const int MbHeightC = sHeader->sps.MbHeightC;
+		//这里最大预测样点值只有25
+		//预测样点位置
+	/*	int referenceCoordinateX[25] = { 0 };
+
+		int referenceCoordinateY[25] = { 0 };*/
+
+		const int maxSamplesVal = MbWidthC + MbHeightC + 1;
+		int* referenceCoordinateX = new int[maxSamplesVal]();
+		int* referenceCoordinateY = new int[maxSamplesVal]();
+
+		for (int x = -1; x < MbHeightC; x++)
+		{
+			referenceCoordinateX[x + 1] = -1;
+			referenceCoordinateY[x + 1] = x;
+		}
+
+		for (int i = 0; i < MbWidthC; i++)
+		{
+			referenceCoordinateX[MbHeightC + 1 + i] = i;
+			referenceCoordinateY[MbHeightC + 1 + i] = -1;;
+		}
+		//最大有17行，9列
+
+
+		int* samples = new int[(MbWidthC + 1) * (MbHeightC + 1)];
+
+
+		memset(samples, -1, sizeof(int) * (MbWidthC + 1) * (MbHeightC + 1));
+
+#define P(x, y)   samples[((y) + 1) * (MbHeightC + 1) + ((x) + 1)]
+
+
+
+		for (size_t i = 0; i < maxSamplesVal; i++)
+		{
+			const int x = referenceCoordinateX[i];
+			const int y = referenceCoordinateY[i];
+
+
+			int mbAddrN = NA;
+			int xW = NA;
+			int yW = NA;
+			int luma4x4BlkIdxN = 0;
+			//xW, yW 当前子块距离mbAddrN左上角样点位置的距离
+			getMbAddrNAndLuma4x4BlkIdxN(mbAddrN, x, y, MbWidthC, MbHeightC, xW, yW);
+
+
+			if (mbAddrN == NA
+				|| (isInterframe(macroblock[mbAddrN]->mode) && sHeader->pps.constrained_intra_pred_flag)
+				|| (macroblock[mbAddrN]->fix_slice_type == SLIECETYPE::H264_SLIECE_TYPE_SI && sHeader->pps.constrained_intra_pred_flag && macroblock[CurrMbAddr]->fix_slice_type != SLIECETYPE::H264_SLIECE_TYPE_SI)
+				)
+			{
+				P(x, y) = -1;
+			}
+			else
+			{
+				//xL  yL mbAddrN宏块左上角样点位置到当前图像左上角的距离
+				int xL = InverseRasterScan(mbAddrN, 16, 16, sHeader->sps.PicWidthInSamplesL, 0);
+				int yL = InverseRasterScan(mbAddrN, 16, 16, sHeader->sps.PicWidthInSamplesL, 1);
+
+				//macroblock mbAddr左上角色度样本的位置(xM, yM)
+				int xM = (xL >> 4) * MbWidthC;
+				int	yM = ((yL >> 4) * MbHeightC) + (yL % 2);
+
+
+
+				P(x, y) = lumaData[xM + xW][yM + yW];
+			}
+
+
+		}
+
+
+
+		delete[] referenceCoordinateX;
+		delete[] referenceCoordinateY;
+		delete[] samples;
+#undef P
+
+	}
+
+
+}
 //Intra4x4PredMode的推导过程
 void ParseSlice::getIntra4x4PredMode(size_t luma4x4BlkIdx, bool isLuam)
 {
@@ -620,7 +847,7 @@ void ParseSlice::getIntra4x4PredMode(size_t luma4x4BlkIdx, bool isLuam)
 
 	//亮度位置的差分值 表6-2（ xD, yD ）
 	//当前子块距离mbAddrN左上角样点距离（ xW, yW)
-	getMbAddrNAndLuma4x4BlkIdxN(isLuam, mbAddrA, x + (-1), y + 0, maxW, maxH, xW, yW);
+	getMbAddrNAndLuma4x4BlkIdxN(mbAddrA, x + (-1), y + 0, maxW, maxH, xW, yW);
 
 	if (mbAddrA != NA)
 	{
@@ -628,7 +855,7 @@ void ParseSlice::getIntra4x4PredMode(size_t luma4x4BlkIdx, bool isLuam)
 		luma4x4BlkIdxA = 8 * (yW / 8) + 4 * (xW / 8) + 2 * ((yW % 8) / 4) + ((xW % 8) / 4);
 	}
 
-	getMbAddrNAndLuma4x4BlkIdxN(isLuam, mbAddrB, x + 0, y + (-1), maxW, maxH, xW, yW);
+	getMbAddrNAndLuma4x4BlkIdxN(mbAddrB, x + 0, y + (-1), maxW, maxH, xW, yW);
 	if (mbAddrB != NA)
 	{
 		//上侧宏块子块索引
@@ -714,7 +941,7 @@ void ParseSlice::getIntra4x4PredMode(size_t luma4x4BlkIdx, bool isLuam)
 }
 //mbAddrN 和luma4x4BlkIdxN（N 等于A or B）推导如下
 void ParseSlice::getMbAddrNAndLuma4x4BlkIdxN(
-	bool isLuam, int& mbAddrN, const int xN, const int yN, const int maxW, const int maxH, int& xW, int& yW
+	int& mbAddrN, const int xN, const int yN, const int maxW, const int maxH, int& xW, int& yW
 )
 {
 	if (xN < 0 && yN < 0)
@@ -864,9 +1091,16 @@ void ParseSlice::transformDecode4x4ChromaResidualProcess(bool isChromaCb)
 	}
 	else
 	{
+
+		int MbWidthC = sHeader->sps.MbWidthC;
+		int MbHeightC = sHeader->sps.MbHeightC;
 		//420 8 8
-		int numChroma4x4Blks = (sHeader->sps.MbWidthC / 4) * (sHeader->sps.MbHeightC / 4);
-		int iCbCr = (isChromaCb == 1) ? 0 : 1;
+		int numChroma4x4Blks = (MbWidthC / 4) * (MbHeightC / 4);
+		int iCbCr = (isChromaCb) ? 0 : 1;
+
+
+
+		int dcC[4][2] = { 0 };
 		if (sHeader->sps.ChromaArrayType == 1) //420
 		{
 			int c[2][2] = { 0 };
@@ -876,6 +1110,7 @@ void ParseSlice::transformDecode4x4ChromaResidualProcess(bool isChromaCb)
 			c[0][1] = macroblock[CurrMbAddr]->ChromaDCLevel[iCbCr][1];
 			c[1][0] = macroblock[CurrMbAddr]->ChromaDCLevel[iCbCr][2];
 			c[1][1] = macroblock[CurrMbAddr]->ChromaDCLevel[iCbCr][3];
+			transformDecodeChromaDCProcess(c, dcC, MbWidthC, MbHeightC, isChromaCb);
 		}
 		else if (sHeader->sps.ChromaArrayType == 2)  //422
 		{
@@ -887,15 +1122,66 @@ void ParseSlice::transformDecode4x4ChromaResidualProcess(bool isChromaCb)
 			|6,7|
 			*/
 			int c[4][2] = { 0 };
-			c[0][0] = m_mbs[CurrMbAddr].ChromaDCLevel[iCbCr][0];
-			c[0][1] = m_mbs[CurrMbAddr].ChromaDCLevel[iCbCr][1];
-			c[1][0] = m_mbs[CurrMbAddr].ChromaDCLevel[iCbCr][2];
-			c[1][1] = m_mbs[CurrMbAddr].ChromaDCLevel[iCbCr][3];
-			c[2][0] = m_mbs[CurrMbAddr].ChromaDCLevel[iCbCr][4];
-			c[2][1] = m_mbs[CurrMbAddr].ChromaDCLevel[iCbCr][5];
-			c[3][0] = m_mbs[CurrMbAddr].ChromaDCLevel[iCbCr][6];
-			c[3][1] = m_mbs[CurrMbAddr].ChromaDCLevel[iCbCr][7];
+			c[0][0] = macroblock[CurrMbAddr]->ChromaDCLevel[iCbCr][0];
+			c[0][1] = macroblock[CurrMbAddr]->ChromaDCLevel[iCbCr][1];
+			c[1][0] = macroblock[CurrMbAddr]->ChromaDCLevel[iCbCr][2];
+			c[1][1] = macroblock[CurrMbAddr]->ChromaDCLevel[iCbCr][3];
+			c[2][0] = macroblock[CurrMbAddr]->ChromaDCLevel[iCbCr][4];
+			c[2][1] = macroblock[CurrMbAddr]->ChromaDCLevel[iCbCr][5];
+			c[3][0] = macroblock[CurrMbAddr]->ChromaDCLevel[iCbCr][6];
+			c[3][1] = macroblock[CurrMbAddr]->ChromaDCLevel[iCbCr][7];
+			transformDecodeChromaDCProcess(c, dcC, MbWidthC, MbHeightC, isChromaCb);
 		}
+
+		int dcCToChroma[8] =
+		{
+			dcC[0][0], dcC[0][1],
+			dcC[1][0], dcC[1][1],
+			dcC[2][0], dcC[2][1],
+			dcC[3][0], dcC[3][1],
+		};
+
+		int rMb[8][16] = { 0 };//本应该是rMb[MbWidthC][MbHeightC], 此处按最大的8x16(422)尺寸来申请数组,
+
+		for (size_t chroma4x4BlkIdx = 0; chroma4x4BlkIdx < numChroma4x4Blks; chroma4x4BlkIdx++)
+		{
+
+			int chromaList[16] = { 0 };
+
+			chromaList[0] = dcCToChroma[chroma4x4BlkIdx];
+
+			for (size_t k = 1; k < 16; k++)
+			{
+				chromaList[k] = macroblock[CurrMbAddr]->ChromaACLevel[iCbCr][chroma4x4BlkIdx][k - 1];
+			}
+
+			int c[4][4] = { 0 };
+			//422 最大8
+			inverseScanner4x4Process(chromaList, c);
+
+			int r[4][4] = { 0 };
+			scalingTransformProcess(c, r, false, isChromaCb);
+
+
+			int xO = InverseRasterScan(chroma4x4BlkIdx, 4, 4, 8, 0);
+			int yO = InverseRasterScan(chroma4x4BlkIdx, 4, 4, 8, 1);
+
+			for (size_t i = 0; i < 4; i++)
+			{
+				for (size_t j = 0; j < 4; j++)
+				{
+					rMb[xO + j][yO + i] = r[i][j];
+				}
+			}
+		}
+
+
+		if (macroblock[CurrMbAddr]->TransformBypassModeFlag)
+		{
+			printError("不支持旁路变换");
+			exit(0);
+		}
+		Intra_chroma_prediction();
 	}
 
 }

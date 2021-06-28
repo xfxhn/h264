@@ -31,7 +31,7 @@ ParseSPS::ParseSPS()
 	level_idc = 0;
 	seq_parameter_set_id = 0;
 	chroma_format_idc = 0;
-	separate_colour_plane_flag = 0;
+	separate_colour_plane_flag = false;
 	bit_depth_luma_minus8 = 0;
 	bit_depth_chroma_minus8 = 0;
 	qpprime_y_zero_transform_bypass_flag = false;
@@ -329,7 +329,7 @@ bool ParseSPS::seq_parameter_set_data(BitStream& bs)
 	//如果是场编码要*2
 	//FrameHeightInMbs = (2 - frame_mbs_only_flag) * PicHeightInMapUnits;
 
-	//表示UV依附于Y 和Y一起编码，
+	//表示UV依附于Y 和Y一起编码，separate_colour_plane_flag=1则表示 UV 与 Y 分开编码。
 	if (!separate_colour_plane_flag) {
 		ChromaArrayType = chroma_format_idc;
 	}
@@ -348,7 +348,7 @@ bool ParseSPS::seq_parameter_set_data(BitStream& bs)
 	否则，MbWidthC和MbHeightC按下式得到：
 	MbWidthC = 16 / SubWidthC
 	MbHeightC = 16 / SubHeightC*/
-	if (chroma_format_idc == 0 || separate_colour_plane_flag == 1)
+	if (chroma_format_idc == 0 || separate_colour_plane_flag)
 	{
 		MbWidthC = 0;
 		MbHeightC = 0;
@@ -358,7 +358,7 @@ bool ParseSPS::seq_parameter_set_data(BitStream& bs)
 
 		int index = chroma_format_idc;
 		//separate_colour_plane_flag=0一起编码，=1分开编码
-		if (chroma_format_idc == 3 && separate_colour_plane_flag == 1)
+		if (chroma_format_idc == 3 && separate_colour_plane_flag)
 		{
 			index = 4;
 		}
@@ -367,6 +367,12 @@ bool ParseSPS::seq_parameter_set_data(BitStream& bs)
 		  在4 : 2 : 2 样点中，两个色度阵列的高度等于亮度阵列的高度，宽度为亮度阵列的一半。
 		  在4 : 4 : 4 样点中，两个色度阵列的高度和宽度与亮度阵列的相等。*/
 
+
+		  //{0, 0, -1, -1},		//单色
+		  //{ 1, 0,  2,  2 },     //420
+		  //{ 2, 0,  2,  1 },		//422
+		  //{ 3, 0,  1,  1 },		//444
+		  //{ 3, 1, -1, -1 },		//444   分开编码
 		SubWidthC = chroma_format_idcs[index].SubWidthC;
 		SubHeightC = chroma_format_idcs[index].SubHeightC;
 		/*样点是以宏块为单元进行处理的。每个宏块中的样点阵列的高和宽均为 16 个样点。

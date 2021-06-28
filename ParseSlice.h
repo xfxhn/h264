@@ -56,7 +56,7 @@ public:
 	void getChromaQuantisationParameters(bool isChromaCb);
 	void getIntra4x4PredMode(size_t luma4x4BlkIdx, bool isLuam);
 
-	void getMbAddrNAndLuma4x4BlkIdxN(bool isLuam, int& mbAddrN, const int xN, const int yN, const int maxW, const int maxH, int& xW, int& yW);
+	void getMbAddrNAndLuma4x4BlkIdxN(int& mbAddrN, const int xN, const int yN, const int maxW, const int maxH, int& xW, int& yW);
 
 
 	void Picture_construction_process_prior_to_deblocking_filter_process(int* u, const char* type, const size_t BlkIdx, const bool isLuam);
@@ -68,8 +68,12 @@ private:
 
 	void transformDecodeIntra_16x16DCProcess(int c[4][4], int dcY[4][4], bool isLuam, bool isChromaCb);
 
+	void transformDecodeChromaDCProcess(int c[4][2], int dcC[4][2], int MbWidthC, int MbHeightC, bool isChromaCb);
+
 	void Intra_4x4_prediction(size_t luma4x4BlkIdx, bool isLuam);
 
 	void Intra_16x16_prediction(bool isLuam);
+
+	void Intra_chroma_prediction();
 };
 
