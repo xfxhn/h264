@@ -38,7 +38,7 @@ public:
 	int readSE();
 	int readME(int ChromaArrayType, H264_MB_PART_PRED_MODE mode);
 
-	
+
 
 	bool more_rbsp_data();
 
@@ -56,6 +56,6 @@ public:
 
 	// 当前读取到了字节中的第几位
 	size_t bitsLeft = 8;
-
-	uint8_t postion;
+	// 读取第几位
+	uint32_t postion;
 };

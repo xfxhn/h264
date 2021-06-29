@@ -82,5 +82,7 @@ void scaling_list(BitStream& bs, int32_t* scalingList, int sizeOfScalingList, bo
 //Моід
 bool byte_aligned(BitStream& bs);
 
-bool more_rbsp_data(BitStream& bs);
+
+
+void matMult(int* matrixA, int* matrixB);
 

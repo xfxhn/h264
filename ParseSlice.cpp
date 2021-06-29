@@ -5,13 +5,13 @@
 
 ParseSlice::ParseSlice(ParseNalu& nalu) :nalu(nalu)
 {
-	/*macroblock = nullptr;
-	sHeader = nullptr;*/
 	mbX = 0;
 	mbY = 0;
-	this->sHeader = nullptr;
+	sHeader = nullptr;
 	macroblock = nullptr;
 	lumaData = nullptr;
+	chromaCbData = nullptr;
+	chromaCrData = nullptr;
 
 	CurrMbAddr = 0;
 }
@@ -31,6 +31,16 @@ bool ParseSlice::parse(BitStream& bs, const ParsePPS* ppsCache, const ParseSPS* 
 	{
 		lumaData[i] = new uint8_t[sHeader->sps.PicHeightInSamplesL]();
 	}
+
+	chromaCbData = new uint8_t * [sHeader->sps.PicWidthInSamplesC];
+	chromaCrData = new uint8_t * [sHeader->sps.PicWidthInSamplesC];
+
+	for (size_t i = 0; i < sHeader->sps.PicWidthInSamplesC; i++)
+	{
+		chromaCbData[i] = new uint8_t[sHeader->sps.PicHeightInSamplesC]();
+		chromaCrData[i] = new uint8_t[sHeader->sps.PicHeightInSamplesC]();
+	}
+
 
 
 	this->macroblock = new Macroblock * [sHeader->PicSizeInMbs];
@@ -80,6 +90,38 @@ ParseSlice::~ParseSlice()
 		lumaData = nullptr;
 	}
 
+	if (chromaCbData)
+	{
+		for (size_t i = 0; i < sHeader->sps.PicWidthInSamplesC; i++)
+		{
+			if (chromaCbData[i])
+			{
+				delete[] chromaCbData[i];
+				chromaCbData[i] = nullptr;
+			}
+		}
+		delete[] chromaCbData;
+		chromaCbData = nullptr;
+	}
+
+	if (chromaCrData)
+	{
+		for (size_t i = 0; i < sHeader->sps.PicWidthInSamplesC; i++)
+		{
+			if (chromaCrData[i])
+			{
+				delete[] chromaCrData[i];
+				chromaCrData[i] = nullptr;
+			}
+		}
+		delete[] chromaCrData;
+		chromaCrData = nullptr;
+	}
+
+
+
+
+
 	if (sHeader)
 	{
 		delete sHeader;
@@ -119,39 +161,41 @@ void ParseSlice::transformDecodeChromaDCProcess(int c[4][2], int dcC[4][2], int 
 	{
 		if (sHeader->sps.ChromaArrayType == 1)
 		{
+
+
+
 			int a[2][2] = {
 				{1, 1},
 				{1,-1}
 			};
-			int b[2][2] = {
-				{1, 1},
-				{1,-1}
-			};
 
-			int g[2][2] = { {0} };
-			int f[2][2] = { {0} };
+			int g[2][2] = { 0 };
+			int f[2][2] = { 0 };
+
+
 			for (size_t i = 0; i < 2; i++)
 			{
 				for (size_t j = 0; j < 2; j++)
 				{
 					for (size_t k = 0; k < 2; k++)
 					{
-						g[i][j] += a[i][k] * c[k][j];
+						g[i][j] += c[k][j] * a[i][k];
 					}
 				}
 			}
+
 			for (size_t i = 0; i < 2; i++)
 			{
 				for (size_t j = 0; j < 2; j++)
 				{
 					for (size_t k = 0; k < 2; k++)
 					{
-						f[i][j] += b[i][k] * g[k][j];
+						f[i][j] += g[i][k] * a[k][j];
 					}
 				}
 			}
 
-
+			int aaa = 1;
 
 			for (size_t i = 0; i < 2; i++)
 			{
@@ -160,6 +204,7 @@ void ParseSlice::transformDecodeChromaDCProcess(int c[4][2], int dcC[4][2], int 
 					dcC[i][j] = ((f[i][j] * LevelScale4x4[qP % 6][0][0]) << (qP / 6)) >> 5;
 				}
 			}
+
 		}
 		else if (sHeader->sps.ChromaArrayType == 2)
 		{
@@ -718,7 +763,7 @@ void ParseSlice::Intra_16x16_prediction(bool isLuam)
 
 
 }
-void ParseSlice::Intra_chroma_prediction()
+void ParseSlice::Intra_chroma_prediction(bool isChromaCb)
 {
 	if (sHeader->sps.ChromaArrayType == 3)
 	{
@@ -728,26 +773,21 @@ void ParseSlice::Intra_chroma_prediction()
 	{
 		const int MbWidthC = sHeader->sps.MbWidthC;
 		const int MbHeightC = sHeader->sps.MbHeightC;
-		//这里最大预测样点值只有25
-		//预测样点位置
-	/*	int referenceCoordinateX[25] = { 0 };
-
-		int referenceCoordinateY[25] = { 0 };*/
 
 		const int maxSamplesVal = MbWidthC + MbHeightC + 1;
 		int* referenceCoordinateX = new int[maxSamplesVal]();
 		int* referenceCoordinateY = new int[maxSamplesVal]();
 
-		for (int x = -1; x < MbHeightC; x++)
+		for (int i = -1; i < MbHeightC; i++)
 		{
-			referenceCoordinateX[x + 1] = -1;
-			referenceCoordinateY[x + 1] = x;
+			referenceCoordinateX[i + 1] = -1;
+			referenceCoordinateY[i + 1] = i;
 		}
 
 		for (int i = 0; i < MbWidthC; i++)
 		{
-			referenceCoordinateX[MbHeightC + 1 + i] = i;
-			referenceCoordinateY[MbHeightC + 1 + i] = -1;;
+			referenceCoordinateX[(MbHeightC + 1 + i)] = i;
+			referenceCoordinateY[(MbHeightC + 1 + i)] = -1;;
 		}
 		//最大有17行，9列
 
@@ -792,13 +832,200 @@ void ParseSlice::Intra_chroma_prediction()
 				int xM = (xL >> 4) * MbWidthC;
 				int	yM = ((yL >> 4) * MbHeightC) + (yL % 2);
 
+				if (isChromaCb)
+				{
+					P(x, y) = chromaCbData[xM + xW][yM + yW];
+				}
+				else
+				{
+					P(x, y) = chromaCrData[xM + xW][yM + yW];
+				}
 
 
-				P(x, y) = lumaData[xM + xW][yM + yW];
+			}
+		}
+
+
+		int IntraChromaPredMode = macroblock[CurrMbAddr]->intra_chroma_pred_mode;
+
+		if (IntraChromaPredMode == 0) //DC
+		{
+			for (size_t chroma4x4BlkIdx = 0; chroma4x4BlkIdx < (1 << (sHeader->sps.ChromaArrayType + 1)); chroma4x4BlkIdx++)
+			{
+				//相对于宏块的左上色度样本的索引为chroma4x4BlkIdx的4x4色度块的左上色度样本的位置(x, y)。
+				const int xO = InverseRasterScan(chroma4x4BlkIdx, 4, 4, 8, 0);
+				const int yO = InverseRasterScan(chroma4x4BlkIdx, 4, 4, 8, 1);
+
+
+				int val = 0;
+				if ((xO == 0 && yO == 0) || (xO > 0 && yO > 0))
+				{
+					if (P(0 + xO, -1) >= 0 && P(1 + xO, -1) >= 0 && P(2 + xO, -1) >= 0 && P(3 + xO, -1) >= 0
+						&& P(-1, 0 + yO) >= 0 && P(-1, 1 + yO) >= 0 && P(-1, 2 + yO) >= 0 && P(-1, 3 + yO) >= 0
+						)
+					{
+						val = (P(0 + xO, -1) + P(1 + xO, -1) + P(2 + xO, -1) + P(3 + xO, -1)
+							+ P(-1, 0 + yO) + P(-1, 1 + yO) + P(-1, 2 + yO) + P(-1, 3 + yO) + 4) >> 3;
+					}
+					//(P(0, -1) < 0 || P(1, -1) < 0 || P(2, -1) < 0 || P(3, -1) < 0)
+					else if (!(P(0 + xO, -1) >= 0 && P(1 + xO, -1) >= 0 && P(2 + xO, -1) >= 0 && P(3 + xO, -1) >= 0)
+						&& (P(-1, 0 + yO) >= 0 && P(-1, 1 + yO) >= 0 && P(-1, 2 + yO) >= 0 && P(-1, 3 + yO) >= 0)
+						)
+					{
+						val = (P(-1, 0 + yO) + P(-1, 1 + yO) + P(-1, 2 + yO) + P(-1, 3 + yO) + 2) >> 2;
+					}
+					else if ((P(0 + xO, -1) > 0 && P(1 + xO, -1) > 0 && P(2 + xO, -1) > 0 && P(3 + xO, -1) > 0)
+						&& !(P(-1, 0 + yO) > 0 && P(-1, 1 + yO) > 0 && P(-1, 2 + yO) > 0 && P(-1, 3 + yO) > 0)
+						)
+					{
+						val = (P(0 + xO, -1) + P(1 + xO, -1) + P(2 + xO, -1) + P(3 + xO, -1) + 2) >> 2;
+					}
+					else //some samples p[ x + xO, −1 ], with x = 0..3, and some samples p[ −1, y +yO ], with y = 0..3, are marked as "not available for Intra chroma prediction"
+					{
+						val = (1 << (sHeader->sps.BitDepthC - 1));
+					}
+				}
+				else if (xO > 0 && yO == 0)
+				{
+					if (P(0 + xO, -1) >= 0 && P(1 + xO, -1) >= 0 && P(2 + xO, -1) >= 0 && P(3 + xO, -1) >= 0)
+					{
+						val = (P(0 + xO, -1) + P(1 + xO, -1) + P(2 + xO, -1) + P(3 + xO, -1) + 2) >> 2;
+					}
+					else if (P(-1, 0 + yO) >= 0 && P(-1, 1 + yO) >= 0 && P(-1, 2 + yO) >= 0 && P(-1, 3 + yO) > 0)
+					{
+						val = (P(-1, 0 + yO) + P(-1, 1 + yO) + P(-1, 2 + yO) + P(-1, 3 + yO) + 2) >> 2;
+					}
+					else //some samples p[ x + xO, −1 ], with x = 0..3, and some samples p[ −1, y +yO ], with y = 0..3, are marked as "not available for Intra chroma prediction"
+					{
+						val = (1 << (sHeader->sps.BitDepthC - 1));
+					}
+				}
+				else if (xO == 0 && yO > 0)
+				{
+					if (P(-1, 0 + yO) >= 0 && P(-1, 1 + yO) >= 0 && P(-1, 2 + yO) >= 0 && P(-1, 3 + yO) > 0)
+					{
+						val = (P(-1, 0 + yO) + P(-1, 1 + yO) + P(-1, 2 + yO) + P(-1, 3 + yO) + 2) >> 2;
+					}
+					else if (P(0 + xO, -1) >= 0 && P(1 + xO, -1) >= 0 && P(2 + xO, -1) >= 0 && P(3 + xO, -1) > 0)
+					{
+						val = (P(0 + xO, -1) + P(1 + xO, -1) + P(2 + xO, -1) + P(3 + xO, -1) + 2) >> 2;
+					}
+					else //some samples p[ x + xO, −1 ], with x = 0..3, and some samples p[ −1, y +yO ], with y = 0..3, are marked as "not available for Intra chroma prediction"
+					{
+						val = (1 << (sHeader->sps.BitDepthC - 1));
+					}
+				}
+
+
+
+				for (size_t y = 0; y < 4; y++)
+				{
+					for (size_t x = 0; x < 4; x++)
+					{
+						macroblock[CurrMbAddr]->chromaPredSamples[x + xO][y + yO] = val;
+					}
+				}
+			}
+		}
+		else if (IntraChromaPredMode == 1)
+		{
+			bool flag = true;
+
+			for (size_t y = 0; y < MbHeightC; y++)
+			{
+				if (P(-1, y) < 0) {
+					flag = false;
+					break;
+				}
 			}
 
-
+			if (flag)
+			{
+				for (size_t y = 0; y < MbHeightC; y++)
+				{
+					for (size_t x = 0; x < MbWidthC; x++)
+					{
+						macroblock[CurrMbAddr]->chromaPredSamples[x][y] = P(-1, y);
+					}
+				}
+			}
 		}
+		else if (IntraChromaPredMode == 2)
+		{
+			bool flag = true;
+			for (size_t x = 0; x < MbWidthC; x++)
+			{
+				if (P(x, -1) < 0)
+				{
+					flag = false;
+					break;
+				}
+			}
+			if (flag)
+			{
+				for (size_t y = 0; y < MbHeightC; y++)
+				{
+					for (size_t x = 0; x < MbWidthC; x++)
+					{
+						macroblock[CurrMbAddr]->chromaPredSamples[x][y] = P(x, -1);
+					}
+				}
+			}
+		}
+		else if (IntraChromaPredMode == 3)
+		{
+			int flag = true;
+			for (size_t x = 0; x < MbWidthC; x++)
+			{
+				if (P(x, -1) < 0)
+				{
+					flag = false;
+					break;
+				}
+			}
+
+			for (int y = -1; y < MbHeightC; y++)
+			{
+				if (P(-1, y) < 0)
+				{
+					flag = false;
+					break;
+				}
+			}
+
+			//This mode shall be used only when the samples p[ x, −1 ], with x = 0..MbWidthC − 1 and p[ −1, y ], with y = −1..MbHeightC − 1 are marked as "available for Intra chroma prediction".
+			if (flag)
+			{
+				int xCF = ((sHeader->sps.ChromaArrayType == 3) ? 4 : 0);
+				int yCF = ((sHeader->sps.ChromaArrayType != 1) ? 4 : 0);
+
+				int H = 0;
+				int V = 0;
+
+				for (int x1 = 0; x1 <= 3 + xCF; x1++)
+				{
+					H += (x1 + 1) * (P(4 + xCF + x1, -1) - P(2 + xCF - x1, -1));
+				}
+
+				for (int y1 = 0; y1 <= 3 + yCF; y1++)
+				{
+					V += (y1 + 1) * (P(-1, 4 + yCF + y1) - P(-1, 2 + yCF - y1));
+				}
+
+				int a = 16 * (P(-1, MbHeightC - 1) + P(MbWidthC - 1, -1));
+				int b = ((34 - 29 * (sHeader->sps.ChromaArrayType == 3)) * H + 32) >> 6;
+				int c = ((34 - 29 * (sHeader->sps.ChromaArrayType != 1)) * V + 32) >> 6;
+
+				for (int y = 0; y < MbHeightC; y++)
+				{
+					for (int x = 0; x < MbWidthC; x++)
+					{
+						macroblock[CurrMbAddr]->chromaPredSamples[x][y] = Clip3(0, (1 << sHeader->sps.BitDepthC) - 1, (a + b * (x - 3 - xCF) + c * (y - 3 - yCF) + 16) >> 5);
+					}
+				}
+			}
+		}
+
 
 
 
@@ -1181,7 +1408,21 @@ void ParseSlice::transformDecode4x4ChromaResidualProcess(bool isChromaCb)
 			printError("不支持旁路变换");
 			exit(0);
 		}
-		Intra_chroma_prediction();
+		Intra_chroma_prediction(isChromaCb);
+
+
+		int* u = new int[MbWidthC * MbHeightC];
+		for (size_t i = 0; i < MbWidthC; i++)
+		{
+			for (size_t j = 0; j < MbHeightC; j++)
+			{
+				u[i * MbWidthC + j] = Clip3(0, (1 << sHeader->sps.BitDepthC) - 1, macroblock[CurrMbAddr]->chromaPredSamples[j][i] + rMb[j][i]);
+			}
+		}
+
+		Picture_construction_process_prior_to_deblocking_filter_process(u, "4*4", 0, false, isChromaCb);
+
+
 	}
 
 }
@@ -1561,7 +1802,7 @@ void ParseSlice::getChromaQuantisationParameters(bool isChromaCb)
 
 
 
-void ParseSlice::Picture_construction_process_prior_to_deblocking_filter_process(int* u, const char* type, const size_t BlkIdx, const bool isLuam)
+void ParseSlice::Picture_construction_process_prior_to_deblocking_filter_process(int* u, const char* type, const size_t BlkIdx, const bool isLuam, bool isChromaCb)
 {
 	//当前宏块 左上角亮度样点距离当前帧左上角的位置
 	int xP = InverseRasterScan(CurrMbAddr, 16, 16, sHeader->sps.PicWidthInSamplesL, 0);
@@ -1600,10 +1841,42 @@ void ParseSlice::Picture_construction_process_prior_to_deblocking_filter_process
 				lumaData[xP + xO + j][yP + yO + i] = u[i * nE + j];
 			}
 		}
+		int a = 1;
 	}
 	else
 	{
+		int MbWidthC = sHeader->sps.MbWidthC;
+		int MbHeightC = sHeader->sps.MbHeightC;
 
+
+
+		if (sHeader->sps.ChromaArrayType == 1 || sHeader->sps.ChromaArrayType == 2) // YUV420 or YUV422
+		{
+			//6.4.7 Inverse 4x4 chroma block scanning process chroma4x4BlkIdx
+			/*const int xO = 0;
+			const int yO = 0;*/
+
+
+			uint8_t** chromaData = nullptr;
+
+			if (isChromaCb)
+			{
+				chromaData = chromaCbData;
+			}
+			else
+			{
+				chromaData = chromaCrData;
+			}
+			for (size_t i = 0; i < MbWidthC; i++)
+			{
+				for (size_t j = 0; j < MbHeightC; j++)
+				{
+					chromaData[xP / sHeader->sps.SubWidthC + xO + j][yP / sHeader->sps.SubHeightC + yO + i] = u[i * MbWidthC + j];
+				}
+
+			}
+			int a = 1;
+		}
 	}
 
 

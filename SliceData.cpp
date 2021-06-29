@@ -120,7 +120,9 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice& Slice)
 			{
 
 				Slice.transformDecode4x4LuamResidualProcess();
-
+				isChromaCb = true;
+				Slice.transformDecode4x4ChromaResidualProcess(isChromaCb);
+				isChromaCb = false;
 				Slice.transformDecode4x4ChromaResidualProcess(isChromaCb);
 			}
 			else if (Slice.macroblock[Slice.CurrMbAddr]->mode == H264_MB_PART_PRED_MODE::Intra_16x16)

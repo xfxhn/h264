@@ -64,13 +64,12 @@ bool byte_aligned(BitStream& bs)
 	return false;
 }
 
-bool more_rbsp_data(BitStream& bs)
+void matMult(int* matrixA, int* matrixB)
 {
 
-	cout << bs.currentPtr << endl;
+	cout << sizeof(matrixA) << endl;
 
-
-	return false;
 }
+
 
 

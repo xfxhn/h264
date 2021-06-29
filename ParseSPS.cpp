@@ -319,10 +319,8 @@ bool ParseSPS::seq_parameter_set_data(BitStream& bs)
 
 	PicWidthInMbs = pic_width_in_mbs_minus1 + 1;
 	PicHeightInMapUnits = pic_height_in_map_units_minus1 + 1;
-	//亮度分量的图像宽度
-	PicWidthInSamplesL = PicWidthInMbs * 16;
-	//亮度分量的图像高度
-	PicHeightInSamplesL = PicHeightInMapUnits * 16;
+
+
 
 	//总共有多少宏块
 	PicSizeInMapUnits = PicWidthInMbs * PicHeightInMapUnits;
@@ -368,8 +366,8 @@ bool ParseSPS::seq_parameter_set_data(BitStream& bs)
 		  在4 : 4 : 4 样点中，两个色度阵列的高度和宽度与亮度阵列的相等。*/
 
 
-		  //{0, 0, -1, -1},		//单色
-		  //{ 1, 0,  2,  2 },     //420
+		  //{0, 0, -1, -1},			//单色
+		  //{ 1, 0,  2,  2 },		//420
 		  //{ 2, 0,  2,  1 },		//422
 		  //{ 3, 0,  1,  1 },		//444
 		  //{ 3, 1, -1, -1 },		//444   分开编码
@@ -381,6 +379,18 @@ bool ParseSPS::seq_parameter_set_data(BitStream& bs)
 		MbHeightC = 16 / SubHeightC;
 
 	}
+
+
+	//亮度分量的图像宽度
+	PicWidthInSamplesL = PicWidthInMbs * 16;
+	//亮度分量的图像高度
+	PicHeightInSamplesL = PicHeightInMapUnits * 16;
+
+
+	//色度分类的图像宽度
+	PicWidthInSamplesC = PicWidthInMbs * MbWidthC;
+	//色度分类的图像高度
+	PicHeightInSamplesC = PicWidthInMbs * MbHeightC;
 
 
 	getWidthAndHeight();

@@ -28,6 +28,8 @@ public:
 	int LevelScale4x4[6][4][4];
 	int LevelScale8x8[6][8][8];
 	uint8_t** lumaData;//存储解码后图片的Y分量数据
+	uint8_t** chromaCbData;//存储解码后图片的cb分量数据
+	uint8_t** chromaCrData;//存储解码后图片的cr分量数据
 
 public:
 	ParseSlice(ParseNalu& nalu);
@@ -59,7 +61,7 @@ public:
 	void getMbAddrNAndLuma4x4BlkIdxN(int& mbAddrN, const int xN, const int yN, const int maxW, const int maxH, int& xW, int& yW);
 
 
-	void Picture_construction_process_prior_to_deblocking_filter_process(int* u, const char* type, const size_t BlkIdx, const bool isLuam);
+	void Picture_construction_process_prior_to_deblocking_filter_process(int* u, const char* type, const size_t BlkIdx, const bool isLuam, bool isChromaCb = true);
 
 	void scaling(bool isLuam, bool isChromaCb);
 
@@ -74,6 +76,6 @@ private:
 
 	void Intra_16x16_prediction(bool isLuam);
 
-	void Intra_chroma_prediction();
+	void Intra_chroma_prediction(bool isChromaCb);
 };
 
