@@ -12,9 +12,9 @@ class ResidualBlockCavlc
 public:
 	ResidualBlockCavlc(ParseSlice& slice);
 
-	bool residual_block_cavlc(BitStream& bs, int* coeffLevel, int startIdx, int endIdx, uint32_t maxNumCoeff, int& TotalCoeff, RESIDUAL_LEVEL residualLevel, size_t i4x4 = 0, size_t i8x8 = 0);
+	bool residual_block_cavlc(BitStream& bs, int* coeffLevel, int startIdx, int endIdx, uint32_t maxNumCoeff, int& TotalCoeff, RESIDUAL_LEVEL residualLevel, size_t BlkIdx = 0);
 
-	int getNumberCurrent(RESIDUAL_LEVEL residualLevel, size_t i4x4, size_t i8x8);
+	int getNumberCurrent(RESIDUAL_LEVEL residualLevel, size_t BlkIdx);
 
 private:
 	int getNumCoeffAndTrailingOnes(int nC, uint16_t coeff_token, int& coeff_token_length, int& TrailingOnes, int& TotalCoeff);

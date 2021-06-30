@@ -334,62 +334,6 @@ bool Macroblock::macroblock_layer(BitStream& bs)
 }
 
 
-
-//色度量化参数和缩放功能的推导过程
-//void Macroblock::getChromaQuantisationParameters(bool isChromaCb)
-//{
-//	//CbCr
-//	int qPOffset = 0;
-//
-//
-//	if (isChromaCb)
-//	{
-//		//计算色度量化参数的偏移量值
-//		qPOffset = sHeader->pps.chroma_qp_index_offset;
-//	}
-//	else
-//	{
-//		qPOffset = sHeader->pps.second_chroma_qp_index_offset;
-//	}
-//	//每个色度分量的qPI 值通过下述方式获得  //QpBdOffsetC 色度偏移
-//	int qPI = Clip3(-(int)sHeader->sps.QpBdOffsetC, 51, macroblock[CurrMbAddr]->QPY + qPOffset);
-//
-//
-//	int QPC = 0;
-//	if (qPI < 30)
-//	{
-//		QPC = qPI;
-//	}
-//	else
-//	{
-//		//int qPIs[] = { 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51 };
-//		int QPCs[] = { 29, 30, 31, 32, 32, 33, 34, 34, 35, 35, 36, 36, 37, 37, 37, 38, 38, 38, 39, 39, 39, 39 };
-//
-//		QPC = QPCs[qPI - 30];
-//	}
-//
-//
-//	int QP1C = QPC + sHeader->sps.QpBdOffsetC;
-//
-//	macroblock[CurrMbAddr]->QPC = QPC;
-//	macroblock[CurrMbAddr]->QP1C = QP1C;
-//
-//
-//
-//	if ((SLIECETYPE)sHeader->slice_type == SLIECETYPE::H264_SLIECE_TYPE_SP || (SLIECETYPE)sHeader->slice_type == SLIECETYPE::H264_SLIECE_TYPE_SI)
-//	{
-//		//用QSY 代替 QPY，QSC 代替 QPC
-//		macroblock[CurrMbAddr]->QSY = macroblock[CurrMbAddr]->QPY;
-//		macroblock[CurrMbAddr]->QSC = macroblock[CurrMbAddr]->QPC;
-//	}
-//
-//}
-
-
-
-
-
-
 //宏块预测语法
 bool Macroblock::mb_pred(BitStream& bs, uint32_t mb_type, uint32_t numMbPart)
 {
@@ -506,20 +450,24 @@ H264_MB_PART_PRED_MODE Macroblock::MbPartPredMode(uint32_t mb_type, SLIECETYPE s
 			if (mb_type == 0) {
 				if (transform_size_8x8_flag) {
 					mode = mb_type_slices_I[1].MbPartPredMode;
+					mbType = mb_type_slices_I[1].name;
 				}
 				else {
 					mode = mb_type_slices_I[0].MbPartPredMode;
+					mbType = mb_type_slices_I[1].name;
 				}
 			}
 			else if (mb_type == 25)
 			{
 				mode = mb_type_slices_I[mb_type].MbPartPredMode;  //na 
+				mbType = mb_type_slices_I[mb_type].name;
 			}
 			else {
 				mode = mb_type_slices_I[mb_type + 1].MbPartPredMode;
 				CodedBlockPatternLuma = mb_type_slices_I[mb_type + 1].CodedBlockPatternLuma;
 				CodedBlockPatternChroma = mb_type_slices_I[mb_type + 1].CodedBlockPatternChroma;
 				Intra16x16PredMode = mb_type_slices_I[mb_type + 1].Intra16x16PredMode;
+				mbType = mb_type_slices_I[mb_type + 1].name;
 			}
 		}
 		else
@@ -539,6 +487,7 @@ H264_MB_PART_PRED_MODE Macroblock::MbPartPredMode(uint32_t mb_type, SLIECETYPE s
 		else {
 			mode = mb_type_sleces_sp_p[mb_type].MbPartPredMode0;
 		}
+		mbType = mb_type_sleces_sp_p[mb_type].name;
 	}
 	else if (slice_type == SLIECETYPE::H264_SLIECE_TYPE_B)
 	{
@@ -549,18 +498,12 @@ H264_MB_PART_PRED_MODE Macroblock::MbPartPredMode(uint32_t mb_type, SLIECETYPE s
 		else {
 			mode = mb_type_sleces_b[mb_type].MbPartPredMode0;
 		}
+		mbType = mb_type_sleces_b[mb_type].name;
 	}
 	else if (slice_type == SLIECETYPE::H264_SLIECE_TYPE_SI)
 	{
-		if (mb_type == 0)
-		{
-			mode = mb_type_sleces_si[mb_type].MbPartPredMode;
-		}
-		else
-		{
-			printError("SImbPartIdx必须是0");
-			exit(1);
-		}
+		mode = mb_type_sleces_si[mb_type].MbPartPredMode;
+		mbType = mb_type_sleces_si[mb_type].name;
 
 	}
 	return mode;
@@ -715,7 +658,7 @@ bool Macroblock::residual(BitStream& bs, int startIdx, int endIdx)
 
 							RESIDUAL_LEVEL level = iCbCr == 0 ? RESIDUAL_LEVEL::ChromaACLevelCb : RESIDUAL_LEVEL::ChromaACLevelCr;
 							//能走到这里DC系数最少被取走了一个，所以这里最多15
-							residual_block.residual_block_cavlc(bs, ChromaACLevel[iCbCr][BlkIdx], max(0, startIdx - 1), endIdx - 1, 15, TotalCoeff, level, i4x4, i8x8);
+							residual_block.residual_block_cavlc(bs, ChromaACLevel[iCbCr][BlkIdx], max(0, startIdx - 1), endIdx - 1, 15, TotalCoeff, level, BlkIdx);
 						}
 					}
 					else
@@ -781,7 +724,7 @@ int Macroblock::residual_luma(BitStream& bs, int i16x16DClevel[16], int i16x16AC
 						else
 						{
 							//解析16*16AC 交流分量 剩余的最多15个系数
-							residual_block.residual_block_cavlc(bs, i16x16AClevel[BlkIdx], max(0, startIdx - 1), endIdx - 1, 15, TotalCoeff, RESIDUAL_LEVEL::Intra16x16ACLevel, i4x4, i8x8);
+							residual_block.residual_block_cavlc(bs, i16x16AClevel[BlkIdx], max(0, startIdx - 1), endIdx - 1, 15, TotalCoeff, RESIDUAL_LEVEL::Intra16x16ACLevel, BlkIdx);
 						}
 
 					}
@@ -793,7 +736,7 @@ int Macroblock::residual_luma(BitStream& bs, int i16x16DClevel[16], int i16x16AC
 						}
 						else
 						{
-							residual_block.residual_block_cavlc(bs, level4x4[BlkIdx], startIdx, endIdx, 16, TotalCoeff, RESIDUAL_LEVEL::LumaLevel4x4, i4x4, i8x8);
+							residual_block.residual_block_cavlc(bs, level4x4[BlkIdx], startIdx, endIdx, 16, TotalCoeff, RESIDUAL_LEVEL::LumaLevel4x4, BlkIdx);
 						}
 					}
 					//存储当前4x4块非0系数数目

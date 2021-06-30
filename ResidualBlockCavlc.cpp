@@ -11,7 +11,7 @@ ResidualBlockCavlc::ResidualBlockCavlc(ParseSlice& slice) :sliceBase(slice)
 }
 
 bool ResidualBlockCavlc::residual_block_cavlc(
-	BitStream& bs, int* coeffLevel, int startIdx, int endIdx, uint32_t maxNumCoeff, int& TotalCoeff, RESIDUAL_LEVEL residualLevel, size_t i4x4, size_t i8x8
+	BitStream& bs, int* coeffLevel, int startIdx, int endIdx, uint32_t maxNumCoeff, int& TotalCoeff, RESIDUAL_LEVEL residualLevel, size_t BlkIdx
 )
 {
 
@@ -20,7 +20,7 @@ bool ResidualBlockCavlc::residual_block_cavlc(
 	int coeff_token_length = 0;
 	int TrailingOnes = 0;
 
-	int numberCurrent = getNumberCurrent(residualLevel, i4x4, i8x8);
+	int numberCurrent = getNumberCurrent(residualLevel, BlkIdx);
 
 	//获取16bit因为token最长只有16bit
 	uint16_t coeff_token = bs.getMultiBit(16);
@@ -175,24 +175,12 @@ bool ResidualBlockCavlc::residual_block_cavlc(
 	return false;
 }
 
-int ResidualBlockCavlc::getNumberCurrent(RESIDUAL_LEVEL residualLevel, size_t i4x4, size_t i8x8)
+int ResidualBlockCavlc::getNumberCurrent(RESIDUAL_LEVEL residualLevel, size_t BlkIdx)
 {
 
+	//const int BlkIdx = i8x8 * 4 + i4x4;
 
-	int luma4x4BlkIdx = 0;
-	int cb4x4BlkIdx = 0;
-	int cr4x4BlkIdx = 0;
 	int nC = 0;
-	bool availableTop = false;
-	bool availableLeft = false;
-
-
-	int nA = 0; //左侧块
-	int nB = 0;	//上测块
-
-
-	const int BlkIdx = i8x8 * 4 + i4x4;
-
 
 
 	if (residualLevel == RESIDUAL_LEVEL::ChromaDCLevel)
@@ -209,116 +197,392 @@ int ResidualBlockCavlc::getNumberCurrent(RESIDUAL_LEVEL residualLevel, size_t i4
 	}
 	else
 	{
+		int nA = 0; //左侧块
+		int nB = 0;	//上测块
 
+
+		int luma4x4BlkIdx = BlkIdx;
+		int cb4x4BlkIdx = BlkIdx;
+		int cr4x4BlkIdx = BlkIdx;
+
+		int BlkIdxA = BlkIdx;
+		int BlkIdxB = BlkIdx;
+
+		int mbAddrA = NA;
+		int mbAddrB = NA;
+
+
+		int chroma4x4BlkIdx = BlkIdx;
 		if (residualLevel == RESIDUAL_LEVEL::Intra16x16DCLevel)
 		{
+			luma4x4BlkIdx = 0;
+		}
+		if (residualLevel == RESIDUAL_LEVEL::CbIntra16x16DCLevel)
+		{
+			cb4x4BlkIdx = 0;
+		}
+		if (residualLevel == RESIDUAL_LEVEL::CrIntra16x16DCLevel)
+		{
+			cr4x4BlkIdx = 0;
+		}
 
 
-			//解析DC的Number current取相邻块的第一个子块的非0系数
-			if (sliceBase.mbY > 0)
+		//亮度
+		if (residualLevel == RESIDUAL_LEVEL::Intra16x16DCLevel || residualLevel == RESIDUAL_LEVEL::Intra16x16ACLevel || residualLevel == RESIDUAL_LEVEL::LumaLevel4x4)
+		{
+
+			//获取距离宏块左上角的样点位置
+			int x = InverseRasterScan(luma4x4BlkIdx / 4, 8, 8, 16, 0) + InverseRasterScan(luma4x4BlkIdx % 4, 4, 4, 8, 0);
+			int y = InverseRasterScan(luma4x4BlkIdx / 4, 8, 8, 16, 1) + InverseRasterScan(luma4x4BlkIdx % 4, 4, 4, 8, 1);
+
+
+
+			//	int mbAddrA = NA;
+			int luma4x4BlkIdxA = NA;
+
+
+			int xW = NA;
+			int yW = NA;
+
+			sliceBase.getMbAddrNAndLuma4x4BlkIdxN(mbAddrA, x + (-1), y + 0, 16, 16, xW, yW);
+
+			if (mbAddrA != NA)
 			{
-				const int topMbIdx = sliceBase.CurrMbAddr - sliceBase.sHeader->sps.PicWidthInMbs;
-				nB = sliceBase.macroblock[topMbIdx]->mb_luma_4x4_non_zero_count_coeff[0];
-				availableTop = true;
+				//左侧宏块子块索引
+				luma4x4BlkIdxA = 8 * (yW / 8) + 4 * (xW / 8) + 2 * ((yW % 8) / 4) + ((xW % 8) / 4);
 			}
 
+			//		int mbAddrB = NA;
+			int luma4x4BlkIdxB = NA;
+			sliceBase.getMbAddrNAndLuma4x4BlkIdxN(mbAddrB, x + 0, y + (-1), 16, 16, xW, yW);
 
-			if (sliceBase.mbX > 0)
+			if (mbAddrB != NA)
 			{
-				const int leftMbIdx = sliceBase.CurrMbAddr - 1;
-				nA = sliceBase.macroblock[leftMbIdx]->mb_luma_4x4_non_zero_count_coeff[0];
-				availableLeft = true;
+				//上侧宏块子块索引
+				luma4x4BlkIdxB = 8 * (yW / 8) + 4 * (xW / 8) + 2 * ((yW % 8) / 4) + ((xW % 8) / 4);
+			}
+			BlkIdxA = luma4x4BlkIdxA;
+			BlkIdxB = luma4x4BlkIdxB;
+		}
+		else if (residualLevel == RESIDUAL_LEVEL::CbIntra16x16DCLevel || residualLevel == RESIDUAL_LEVEL::CbIntra16x16ACLevel || residualLevel == RESIDUAL_LEVEL::CbLevel4x4)
+		{
+			//对于ChromaArrayType等于3的相邻4x4色度块的推导过程
+			//这个过程只在ChromaArrayType等于3时被调用
+
+			int x = InverseRasterScan(cb4x4BlkIdx / 4, 8, 8, 16, 0) + InverseRasterScan(cb4x4BlkIdx % 4, 4, 4, 8, 0);
+			int y = InverseRasterScan(cb4x4BlkIdx / 4, 8, 8, 16, 1) + InverseRasterScan(cb4x4BlkIdx % 4, 4, 4, 8, 1);
+
+			int maxW = sliceBase.sHeader->sps.MbWidthC;
+			int maxH = sliceBase.sHeader->sps.MbHeightC;
+
+			//		int mbAddrA = NA;
+			int chroma4x4BlkIdxA = NA;
+
+			int xW = NA;
+			int yW = NA;
+
+			sliceBase.getMbAddrNAndLuma4x4BlkIdxN(mbAddrA, x + (-1), y + 0, maxW, maxH, xW, yW);
+
+			if (mbAddrA != NA)
+			{
+				//左侧宏块子块索引
+				chroma4x4BlkIdxA = 2 * (yW / 4) + (xW / 4);
 			}
 
-		}
+			//			int mbAddrB = NA;
+			int chroma4x4BlkIdxB = NA;
+			sliceBase.getMbAddrNAndLuma4x4BlkIdxN(mbAddrB, x + 0, y + (-1), maxW, maxH, xW, yW);
 
-
-
-		if (residualLevel == RESIDUAL_LEVEL::ChromaACLevelCb)
-		{
-			findChromaAC_nA_nB(0, BlkIdx, nA, nB, availableLeft, availableTop);
-
-		}
-		else if (residualLevel == RESIDUAL_LEVEL::ChromaACLevelCr)
-		{
-			findChromaAC_nA_nB(1, BlkIdx, nA, nB, availableLeft, availableTop);
-		}
-
-
-
-
-		if (residualLevel == RESIDUAL_LEVEL::LumaLevel4x4 || residualLevel == RESIDUAL_LEVEL::Intra16x16ACLevel)
-		{
-			if (BlkIdx == 0 || BlkIdx == 2 || BlkIdx == 8 || BlkIdx == 10)
+			if (mbAddrB != NA)
 			{
-				if (sliceBase.mbX > 0) {
-					const int leftMbIdx = sliceBase.CurrMbAddr - 1;
-					const int left4x4Idx = BlkIdx + 5;
-					nA = sliceBase.macroblock[leftMbIdx]->mb_luma_4x4_non_zero_count_coeff[left4x4Idx];
-					availableLeft = true;
-				}
+				//上侧宏块子块索引
+				chroma4x4BlkIdxB = 2 * (yW / 4) + (xW / 4);
+			}
+			BlkIdxA = chroma4x4BlkIdxA;
+			BlkIdxB = chroma4x4BlkIdxB;
+
+		}
+		else if (residualLevel == RESIDUAL_LEVEL::CrIntra16x16DCLevel || residualLevel == RESIDUAL_LEVEL::CrIntra16x16ACLevel || residualLevel == RESIDUAL_LEVEL::CrLevel4x4)
+		{
+			//对于ChromaArrayType等于3的相邻4x4色度块的推导过程
+			//这个过程只在ChromaArrayType等于3时被调用
+
+			int x = InverseRasterScan(cb4x4BlkIdx / 4, 8, 8, 16, 0) + InverseRasterScan(cb4x4BlkIdx % 4, 4, 4, 8, 0);
+			int y = InverseRasterScan(cb4x4BlkIdx / 4, 8, 8, 16, 1) + InverseRasterScan(cb4x4BlkIdx % 4, 4, 4, 8, 1);
+
+			int maxW = sliceBase.sHeader->sps.MbWidthC;
+			int maxH = sliceBase.sHeader->sps.MbHeightC;
+
+			//	int mbAddrA = NA;
+			int chroma4x4BlkIdxA = NA;
+
+			int xW = NA;
+			int yW = NA;
+
+			sliceBase.getMbAddrNAndLuma4x4BlkIdxN(mbAddrA, x + (-1), y + 0, maxW, maxH, xW, yW);
+
+			if (mbAddrA != NA)
+			{
+				//左侧宏块子块索引
+				chroma4x4BlkIdxA = 2 * (yW / 4) + (xW / 4);
+			}
+
+			//		int mbAddrB = NA;
+			int chroma4x4BlkIdxB = NA;
+			sliceBase.getMbAddrNAndLuma4x4BlkIdxN(mbAddrB, x + 0, y + (-1), maxW, maxH, xW, yW);
+
+			if (mbAddrB != NA)
+			{
+				//上侧宏块子块索引
+				chroma4x4BlkIdxB = 2 * (yW / 4) + (xW / 4);
+			}
+			BlkIdxA = chroma4x4BlkIdxA;
+			BlkIdxB = chroma4x4BlkIdxB;
+		}
+		else if (residualLevel == RESIDUAL_LEVEL::ChromaACLevelCb || residualLevel == RESIDUAL_LEVEL::ChromaACLevelCr)
+		{
+			//ChromaACLevel
+			//相邻4x4色度块的推导过程
+			//这个子句只在ChromaArrayType等于1或2时被调用
+
+			//相对于宏块的左上色度样本的索引为chroma4x4BlkIdx的4x4色度块的左上色度样本的位置(x, y)。
+			int x = InverseRasterScan(chroma4x4BlkIdx, 4, 4, 8, 0);
+			int y = InverseRasterScan(chroma4x4BlkIdx, 4, 4, 8, 1);
+
+
+
+			int maxW = sliceBase.sHeader->sps.MbWidthC;
+			int maxH = sliceBase.sHeader->sps.MbHeightC;
+
+			//		int mbAddrA = NA;
+			int chroma4x4BlkIdxA = NA;
+
+			int xW = NA;
+			int yW = NA;
+
+			sliceBase.getMbAddrNAndLuma4x4BlkIdxN(mbAddrA, x + (-1), y + 0, maxW, maxH, xW, yW);
+
+			if (mbAddrA != NA)
+			{
+				//左侧宏块子块索引
+				chroma4x4BlkIdxA = 2 * (yW / 4) + (xW / 4);
+			}
+
+			//		int mbAddrB = NA;
+			int chroma4x4BlkIdxB = NA;
+			sliceBase.getMbAddrNAndLuma4x4BlkIdxN(mbAddrB, x + 0, y + (-1), maxW, maxH, xW, yW);
+
+			if (mbAddrB != NA)
+			{
+				//上侧宏块子块索引
+				chroma4x4BlkIdxB = 2 * (yW / 4) + (xW / 4);
+			}
+			BlkIdxA = chroma4x4BlkIdxA;
+			BlkIdxB = chroma4x4BlkIdxB;
+		}
+
+
+		bool availableFlagA = false;
+		bool availableFlagB = false;
+		if (mbAddrA == NA ||
+			(isInterMode(sliceBase.macroblock[sliceBase.CurrMbAddr]->mode) && sliceBase.sHeader->pps.constrained_intra_pred_flag)
+			&& isInterframe(sliceBase.macroblock[mbAddrA]->mode)
+			&& sliceBase.sHeader->nalu.nal_unit_type >= 2 && sliceBase.sHeader->nalu.nal_unit_type <= 4)
+		{
+			availableFlagA = false;
+		}
+		else
+		{
+			availableFlagA = true;
+		}
+
+		if (mbAddrB == NA ||
+			(isInterMode(sliceBase.macroblock[sliceBase.CurrMbAddr]->mode) && sliceBase.sHeader->pps.constrained_intra_pred_flag)
+			&& isInterframe(sliceBase.macroblock[mbAddrB]->mode)
+			&& sliceBase.sHeader->nalu.nal_unit_type >= 2 && sliceBase.sHeader->nalu.nal_unit_type <= 4)
+		{
+			availableFlagB = false;
+		}
+		else
+		{
+			availableFlagB = true;
+		}
+
+
+		if (availableFlagA)
+		{
+			if (sliceBase.macroblock[mbAddrA]->mbType == H264_MB_TYPE::P_Skip || sliceBase.macroblock[mbAddrA]->mbType == H264_MB_TYPE::B_Skip)
+			{
+				nA = 0;
+			}
+			else if (sliceBase.macroblock[mbAddrA]->mbType == H264_MB_TYPE::I_PCM) //if mbAddrN is an I_PCM macroblock, nN is set equal to 16.
+			{
+				nA = 16;
 			}
 			else
 			{
-				if (BlkIdx % 2 == 1) {
-
-					nA = sliceBase.macroblock[sliceBase.CurrMbAddr]->mb_luma_4x4_non_zero_count_coeff[BlkIdx - 1];
-					availableLeft = true;
+				if (residualLevel == RESIDUAL_LEVEL::Intra16x16DCLevel || residualLevel == RESIDUAL_LEVEL::Intra16x16ACLevel || residualLevel == RESIDUAL_LEVEL::LumaLevel4x4)
+				{
+					nA = sliceBase.macroblock[mbAddrA]->mb_luma_4x4_non_zero_count_coeff[BlkIdxA];
 				}
-				else {
-					nA = sliceBase.macroblock[sliceBase.CurrMbAddr]->mb_luma_4x4_non_zero_count_coeff[BlkIdx - 3];
-					availableLeft = true;
+				else if (residualLevel == RESIDUAL_LEVEL::CbIntra16x16DCLevel || residualLevel == RESIDUAL_LEVEL::CbIntra16x16ACLevel || residualLevel == RESIDUAL_LEVEL::CbLevel4x4)
+				{
+					nA = sliceBase.macroblock[mbAddrA]->mb_chroma_4x4_non_zero_count_coeff[0][BlkIdxA];
 				}
-			}
-
-
-
-
-			if (i8x8 < 2)
-			{
-				if (i4x4 < 2) {
-					if (sliceBase.mbY > 0)
-					{
-						const int topMbIdx = sliceBase.CurrMbAddr - sliceBase.sHeader->sps.PicWidthInMbs;
-						const int top4x4Idx = BlkIdx + 10;
-						nB = sliceBase.macroblock[topMbIdx]->mb_luma_4x4_non_zero_count_coeff[top4x4Idx];
-						availableTop = true;
-					}
+				else if (residualLevel == RESIDUAL_LEVEL::CrIntra16x16DCLevel || residualLevel == RESIDUAL_LEVEL::CrIntra16x16ACLevel || residualLevel == RESIDUAL_LEVEL::CrLevel4x4)
+				{
+					nA = sliceBase.macroblock[mbAddrA]->mb_chroma_4x4_non_zero_count_coeff[1][BlkIdxA];
 				}
-				else {
-					nB = sliceBase.macroblock[sliceBase.CurrMbAddr]->mb_luma_4x4_non_zero_count_coeff[BlkIdx - 2];
-					availableTop = true;
+				else if (residualLevel == RESIDUAL_LEVEL::ChromaACLevelCb)
+				{
+					nA = sliceBase.macroblock[mbAddrA]->mb_chroma_4x4_non_zero_count_coeff[0][BlkIdxA];
 				}
-			}
-			else
-			{
-				if (i4x4 < 2) {
-					nB = sliceBase.macroblock[sliceBase.CurrMbAddr]->mb_luma_4x4_non_zero_count_coeff[BlkIdx - 6];
-					availableTop = true;
-				}
-				else {
-					nB = sliceBase.macroblock[sliceBase.CurrMbAddr]->mb_luma_4x4_non_zero_count_coeff[BlkIdx - 2];
-					availableTop = true;
+				else if (residualLevel == RESIDUAL_LEVEL::ChromaACLevelCr)
+				{
+					nA = sliceBase.macroblock[mbAddrA]->mb_chroma_4x4_non_zero_count_coeff[1][BlkIdxA];
 				}
 			}
 		}
 
 
 
+		if (availableFlagB)
+		{
+			if (sliceBase.macroblock[mbAddrB]->mbType == H264_MB_TYPE::P_Skip || sliceBase.macroblock[mbAddrB]->mbType == H264_MB_TYPE::B_Skip)
+			{
+				nB = 0;
+			}
+			else if (sliceBase.macroblock[mbAddrB]->mbType == H264_MB_TYPE::I_PCM) //if mbAddrN is an I_PCM macroblock, nN is set equal to 16.
+			{
+				nB = 16;
+			}
+			else
+			{
+				if (residualLevel == RESIDUAL_LEVEL::Intra16x16DCLevel || residualLevel == RESIDUAL_LEVEL::Intra16x16ACLevel || residualLevel == RESIDUAL_LEVEL::LumaLevel4x4)
+				{
+					nB = sliceBase.macroblock[mbAddrB]->mb_luma_4x4_non_zero_count_coeff[BlkIdxB];
+				}
+				else if (residualLevel == RESIDUAL_LEVEL::CbIntra16x16DCLevel || residualLevel == RESIDUAL_LEVEL::CbIntra16x16ACLevel || residualLevel == RESIDUAL_LEVEL::CbLevel4x4)
+				{
+					nB = sliceBase.macroblock[mbAddrB]->mb_chroma_4x4_non_zero_count_coeff[0][BlkIdxB];
+				}
+				else if (residualLevel == RESIDUAL_LEVEL::CrIntra16x16DCLevel || residualLevel == RESIDUAL_LEVEL::CrIntra16x16ACLevel || residualLevel == RESIDUAL_LEVEL::CrLevel4x4)
+				{
+					nB = sliceBase.macroblock[mbAddrB]->mb_chroma_4x4_non_zero_count_coeff[1][BlkIdxB];
+				}
+				else if (residualLevel == RESIDUAL_LEVEL::ChromaACLevelCb)
+				{
+					nB = sliceBase.macroblock[mbAddrB]->mb_chroma_4x4_non_zero_count_coeff[0][BlkIdxB];
+				}
+				else if (residualLevel == RESIDUAL_LEVEL::ChromaACLevelCr)
+				{
+					nB = sliceBase.macroblock[mbAddrB]->mb_chroma_4x4_non_zero_count_coeff[1][BlkIdxB];
+				}
+			}
+		}
+		//if (residualLevel == RESIDUAL_LEVEL::Intra16x16DCLevel)
+		//{
+
+
+		//	//解析DC的Number current取相邻块的第一个子块的非0系数
+		//	if (sliceBase.mbY > 0)
+		//	{
+		//		const int topMbIdx = sliceBase.CurrMbAddr - sliceBase.sHeader->sps.PicWidthInMbs;
+		//		nB = sliceBase.macroblock[topMbIdx]->mb_luma_4x4_non_zero_count_coeff[0];
+		//		availableTop = true;
+		//	}
+
+
+		//	if (sliceBase.mbX > 0)
+		//	{
+		//		const int leftMbIdx = sliceBase.CurrMbAddr - 1;
+		//		nA = sliceBase.macroblock[leftMbIdx]->mb_luma_4x4_non_zero_count_coeff[0];
+		//		availableLeft = true;
+		//	}
+
+		//}
+
+
+
+		//if (residualLevel == RESIDUAL_LEVEL::ChromaACLevelCb)
+		//{
+		//	findChromaAC_nA_nB(0, BlkIdx, nA, nB, availableLeft, availableTop);
+
+		//}
+		//else if (residualLevel == RESIDUAL_LEVEL::ChromaACLevelCr)
+		//{
+		//	findChromaAC_nA_nB(1, BlkIdx, nA, nB, availableLeft, availableTop);
+		//}
 
 
 
 
+		//if (residualLevel == RESIDUAL_LEVEL::LumaLevel4x4 || residualLevel == RESIDUAL_LEVEL::Intra16x16ACLevel)
+		//{
+		//	if (BlkIdx == 0 || BlkIdx == 2 || BlkIdx == 8 || BlkIdx == 10)
+		//	{
+		//		if (sliceBase.mbX > 0) {
+		//			const int leftMbIdx = sliceBase.CurrMbAddr - 1;
+		//			const int left4x4Idx = BlkIdx + 5;
+		//			nA = sliceBase.macroblock[leftMbIdx]->mb_luma_4x4_non_zero_count_coeff[left4x4Idx];
+		//			availableLeft = true;
+		//		}
+		//	}
+		//	else
+		//	{
+		//		if (BlkIdx % 2 == 1) {
 
-		if (availableTop && availableLeft)
+		//			nA = sliceBase.macroblock[sliceBase.CurrMbAddr]->mb_luma_4x4_non_zero_count_coeff[BlkIdx - 1];
+		//			availableLeft = true;
+		//		}
+		//		else {
+		//			nA = sliceBase.macroblock[sliceBase.CurrMbAddr]->mb_luma_4x4_non_zero_count_coeff[BlkIdx - 3];
+		//			availableLeft = true;
+		//		}
+		//	}
+
+
+
+
+		//	if (i8x8 < 2)
+		//	{
+		//		if (i4x4 < 2) {
+		//			if (sliceBase.mbY > 0)
+		//			{
+		//				const int topMbIdx = sliceBase.CurrMbAddr - sliceBase.sHeader->sps.PicWidthInMbs;
+		//				const int top4x4Idx = BlkIdx + 10;
+		//				nB = sliceBase.macroblock[topMbIdx]->mb_luma_4x4_non_zero_count_coeff[top4x4Idx];
+		//				availableTop = true;
+		//			}
+		//		}
+		//		else {
+		//			nB = sliceBase.macroblock[sliceBase.CurrMbAddr]->mb_luma_4x4_non_zero_count_coeff[BlkIdx - 2];
+		//			availableTop = true;
+		//		}
+		//	}
+		//	else
+		//	{
+		//		if (i4x4 < 2) {
+		//			nB = sliceBase.macroblock[sliceBase.CurrMbAddr]->mb_luma_4x4_non_zero_count_coeff[BlkIdx - 6];
+		//			availableTop = true;
+		//		}
+		//		else {
+		//			nB = sliceBase.macroblock[sliceBase.CurrMbAddr]->mb_luma_4x4_non_zero_count_coeff[BlkIdx - 2];
+		//			availableTop = true;
+		//		}
+		//	}
+		//}
+
+
+		if (availableFlagA && availableFlagB)
 		{
 			nC = (nA + nB + 1) >> 1;
 		}
-		else if (availableLeft && !availableTop)
+		else if (availableFlagA && !availableFlagB)
 		{
 			nC = nA;
 		}
-		else if (availableTop && !availableLeft)
+		else if (availableFlagB && !availableFlagA)
 		{
 			nC = nB;
 		}

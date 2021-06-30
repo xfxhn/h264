@@ -60,7 +60,7 @@ inline int InverseRasterScan(int32_t a, int32_t b, int32_t c, int32_t d, int32_t
 
 
 
-
+//Direct 表示直接预测模式
 inline bool isInterMode(H264_MB_PART_PRED_MODE mode)
 {
 	return (mode == H264_MB_PART_PRED_MODE::Intra_4x4) || (mode == H264_MB_PART_PRED_MODE::Intra_8x8) || (mode == H264_MB_PART_PRED_MODE::Intra_16x16);
@@ -82,7 +82,4 @@ void scaling_list(BitStream& bs, int32_t* scalingList, int sizeOfScalingList, bo
 //填充
 bool byte_aligned(BitStream& bs);
 
-
-
-void matMult(int* matrixA, int* matrixB);
 

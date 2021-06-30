@@ -172,14 +172,13 @@ void ParseSlice::transformDecodeChromaDCProcess(int c[4][2], int dcC[4][2], int 
 			int g[2][2] = { 0 };
 			int f[2][2] = { 0 };
 
-
 			for (size_t i = 0; i < 2; i++)
 			{
 				for (size_t j = 0; j < 2; j++)
 				{
 					for (size_t k = 0; k < 2; k++)
 					{
-						g[i][j] += c[k][j] * a[i][k];
+						g[i][j] += a[i][k] * c[k][j];
 					}
 				}
 			}
@@ -194,8 +193,6 @@ void ParseSlice::transformDecodeChromaDCProcess(int c[4][2], int dcC[4][2], int 
 					}
 				}
 			}
-
-			int aaa = 1;
 
 			for (size_t i = 0; i < 2; i++)
 			{
@@ -223,7 +220,7 @@ void ParseSlice::transformDecodeChromaDCProcess(int c[4][2], int dcC[4][2], int 
 			{
 				for (size_t j = 0; j < 2; j++)
 				{
-					for (size_t k = 0; k < 2; k++)
+					for (size_t k = 0; k < 4; k++)
 					{
 						g[i][j] += a[i][k] * c[k][j];
 					}
@@ -236,7 +233,7 @@ void ParseSlice::transformDecodeChromaDCProcess(int c[4][2], int dcC[4][2], int 
 				{
 					for (size_t k = 0; k < 2; k++)
 					{
-						f[i][j] += b[i][k] * g[k][j];
+						f[i][j] += g[i][k] * b[k][j];
 					}
 				}
 			}
@@ -1068,7 +1065,20 @@ void ParseSlice::getIntra4x4PredMode(size_t luma4x4BlkIdx, bool isLuam)
 	//位于4×4块luma4x4BlkIdx左侧和上侧的4×4亮度块的索引及其可用性状态
 	int luma4x4BlkIdxA = NA;
 	int luma4x4BlkIdxB = NA;
+
+
+
 	//表示与宏块mbAddrN左上角的相对（不是相对于当前宏块左上角）位置（xN，yN）。
+	/*
+	*   0,-1
+	   ---------------
+  -1,0 |0,0
+	   |
+	   |
+	   |
+	*/
+
+
 	int xW = NA;
 	int yW = NA;
 
@@ -1422,6 +1432,10 @@ void ParseSlice::transformDecode4x4ChromaResidualProcess(bool isChromaCb)
 
 		Picture_construction_process_prior_to_deblocking_filter_process(u, "4*4", 0, false, isChromaCb);
 
+
+
+		delete[] u;
+		u = nullptr;
 
 	}
 
@@ -1841,7 +1855,6 @@ void ParseSlice::Picture_construction_process_prior_to_deblocking_filter_process
 				lumaData[xP + xO + j][yP + yO + i] = u[i * nE + j];
 			}
 		}
-		int a = 1;
 	}
 	else
 	{
@@ -1875,7 +1888,6 @@ void ParseSlice::Picture_construction_process_prior_to_deblocking_filter_process
 				}
 
 			}
-			int a = 1;
 		}
 	}
 
@@ -2062,20 +2074,15 @@ void ParseSlice::transformDecodeIntra_16x16DCProcess(int c[4][4], int dcY[4][4],
 	else
 	{
 		//4 × 4 luma直流变换系数的逆变换
-		int a[4][4] = {
+		const int a[4][4] = {
 			{1,1,1,1},
 			{1,1,-1,-1},
 			{1,-1,-1,1},
 			{1,-1,1,-1},
 		};
-		int b[4][4] = {
-			{1,1,1,1},
-			{1,1,-1,-1},
-			{1,-1,-1,1},
-			{1,-1,1,-1},
-		};
-		int g[4][4] = { {0} };
-		int f[4][4] = { {0} };
+
+		int g[4][4] = { 0 };
+		int f[4][4] = { 0 };
 		for (size_t i = 0; i < 4; i++)
 		{
 			for (size_t j = 0; j < 4; j++)
@@ -2092,7 +2099,7 @@ void ParseSlice::transformDecodeIntra_16x16DCProcess(int c[4][4], int dcY[4][4],
 			{
 				for (size_t k = 0; k < 4; k++)
 				{
-					f[i][j] += b[i][k] * g[k][j];
+					f[i][j] += g[i][k] * a[k][j];
 				}
 			}
 		}

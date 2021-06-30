@@ -174,7 +174,11 @@ enum class RESIDUAL_LEVEL
 	Intra16x16DCLevel,
 	Intra16x16ACLevel,
 	CbIntra16x16DCLevel,
+	CbIntra16x16ACLevel,
+	CbLevel4x4,
+	CrLevel4x4,
 	CrIntra16x16DCLevel,
+	CrIntra16x16ACLevel
 };
 
 //Intra4x4PredMode 9种4*4帧内预测模式

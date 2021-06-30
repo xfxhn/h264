@@ -58,6 +58,8 @@ class ParseSlice;
 class Macroblock
 {
 public:
+
+	H264_MB_TYPE    mbType;
 	uint32_t		pcm_alignment_zero_bit; // 3 f(1)
 	uint32_t		pcm_sample_luma[256]; //3 u(v)
 	uint32_t* pcm_sample_chroma;

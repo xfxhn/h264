@@ -64,12 +64,6 @@ bool byte_aligned(BitStream& bs)
 	return false;
 }
 
-void matMult(int* matrixA, int* matrixB)
-{
-
-	cout << sizeof(matrixA) << endl;
-
-}
 
 
 
