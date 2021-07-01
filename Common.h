@@ -11,6 +11,7 @@ constexpr auto NA = -1;
 
 using namespace std;
 
+void rbsp_trailing_bits(BitStream& bs);
 
 inline bool isMbUsable(int mbAddr, int CurrMbAddr)
 {

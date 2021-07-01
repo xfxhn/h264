@@ -197,6 +197,9 @@ void AnnexBReader::getNaluHeader(uint8_t* buffer, int size)
 	}
 	case NaluType::H264_NAL_SEI: //6
 	{
+		ParseSEI sei;
+		sei.sei_rbsp(bs);
+
 		break;
 	}
 	case NaluType::H264_NAL_SPS: //7

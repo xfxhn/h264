@@ -4,6 +4,7 @@
 #include "ParsePPS.h"
 #include "ParseSlice.h"
 #include "ParseNalu.h"
+#include "ParseSEI.h"
 #pragma warning(disable:4996)
 
 
@@ -31,16 +32,13 @@ private:
 	//ParseSPS spsCache[32];
 	ParseSPS* spsCache;
 
-	/*vector<ParsePPS*> ppsCache;
-	
-	vector<ParseSPS*> spsCache;*/
 private:
 	static const int MAX_BUFFER_SIZE;
 	bool CheckStartCode(int& startCodeLen, uint8_t* bufPtr, int bufLen);
 
 
-	void getNaluHeader(uint8_t* buffer,int size);
-	
+	void getNaluHeader(uint8_t* buffer, int size);
+
 
 	FILE* f = nullptr;
 

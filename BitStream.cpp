@@ -82,6 +82,7 @@ BitStream::BitStream(uint8_t* buf, int _size)
 {
 	start = buf;
 	currentPtr = buf;
+	endPtr = buf + _size - 1;
 	size = _size;
 	postion = 0;
 }
@@ -183,25 +184,69 @@ int BitStream::readME(int ChromaArrayType, H264_MB_PART_PRED_MODE mode)
 //是否还有数据，有返回true，否则返回false
 bool BitStream::more_rbsp_data()
 {
-	bool flag = true;
 
-	if (postion + 1 == size)
+	if (currentPtr > endPtr
+		|| (currentPtr == endPtr && bitsLeft == 0)
+		)
 	{
-		size_t i = 0;
-		for (; i < 8; i++)
+		return false;
+	}
+
+	uint8_t* end = endPtr;
+	while (end > currentPtr && *end == 0) //从后往前找，直到找到第一个非0值字节位置为止
+	{
+		end--;
+	}
+
+
+	if (end > currentPtr)
+	{
+		return true; //说明当前位置bs.m_p后面还有码流数据
+	}
+	else
+	{
+		bool flag = true;
+		int i = 0;
+		for (i = 0; i < 8; i++) //在单个字节的8个比特位中，从后往前找，找到rbsp_stop_one_bit位置
 		{
-			if (((*currentPtr >> i) & 1) != 0)
+			int v = ((*(currentPtr)) >> i) & 0x01;
+			if (v == 1)
 			{
-				flag = (i != 7);
-				++i;
+				i++;
+				flag = true;
 				break;
 			}
 		}
-		flag = (flag && (bitsLeft > i));
 
+		if (flag && i < bitsLeft)
+		{
+			return true;
+		}
+		else
+		{
+			return false;
+		}
 	}
+	return true;
+	//bool flag = true;
 
-	return flag;
+	//if (postion + 1 == size)
+	//{
+	//	size_t i = 0;
+	//	for (; i < 8; i++)
+	//	{
+	//		if (((*currentPtr >> i) & 1) != 0)
+	//		{
+	//			flag = (i != 7);
+	//			//++i;
+	//			break;
+	//		}
+	//	}
+	//	flag = (flag && (bitsLeft > i));
+
+	//}
+
+	//return flag;
 }
 
 BitStream::~BitStream()

@@ -53,6 +53,7 @@ public:
 
 	// 当前读取到了哪个字节
 	uint8_t* currentPtr = nullptr;
+	uint8_t* endPtr = nullptr;
 
 	// 当前读取到了字节中的第几位
 	size_t bitsLeft = 8;

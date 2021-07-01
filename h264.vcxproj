@@ -26,6 +26,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="ParseNalu.cpp" />
     <ClCompile Include="ParsePPS.cpp" />
+    <ClCompile Include="ParseSEI.cpp" />
     <ClCompile Include="ParseSlice.cpp" />
     <ClCompile Include="ParseSPS.cpp" />
     <ClCompile Include="ResidualBlockCavlc.cpp" />
@@ -41,6 +42,7 @@
     <ClInclude Include="NaluType.h" />
     <ClInclude Include="ParseNalu.h" />
     <ClInclude Include="ParsePPS.h" />
+    <ClInclude Include="ParseSEI.h" />
     <ClInclude Include="ParseSlice.h" />
     <ClInclude Include="ParseSPS.h" />
     <ClInclude Include="ResidualBlockCavlc.h" />

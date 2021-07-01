@@ -51,6 +51,9 @@
     <ClCompile Include="ResidualBlockCavlc.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="ParseSEI.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AnnexBReader.h">
@@ -90,6 +93,9 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="CalvcTable.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="ParseSEI.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

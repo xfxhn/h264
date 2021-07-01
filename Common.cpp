@@ -5,10 +5,23 @@
 
 
 
+//rbsp_trailing_bits( )用于SODB 之后
+void rbsp_trailing_bits(BitStream& bs)
+{
+	if (bs.currentPtr >= bs.endPtr)
+	{
+		return;
+	}
+
+	int rbsp_stop_one_bit = bs.readBit(); // /* equal to 1 */ All f(1)
+	while (!byte_aligned(bs))
+	{
+		int rbsp_alignment_zero_bit = bs.readBit(); // /* equal to 0 */ All f(1)
+	}
+}
 
 string printHex(unsigned char* data, int len)
 {
-
 
 	for (size_t i = 0; i < len; i++)
 	{
