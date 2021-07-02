@@ -112,8 +112,9 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice& Slice)
 			Slice.mbY = (CurrMbAddr / Slice.sHeader->sps.PicWidthInMbs);
 
 			Slice.CurrMbAddr = CurrMbAddr;
-			Slice.macroblock[Slice.CurrMbAddr]->macroblock_layer(bs);
 
+
+			Slice.macroblock[Slice.CurrMbAddr]->macroblock_layer(bs);
 
 			bool isChromaCb = true;
 			if (Slice.macroblock[Slice.CurrMbAddr]->mode == H264_MB_PART_PRED_MODE::Intra_4x4)
@@ -164,8 +165,8 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice& Slice)
 			}
 		}
 		CurrMbAddr = NextMbAddress(sHeader, CurrMbAddr);
-
 	} while (moreDataFlag);
+
 	return false;
 }
 

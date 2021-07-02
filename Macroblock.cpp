@@ -140,9 +140,13 @@ Macroblock::Macroblock(ParseSlice& slice) :sliceBase(slice)
 //一个宏块的色度分量的coded_block_pattern，Cb、Cr的CodedBlockPatternChroma相同
 bool Macroblock::macroblock_layer(BitStream& bs)
 {
+
+
+
 	SliceHeader* sHeader = sliceBase.sHeader;
 
 	isAe = sHeader->pps.entropy_coding_mode_flag;  //ae(v)表示CABAC编码
+
 
 	if (isAe) // ae(v) 表示CABAC编码
 	{
@@ -206,7 +210,8 @@ bool Macroblock::macroblock_layer(BitStream& bs)
 			pcm_sample_chroma[i] = bs.readMultiBit(v); //3 u(v)
 		}
 	}
-	else {
+	else
+	{
 		bool noSubMbPartSizeLessThan8x8Flag = true;
 		//子宏块  //（只对 8×8MB 分割的帧内 MB）确定每一子宏块的子宏 块分割，每一宏块分割的表 0 和 / 或表 1 的参考图象；每一 宏块子分割的差分编码运动矢量。
 		if (!is_I_NxN(fix_mb_type, fix_slice_type) &&
@@ -312,6 +317,9 @@ bool Macroblock::macroblock_layer(BitStream& bs)
 			residual(bs, 0, 15);
 		}
 	}
+
+
+	cout << bs.getMultiBit(30) << endl;
 	//QPY = ( ( QPY,PREV + mb_qp_delta + 52 + 2 * QpBdOffsetY ) % ( 52 + QpBdOffsetY ) ) －QpBdOffsetY
 	//QpBdOffsetY  亮度偏移
 	QPY = ((sHeader->QPY_prev + mb_qp_delta + 52 + 2 * sHeader->sps.QpBdOffsetY) % (52 + sHeader->sps.QpBdOffsetY) - sHeader->sps.QpBdOffsetY);
@@ -595,6 +603,7 @@ bool Macroblock::residual(BitStream& bs, int startIdx, int endIdx)
 	{
 		//ResidualBlockCavlc residual_block;
 	}
+
 	//解析量度
 	residual_luma(bs, i16x16DClevel, i16x16AClevel, level4x4, level8x8, startIdx, endIdx);
 
@@ -638,6 +647,7 @@ bool Macroblock::residual(BitStream& bs, int startIdx, int endIdx)
 			}
 		}
 
+
 		for (size_t iCbCr = 0; iCbCr < 2; iCbCr++)
 		{
 			//420是4个y对应一组uv，422是两个y对应一组uv，如果这里是420的就u和v各读一个,如果422的就各读两个 如果444的就各读四个，所以最多有16个
@@ -659,7 +669,10 @@ bool Macroblock::residual(BitStream& bs, int startIdx, int endIdx)
 							RESIDUAL_LEVEL level = iCbCr == 0 ? RESIDUAL_LEVEL::ChromaACLevelCb : RESIDUAL_LEVEL::ChromaACLevelCr;
 							//能走到这里DC系数最少被取走了一个，所以这里最多15
 							residual_block.residual_block_cavlc(bs, ChromaACLevel[iCbCr][BlkIdx], max(0, startIdx - 1), endIdx - 1, 15, TotalCoeff, level, BlkIdx);
+
 						}
+						//色度非0系数
+						mb_chroma_4x4_non_zero_count_coeff[iCbCr][BlkIdx] = TotalCoeff;
 					}
 					else
 					{
@@ -670,8 +683,7 @@ bool Macroblock::residual(BitStream& bs, int startIdx, int endIdx)
 						}
 
 					}
-					//色度非0系数
-					mb_chroma_4x4_non_zero_count_coeff[iCbCr][BlkIdx] = TotalCoeff;
+
 				}
 			}
 		}

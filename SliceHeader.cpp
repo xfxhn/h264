@@ -105,6 +105,11 @@ SliceHeader::SliceHeader(ParseNalu& nalu) :nalu(nalu)
 
 
 
+bool SliceHeader::isFinishPicture()
+{
+	return false;
+}
+
 bool SliceHeader::slice_header(BitStream& bs, const ParsePPS ppsCache[256], const ParseSPS spsCache[32])
 {
 	//这个属性表示的是在这个 Slice 中第一个宏块的序号

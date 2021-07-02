@@ -47,6 +47,7 @@ int AnnexBReader::ReadNalu(uint8_t* buffer, rsize_t& dataLen)
 	uint8_t* data = nullptr;
 
 
+
 	while (slice <= dataLen)
 	{
 		//获取startCode占取几个字节
@@ -91,7 +92,7 @@ int AnnexBReader::ReadNalu(uint8_t* buffer, rsize_t& dataLen)
 
 			memcpy(data, buffer + start, blockSize);
 			size_t size = unescape(data, blockSize);
-			printHex(data, size);
+			//printHex(data, size);
 			//getNaluHeader(data, size);
 			if (data != nullptr)
 			{
@@ -164,6 +165,8 @@ void AnnexBReader::getNaluHeader(uint8_t* buffer, int size)
 
 	nalu.getH264RbspFromNalUnit(bs);
 
+
+
 	switch ((NaluType)nalu.nal_unit_type)
 	{
 	case NaluType::H264_NAL_SLICE: //1
@@ -185,14 +188,47 @@ void AnnexBReader::getNaluHeader(uint8_t* buffer, int size)
 	}
 	case NaluType::H264_NAL_IDR_SLICE: //5 立即刷新帧（每个GOP的第一帧必须是I帧）
 	{
-		if (slice)
-		{
-			delete slice;
-			slice = nullptr;
-		}
-		slice = new ParseSlice(nalu);
-		slice->parse(bs, ppsCache, spsCache);
+		SliceHeader* sHeader = new SliceHeader(nalu);
+		sHeader->slice_header(bs, ppsCache, spsCache);
 
+
+		//ParseSlice
+		//解码完了这一帧,重新初始化
+		if (sHeader->isFinishPicture())
+		{
+			if (slice)
+			{
+				delete slice;
+				slice = nullptr;
+			}
+
+
+			this->slice = new ParseSlice;
+			this->slice->parse(bs, nalu, sHeader);
+
+		}
+		else
+		{
+			//是否是第一帧的第一个slice
+			if (true)
+			{
+				if (slice)
+				{
+					delete slice;
+					slice = nullptr;
+				}
+
+
+
+				this->slice = new ParseSlice;
+				this->slice->parse(bs, nalu, sHeader);
+			}
+
+		}
+		SliceData sData;
+		sData.slice_data(bs, *slice);
+
+		delete sHeader;
 		break;
 	}
 	case NaluType::H264_NAL_SEI: //6

@@ -108,6 +108,8 @@ public:
 	~SliceHeader();
 
 
+	bool isFinishPicture();
+
 	bool slice_header(BitStream& bs, const ParsePPS ppsCache[256], const ParseSPS spsCache[32]);
 
 

@@ -2,6 +2,8 @@
 #include "Common.h"
 #include "ParseSPS.h"
 #include "ParsePPS.h"
+#include "SliceHeader.h"
+#include "SliceData.h"
 #include "ParseSlice.h"
 #include "ParseNalu.h"
 #include "ParseSEI.h"

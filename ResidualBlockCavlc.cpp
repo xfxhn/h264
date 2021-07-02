@@ -178,8 +178,6 @@ bool ResidualBlockCavlc::residual_block_cavlc(
 int ResidualBlockCavlc::getNumberCurrent(RESIDUAL_LEVEL residualLevel, size_t BlkIdx)
 {
 
-	//const int BlkIdx = i8x8 * 4 + i4x4;
-
 	int nC = 0;
 
 
@@ -480,99 +478,6 @@ int ResidualBlockCavlc::getNumberCurrent(RESIDUAL_LEVEL residualLevel, size_t Bl
 				}
 			}
 		}
-		//if (residualLevel == RESIDUAL_LEVEL::Intra16x16DCLevel)
-		//{
-
-
-		//	//解析DC的Number current取相邻块的第一个子块的非0系数
-		//	if (sliceBase.mbY > 0)
-		//	{
-		//		const int topMbIdx = sliceBase.CurrMbAddr - sliceBase.sHeader->sps.PicWidthInMbs;
-		//		nB = sliceBase.macroblock[topMbIdx]->mb_luma_4x4_non_zero_count_coeff[0];
-		//		availableTop = true;
-		//	}
-
-
-		//	if (sliceBase.mbX > 0)
-		//	{
-		//		const int leftMbIdx = sliceBase.CurrMbAddr - 1;
-		//		nA = sliceBase.macroblock[leftMbIdx]->mb_luma_4x4_non_zero_count_coeff[0];
-		//		availableLeft = true;
-		//	}
-
-		//}
-
-
-
-		//if (residualLevel == RESIDUAL_LEVEL::ChromaACLevelCb)
-		//{
-		//	findChromaAC_nA_nB(0, BlkIdx, nA, nB, availableLeft, availableTop);
-
-		//}
-		//else if (residualLevel == RESIDUAL_LEVEL::ChromaACLevelCr)
-		//{
-		//	findChromaAC_nA_nB(1, BlkIdx, nA, nB, availableLeft, availableTop);
-		//}
-
-
-
-
-		//if (residualLevel == RESIDUAL_LEVEL::LumaLevel4x4 || residualLevel == RESIDUAL_LEVEL::Intra16x16ACLevel)
-		//{
-		//	if (BlkIdx == 0 || BlkIdx == 2 || BlkIdx == 8 || BlkIdx == 10)
-		//	{
-		//		if (sliceBase.mbX > 0) {
-		//			const int leftMbIdx = sliceBase.CurrMbAddr - 1;
-		//			const int left4x4Idx = BlkIdx + 5;
-		//			nA = sliceBase.macroblock[leftMbIdx]->mb_luma_4x4_non_zero_count_coeff[left4x4Idx];
-		//			availableLeft = true;
-		//		}
-		//	}
-		//	else
-		//	{
-		//		if (BlkIdx % 2 == 1) {
-
-		//			nA = sliceBase.macroblock[sliceBase.CurrMbAddr]->mb_luma_4x4_non_zero_count_coeff[BlkIdx - 1];
-		//			availableLeft = true;
-		//		}
-		//		else {
-		//			nA = sliceBase.macroblock[sliceBase.CurrMbAddr]->mb_luma_4x4_non_zero_count_coeff[BlkIdx - 3];
-		//			availableLeft = true;
-		//		}
-		//	}
-
-
-
-
-		//	if (i8x8 < 2)
-		//	{
-		//		if (i4x4 < 2) {
-		//			if (sliceBase.mbY > 0)
-		//			{
-		//				const int topMbIdx = sliceBase.CurrMbAddr - sliceBase.sHeader->sps.PicWidthInMbs;
-		//				const int top4x4Idx = BlkIdx + 10;
-		//				nB = sliceBase.macroblock[topMbIdx]->mb_luma_4x4_non_zero_count_coeff[top4x4Idx];
-		//				availableTop = true;
-		//			}
-		//		}
-		//		else {
-		//			nB = sliceBase.macroblock[sliceBase.CurrMbAddr]->mb_luma_4x4_non_zero_count_coeff[BlkIdx - 2];
-		//			availableTop = true;
-		//		}
-		//	}
-		//	else
-		//	{
-		//		if (i4x4 < 2) {
-		//			nB = sliceBase.macroblock[sliceBase.CurrMbAddr]->mb_luma_4x4_non_zero_count_coeff[BlkIdx - 6];
-		//			availableTop = true;
-		//		}
-		//		else {
-		//			nB = sliceBase.macroblock[sliceBase.CurrMbAddr]->mb_luma_4x4_non_zero_count_coeff[BlkIdx - 2];
-		//			availableTop = true;
-		//		}
-		//	}
-		//}
-
 
 		if (availableFlagA && availableFlagB)
 		{

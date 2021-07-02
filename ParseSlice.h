@@ -32,9 +32,11 @@ public:
 	uint8_t** chromaCrData;//存储解码后图片的cr分量数据
 
 public:
-	ParseSlice(ParseNalu& nalu);
+	ParseSlice();
 
-	bool parse(BitStream& bs, const ParsePPS* ppsCache, const ParseSPS* spsCache);
+	bool parse(BitStream& bs, ParseNalu& nalu, SliceHeader* sHeader);
+
+	void init();
 
 	~ParseSlice();
 
