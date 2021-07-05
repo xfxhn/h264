@@ -157,21 +157,57 @@ bool AnnexBReader::CheckStartCode(int& startCodeLen, uint8_t* bufPtr, int bufLen
 void AnnexBReader::getNaluHeader(uint8_t* buffer, int size)
 {
 
-
-
 	BitStream bs(buffer, size);
 
 	ParseNalu nalu;
 
 	nalu.getH264RbspFromNalUnit(bs);
 
-
-
 	switch ((NaluType)nalu.nal_unit_type)
 	{
 	case NaluType::H264_NAL_SLICE: //1
 	{
 		// std::cout << NaluType::PPS << std::endl;
+
+
+		SliceHeader* sHeader = new SliceHeader(nalu);
+		sHeader->slice_header(bs, ppsCache, spsCache);
+
+
+		if (this->slice && this->slice->CurrMbAddr >= (sHeader->PicSizeInMbs - 1))
+		{
+			//环路滤波器
+
+			if (slice)
+			{
+				delete slice;
+				slice = nullptr;
+			}
+			this->slice = new ParseSlice(nalu, sHeader);
+			this->slice->parse();
+			cout << "解码完这一帧" << endl;
+		}
+		else
+		{
+			//是否是第一帧的第一个slice
+			if (sHeader->first_mb_in_slice == 0)
+			{
+				if (slice)
+				{
+					delete slice;
+					slice = nullptr;
+				}
+
+				this->slice = new ParseSlice(nalu, sHeader);
+				this->slice->parse();
+			}
+
+		}
+		SliceData sData;
+		sData.slice_data(bs, slice);
+
+		delete sHeader;
+		sHeader = nullptr;
 		break;
 	}
 	case NaluType::H264_NAL_DPA: //2
@@ -192,9 +228,7 @@ void AnnexBReader::getNaluHeader(uint8_t* buffer, int size)
 		sHeader->slice_header(bs, ppsCache, spsCache);
 
 
-		//ParseSlice
-		//解码完了这一帧,重新初始化
-		if (sHeader->isFinishPicture())
+		if (this->slice && this->slice->CurrMbAddr > sHeader->PicSizeInMbs - 1)
 		{
 			if (slice)
 			{
@@ -203,14 +237,14 @@ void AnnexBReader::getNaluHeader(uint8_t* buffer, int size)
 			}
 
 
-			this->slice = new ParseSlice;
-			this->slice->parse(bs, nalu, sHeader);
-
+			this->slice = new ParseSlice(nalu, sHeader);
+			this->slice->parse();
+			cout << "解码完这一帧" << endl;
 		}
 		else
 		{
 			//是否是第一帧的第一个slice
-			if (true)
+			if (sHeader->first_mb_in_slice == 0)
 			{
 				if (slice)
 				{
@@ -218,17 +252,19 @@ void AnnexBReader::getNaluHeader(uint8_t* buffer, int size)
 					slice = nullptr;
 				}
 
-
-
-				this->slice = new ParseSlice;
-				this->slice->parse(bs, nalu, sHeader);
+				this->slice = new ParseSlice(nalu, sHeader);
+				this->slice->parse();
 			}
 
 		}
 		SliceData sData;
-		sData.slice_data(bs, *slice);
+		sData.slice_data(bs, slice);
 
 		delete sHeader;
+		sHeader = nullptr;
+
+
+
 		break;
 	}
 	case NaluType::H264_NAL_SEI: //6

@@ -27,10 +27,10 @@ int SliceData::NextMbAddress(SliceHeader* sHeader, uint32_t n)
 	return i;
 }
 
-bool SliceData::slice_data(BitStream& bs, ParseSlice& Slice)
+bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice)
 {
 
-	SliceHeader* sHeader = Slice.sHeader;
+	SliceHeader* sHeader = Slice->sHeader;
 
 	bool isAe = sHeader->pps.entropy_coding_mode_flag;  //ae(v)表示CABAC编码
 
@@ -51,7 +51,7 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice& Slice)
 
 	//当前解码的宏块在图片中的坐标位置
 	CurrMbAddr = sHeader->first_mb_in_slice;
-	Slice.CurrMbAddr = CurrMbAddr;
+	Slice->CurrMbAddr = CurrMbAddr;
 
 
 
@@ -79,8 +79,8 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice& Slice)
 				for (size_t i = 0; i < mb_skip_run; i++)
 				{
 
-					Slice.mbX = (CurrMbAddr % Slice.sHeader->sps.PicWidthInMbs);
-					Slice.mbY = (CurrMbAddr / Slice.sHeader->sps.PicWidthInMbs);
+					Slice->mbX = (CurrMbAddr % Slice->sHeader->sps.PicWidthInMbs);
+					Slice->mbY = (CurrMbAddr / Slice->sHeader->sps.PicWidthInMbs);
 					CurrMbAddr = NextMbAddress(sHeader, CurrMbAddr);
 				}
 
@@ -108,31 +108,41 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice& Slice)
 			}
 
 
-			Slice.mbX = (CurrMbAddr % Slice.sHeader->sps.PicWidthInMbs);
-			Slice.mbY = (CurrMbAddr / Slice.sHeader->sps.PicWidthInMbs);
+			Slice->mbX = (CurrMbAddr % Slice->sHeader->sps.PicWidthInMbs);
+			Slice->mbY = (CurrMbAddr / Slice->sHeader->sps.PicWidthInMbs);
 
-			Slice.CurrMbAddr = CurrMbAddr;
+			Slice->CurrMbAddr = CurrMbAddr;
 
-
-			Slice.macroblock[Slice.CurrMbAddr]->macroblock_layer(bs);
-
-			bool isChromaCb = true;
-			if (Slice.macroblock[Slice.CurrMbAddr]->mode == H264_MB_PART_PRED_MODE::Intra_4x4)
+			if (Slice->CurrMbAddr > 97)
 			{
-
-				Slice.transformDecode4x4LuamResidualProcess();
-				isChromaCb = true;
-				Slice.transformDecode4x4ChromaResidualProcess(isChromaCb);
-				isChromaCb = false;
-				Slice.transformDecode4x4ChromaResidualProcess(isChromaCb);
+				int a = 1;
+				int b = bs.getMultiBit(30);
+				printf("%d\n", b);
 			}
-			else if (Slice.macroblock[Slice.CurrMbAddr]->mode == H264_MB_PART_PRED_MODE::Intra_16x16)
+			Slice->macroblock[Slice->CurrMbAddr]->macroblock_layer(bs);
+			if (Slice->CurrMbAddr > 97)
 			{
-				Slice.transformDecode16x16LuamResidualProcess(Slice.macroblock[Slice.CurrMbAddr]->i16x16DClevel, Slice.macroblock[Slice.CurrMbAddr]->i16x16AClevel, true, false);
+				int a = 1;
+				int b = bs.getMultiBit(30);
+				printf("%d\n", b);
+			}
+			bool isChromaCb = true;
+			if (Slice->macroblock[Slice->CurrMbAddr]->mode == H264_MB_PART_PRED_MODE::Intra_4x4)
+			{
+
+				Slice->transformDecode4x4LuamResidualProcess();
 				isChromaCb = true;
-				Slice.transformDecode4x4ChromaResidualProcess(isChromaCb);
+				Slice->transformDecode4x4ChromaResidualProcess(isChromaCb);
 				isChromaCb = false;
-				Slice.transformDecode4x4ChromaResidualProcess(isChromaCb);
+				Slice->transformDecode4x4ChromaResidualProcess(isChromaCb);
+			}
+			else if (Slice->macroblock[Slice->CurrMbAddr]->mode == H264_MB_PART_PRED_MODE::Intra_16x16)
+			{
+				Slice->transformDecode16x16LuamResidualProcess(Slice->macroblock[Slice->CurrMbAddr]->i16x16DClevel, Slice->macroblock[Slice->CurrMbAddr]->i16x16AClevel, true, false);
+				isChromaCb = true;
+				Slice->transformDecode4x4ChromaResidualProcess(isChromaCb);
+				isChromaCb = false;
+				Slice->transformDecode4x4ChromaResidualProcess(isChromaCb);
 			}
 
 		}
@@ -160,8 +170,6 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice& Slice)
 				//RETURN_IF_FAILED(ret != 0, ret);
 
 				//moreDataFlag = !end_of_slice_flag;
-
-
 			}
 		}
 		CurrMbAddr = NextMbAddress(sHeader, CurrMbAddr);

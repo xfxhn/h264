@@ -40,7 +40,7 @@ int main()
 {
 
 	AnnexBReader reader;
-	bool isOpen = reader.open("./baseline.264");
+	bool isOpen = reader.open("./data/test.h264");
 
 	return EXIT_SUCCESS;
 }

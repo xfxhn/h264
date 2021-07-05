@@ -318,8 +318,6 @@ bool Macroblock::macroblock_layer(BitStream& bs)
 		}
 	}
 
-
-	cout << bs.getMultiBit(30) << endl;
 	//QPY = ( ( QPY,PREV + mb_qp_delta + 52 + 2 * QpBdOffsetY ) % ( 52 + QpBdOffsetY ) ) －QpBdOffsetY
 	//QpBdOffsetY  亮度偏移
 	QPY = ((sHeader->QPY_prev + mb_qp_delta + 52 + 2 * sHeader->sps.QpBdOffsetY) % (52 + sHeader->sps.QpBdOffsetY) - sHeader->sps.QpBdOffsetY);
@@ -604,6 +602,7 @@ bool Macroblock::residual(BitStream& bs, int startIdx, int endIdx)
 		//ResidualBlockCavlc residual_block;
 	}
 
+
 	//解析量度
 	residual_luma(bs, i16x16DClevel, i16x16AClevel, level4x4, level8x8, startIdx, endIdx);
 
@@ -648,6 +647,9 @@ bool Macroblock::residual(BitStream& bs, int startIdx, int endIdx)
 		}
 
 
+
+
+
 		for (size_t iCbCr = 0; iCbCr < 2; iCbCr++)
 		{
 			//420是4个y对应一组uv，422是两个y对应一组uv，如果这里是420的就u和v各读一个,如果422的就各读两个 如果444的就各读四个，所以最多有16个
@@ -687,6 +689,7 @@ bool Macroblock::residual(BitStream& bs, int startIdx, int endIdx)
 				}
 			}
 		}
+
 	}
 	else if (sHeader->sps.ChromaArrayType == 3)
 	{
@@ -712,6 +715,15 @@ int Macroblock::residual_luma(BitStream& bs, int i16x16DClevel[16], int i16x16AC
 		{
 			residual_block.residual_block_cavlc(bs, i16x16DClevel, 0, 15, 16, TotalCoeff, RESIDUAL_LEVEL::Intra16x16DCLevel);
 		}
+		mb_luma_4x4_non_zero_count_coeff[0] = TotalCoeff;
+	}
+
+
+	if (sliceBase.CurrMbAddr > 97)
+	{
+		int a = 1;
+		int b = bs.getMultiBit(30);
+		printf("%d\n", b);
 	}
 	//先循环外面四个8x8
 	for (size_t i8x8 = 0; i8x8 < 4; i8x8++)
@@ -793,6 +805,13 @@ int Macroblock::residual_luma(BitStream& bs, int i16x16DClevel[16], int i16x16AC
 		{
 
 		}
+	}
+
+	if (sliceBase.CurrMbAddr > 97)
+	{
+		int a = 1;
+		int b = bs.getMultiBit(30);
+		printf("%d\n", b);
 	}
 	return 0;
 }

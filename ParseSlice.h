@@ -16,7 +16,7 @@ class ParseSlice
 	//	Macroblock** macroblock;
 	//	SliceHeader* sHeader;
 public:
-	ParseNalu& nalu;
+	const ParseNalu& nalu;
 	SliceHeader* sHeader;
 	Macroblock** macroblock;
 public:
@@ -31,10 +31,18 @@ public:
 	uint8_t** chromaCbData;//存储解码后图片的cb分量数据
 	uint8_t** chromaCrData;//存储解码后图片的cr分量数据
 
-public:
-	ParseSlice();
 
-	bool parse(BitStream& bs, ParseNalu& nalu, SliceHeader* sHeader);
+
+	uint32_t PicWidthInSamplesL;
+	uint32_t PicHeightInSamplesL;
+	uint32_t PicWidthInSamplesC;
+	uint32_t PicHeightInSamplesC;
+	uint32_t PicSizeInMbs;
+
+public:
+	ParseSlice(ParseNalu& nalu, SliceHeader* sHeader);
+
+	bool parse();
 
 	void init();
 

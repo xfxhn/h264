@@ -14,7 +14,6 @@ public:
 	uint32_t    slice_type; // 2 ue(v)
 
 
-
 	uint32_t     first_mb_in_slice; // 2 ue(v)
 
 	uint32_t     pic_parameter_set_id; // 2 ue(v)

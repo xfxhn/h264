@@ -107,6 +107,9 @@ SliceHeader::SliceHeader(ParseNalu& nalu) :nalu(nalu)
 
 bool SliceHeader::isFinishPicture()
 {
+
+
+
 	return false;
 }
 

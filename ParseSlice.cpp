@@ -5,67 +5,52 @@
 /// <summary>
 /// ParseNalu& nalu  :nalu(nalu)
 /// </summary>
-ParseSlice::ParseSlice()
+ParseSlice::ParseSlice(ParseNalu& nalu, SliceHeader* sHeader) :nalu(nalu)
 {
 	mbX = 0;
 	mbY = 0;
-	sHeader = nullptr;
+
 	macroblock = nullptr;
 	lumaData = nullptr;
 	chromaCbData = nullptr;
 	chromaCrData = nullptr;
-
+	memset(LevelScale4x4, 0, sizeof(int) * 6 * 4 * 4);
+	memset(LevelScale8x8, 0, sizeof(int) * 6 * 8 * 8);
 	CurrMbAddr = 0;
-}
-
-bool ParseSlice::parse(BitStream& bs, ParseNalu& nalu, SliceHeader* sHeader)
-{
-
-	this->nalu = nalu;
 	this->sHeader = sHeader;
 
+	PicWidthInSamplesL = sHeader->sps.PicWidthInSamplesL;
+	PicHeightInSamplesL = sHeader->sps.PicHeightInSamplesL;
+	PicWidthInSamplesC = sHeader->sps.PicWidthInSamplesC;
+	PicHeightInSamplesC = sHeader->sps.PicHeightInSamplesC;
+	PicSizeInMbs = sHeader->PicSizeInMbs;
+}
+
+bool ParseSlice::parse()
+{
 
 
-
-
-
-	/*this->sHeader = new SliceHeader(nalu);
-	sHeader->slice_header(bs, ppsCache, spsCache);*/
-
-
-
-
-	lumaData = new uint8_t * [sHeader->sps.PicWidthInSamplesL];
-	for (size_t i = 0; i < sHeader->sps.PicWidthInSamplesL; i++)
+	lumaData = new uint8_t * [PicWidthInSamplesL];
+	for (size_t i = 0; i < PicWidthInSamplesL; i++)
 	{
-		lumaData[i] = new uint8_t[sHeader->sps.PicHeightInSamplesL]();
+		lumaData[i] = new uint8_t[PicHeightInSamplesL]();
 	}
 
-	chromaCbData = new uint8_t * [sHeader->sps.PicWidthInSamplesC];
-	chromaCrData = new uint8_t * [sHeader->sps.PicWidthInSamplesC];
+	chromaCbData = new uint8_t * [PicWidthInSamplesC];
+	chromaCrData = new uint8_t * [PicWidthInSamplesC];
 
-	for (size_t i = 0; i < sHeader->sps.PicWidthInSamplesC; i++)
+	for (size_t i = 0; i < PicWidthInSamplesC; i++)
 	{
-		chromaCbData[i] = new uint8_t[sHeader->sps.PicHeightInSamplesC]();
-		chromaCrData[i] = new uint8_t[sHeader->sps.PicHeightInSamplesC]();
+		chromaCbData[i] = new uint8_t[PicHeightInSamplesC]();
+		chromaCrData[i] = new uint8_t[PicHeightInSamplesC]();
 	}
 
-	this->macroblock = new Macroblock * [sHeader->PicSizeInMbs];
+	this->macroblock = new Macroblock * [PicSizeInMbs];
 
-	//memset(macroblock, NULL, sizeof(Macroblock*) * sHeader->PicSizeInMbs);
-	for (size_t i = 0; i < sHeader->PicSizeInMbs; i++)
+	for (size_t i = 0; i < PicSizeInMbs; i++)
 	{
 		macroblock[i] = new Macroblock(*this);
 	}
-
-
-
-
-
-	/*SliceData sData;
-
-	sData.slice_data(bs, *this);*/
-
 
 	return false;
 }
@@ -81,7 +66,7 @@ ParseSlice::~ParseSlice()
 {
 	if (macroblock)
 	{
-		for (size_t i = 0; i < sHeader->PicSizeInMbs; i++)
+		for (size_t i = 0; i < PicSizeInMbs; i++)
 		{
 			if (macroblock[i])
 			{
@@ -94,7 +79,7 @@ ParseSlice::~ParseSlice()
 	}
 	if (lumaData)
 	{
-		for (size_t i = 0; i < sHeader->sps.PicWidthInSamplesL; i++)
+		for (size_t i = 0; i < PicWidthInSamplesL; i++)
 		{
 			if (lumaData[i])
 			{
@@ -108,7 +93,7 @@ ParseSlice::~ParseSlice()
 
 	if (chromaCbData)
 	{
-		for (size_t i = 0; i < sHeader->sps.PicWidthInSamplesC; i++)
+		for (size_t i = 0; i < PicWidthInSamplesC; i++)
 		{
 			if (chromaCbData[i])
 			{
@@ -122,7 +107,7 @@ ParseSlice::~ParseSlice()
 
 	if (chromaCrData)
 	{
-		for (size_t i = 0; i < sHeader->sps.PicWidthInSamplesC; i++)
+		for (size_t i = 0; i < PicWidthInSamplesC; i++)
 		{
 			if (chromaCrData[i])
 			{
@@ -133,18 +118,6 @@ ParseSlice::~ParseSlice()
 		delete[] chromaCrData;
 		chromaCrData = nullptr;
 	}
-
-
-
-
-
-	if (sHeader)
-	{
-		delete sHeader;
-		sHeader = nullptr;
-	}
-
-
 
 }
 
