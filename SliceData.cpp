@@ -4,6 +4,9 @@ SliceData::SliceData()
 {
 	mb_field_decoding_flag = 0;
 	mb_skip_flag = 0;
+	CurrMbAddr = 0;
+	cabac_alignment_one_bit = 0;
+	mb_skip_run = 0;
 }
 
 //Ìø¹ýºê¿é
@@ -29,6 +32,7 @@ int SliceData::NextMbAddress(SliceHeader* sHeader, uint32_t n)
 
 bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice)
 {
+
 
 	SliceHeader* sHeader = Slice->sHeader;
 
@@ -57,8 +61,11 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice)
 
 	bool moreDataFlag = true;
 	bool prevMbSkipped = false;
+
 	do
 	{
+
+
 		if ((SLIECETYPE)sHeader->slice_type != SLIECETYPE::H264_SLIECE_TYPE_I && (SLIECETYPE)sHeader->slice_type != SLIECETYPE::H264_SLIECE_TYPE_SI)
 		{
 
@@ -113,19 +120,9 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice)
 
 			Slice->CurrMbAddr = CurrMbAddr;
 
-			if (Slice->CurrMbAddr > 97)
-			{
-				int a = 1;
-				int b = bs.getMultiBit(30);
-				printf("%d\n", b);
-			}
+
 			Slice->macroblock[Slice->CurrMbAddr]->macroblock_layer(bs);
-			if (Slice->CurrMbAddr > 97)
-			{
-				int a = 1;
-				int b = bs.getMultiBit(30);
-				printf("%d\n", b);
-			}
+
 			bool isChromaCb = true;
 			if (Slice->macroblock[Slice->CurrMbAddr]->mode == H264_MB_PART_PRED_MODE::Intra_4x4)
 			{

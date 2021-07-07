@@ -87,10 +87,10 @@ BitStream::BitStream(uint8_t* buf, int _size)
 	postion = 0;
 }
 
-uint16_t BitStream::readBit()
+int BitStream::readBit()
 {
 	--bitsLeft;
-	uint16_t result = (*currentPtr >> bitsLeft) & 1;
+	int result = ((*currentPtr) >> bitsLeft) & 1;
 
 	if (bitsLeft == 0) {
 		currentPtr++;
@@ -103,7 +103,7 @@ uint16_t BitStream::readBit()
 int BitStream::readMultiBit(int n)
 {
 	int result = 0;
-	for (size_t i = 0; i < n; i++) {
+	for (size_t i = 0; i < n; ++i) {
 		//把前n位移到后面n位来
 		result = result | (readBit() << (n - i - 1));
 	}

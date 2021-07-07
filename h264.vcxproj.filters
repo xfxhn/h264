@@ -54,6 +54,9 @@
     <ClCompile Include="ParseSEI.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="Cabac.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AnnexBReader.h">
@@ -96,6 +99,9 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="ParseSEI.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Cabac.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

@@ -5,9 +5,9 @@
 
 ResidualBlockCavlc::ResidualBlockCavlc(ParseSlice& slice) :sliceBase(slice)
 {
-	level_suffix = 0;
-	memset(&levelVal, 0, sizeof(int32_t) * 16);
-	memset(&runVal, 0, sizeof(int32_t) * 16);
+	/*level_suffix = 0;
+	memset(&levelVal, 0, sizeof(int32_t) * 16);*/
+	//memset(&runVal, 0, sizeof(int32_t) * 16);
 }
 
 bool ResidualBlockCavlc::residual_block_cavlc(
@@ -25,15 +25,25 @@ bool ResidualBlockCavlc::residual_block_cavlc(
 	//获取16bit因为token最长只有16bit
 	uint16_t coeff_token = bs.getMultiBit(16);
 
+
 	getNumCoeffAndTrailingOnes(numberCurrent, coeff_token, coeff_token_length, TrailingOnes, TotalCoeff);
 
 	//读取真正的token长度
-	bs.readMultiBit(coeff_token_length);
+	int a = bs.readMultiBit(coeff_token_length);
+
+
 
 
 	int suffixLength = 0;
 	int levelSuffixSize = 0;
 	int	levelCode = 0;
+
+	int levelVal[16] = { 0 }; //非零系数,带符号
+
+
+
+	int	level_suffix = 0;
+	int	level_prefix = 0;
 	if (TotalCoeff > 0)
 	{
 		if (TotalCoeff > 10 && TrailingOnes < 3)
@@ -129,8 +139,8 @@ bool ResidualBlockCavlc::residual_block_cavlc(
 				}
 			}
 
-
 		}
+
 
 		//最后一个非0系数之前的0的个数  TotalZeros  0, 15(4x4)
 		int TotalZeros = 0;
@@ -138,11 +148,15 @@ bool ResidualBlockCavlc::residual_block_cavlc(
 		{
 			//解码total_zeros
 			TotalZeros = getTotalZeros(bs, TotalCoeff - 1, maxNumCoeff);
+
 		}
 		else
 		{
 			TotalZeros = 0;
 		}
+
+
+		int runVal[16] = { 0 };
 		//每个非0系数之前0的个数  zerosLeft
 		//获取每个非0系数之前到下一个非0之间0的个数  RunBefore
 		//初始化zerosLeft为TotalZeros
@@ -171,6 +185,7 @@ bool ResidualBlockCavlc::residual_block_cavlc(
 			coeffLevel[startIdx + coeffNum] = levelVal[i];
 		}
 	}
+
 
 	return false;
 }

@@ -115,13 +115,13 @@ bool SliceHeader::isFinishPicture()
 
 bool SliceHeader::slice_header(BitStream& bs, const ParsePPS ppsCache[256], const ParseSPS spsCache[32])
 {
+
 	//这个属性表示的是在这个 Slice 中第一个宏块的序号
 	first_mb_in_slice = bs.readUE(); //2 ue(v)
 	//slice的类型
 	slice_type = bs.readUE() % 5; //2 ue(v)
 	//依赖的pps id
 	pic_parameter_set_id = bs.readUE(); //2 ue(v)
-
 	pps = ppsCache[pic_parameter_set_id];
 	sps = spsCache[pps.seq_parameter_set_id];
 
@@ -374,6 +374,7 @@ bool SliceHeader::slice_header(BitStream& bs, const ParsePPS ppsCache[256], cons
 	return false;
 }
 
+//参考图像滑窗标记过程
 bool SliceHeader::dec_ref_pic_marking(BitStream& bs)
 {
 	if (nalu.IdrPicFlag)
@@ -381,6 +382,18 @@ bool SliceHeader::dec_ref_pic_marking(BitStream& bs)
 		//帧间编码的时候作为参考帧的标记
 		no_output_of_prior_pics_flag = bs.readBit(); //2 | 5 u(1)
 		long_term_reference_flag = bs.readBit(); //2 | 5 u(1)
+	}
+	else
+	{
+		adaptive_ref_pic_marking_mode_flag = bs.readBit();
+
+		//当 adaptive_ref_pic_marking_mode_flag 等于 1 时调用。在当前图像解码完毕后，
+		//根据 memory_management_control_operation 命令，
+		//按照它们在比特流出现的顺序执行，其中命令参数为 从 1 到 6
+		if (adaptive_ref_pic_marking_mode_flag)
+		{
+
+		}
 	}
 	return false;
 }

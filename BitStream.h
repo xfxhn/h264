@@ -27,7 +27,7 @@ public:
 	BitStream(uint8_t* buf, int size);
 
 	//¶ÁÈ¡1bit
-	uint16_t readBit();
+	int readBit();
 
 	//¶ÁÈ¡n¸öbit
 	int readMultiBit(int n);

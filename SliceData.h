@@ -1,7 +1,9 @@
 #pragma once
 #include "Common.h"
+#include "Cabac.h"
 #include "SliceHeader.h"
 #include "Macroblock.h"
+
 class ParseSlice;
 class SliceData
 {

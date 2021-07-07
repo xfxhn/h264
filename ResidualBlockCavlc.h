@@ -26,10 +26,9 @@ private:
 public:
 	ParseSlice& sliceBase;
 	bool	trailing_ones_sign_flag;
-	int     levelVal[16]; //非零系数,带符号
-	int		level_suffix;
-	int		level_prefix;
+	
+	
 
-	int     runVal[16];
+	
 };
 

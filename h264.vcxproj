@@ -21,6 +21,7 @@
   <ItemGroup>
     <ClCompile Include="AnnexBReader.cpp" />
     <ClCompile Include="BitStream.cpp" />
+    <ClCompile Include="Cabac.cpp" />
     <ClCompile Include="Common.cpp" />
     <ClCompile Include="Macroblock.cpp" />
     <ClCompile Include="main.cpp" />
@@ -36,6 +37,7 @@
   <ItemGroup>
     <ClInclude Include="AnnexBReader.h" />
     <ClInclude Include="BitStream.h" />
+    <ClInclude Include="Cabac.h" />
     <ClInclude Include="CalvcTable.h" />
     <ClInclude Include="Common.h" />
     <ClInclude Include="Macroblock.h" />

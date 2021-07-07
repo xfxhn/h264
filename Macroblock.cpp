@@ -314,6 +314,7 @@ bool Macroblock::macroblock_layer(BitStream& bs)
 				//量化参数的改变值。
 				mb_qp_delta = bs.readSE();
 			}
+
 			residual(bs, 0, 15);
 		}
 	}
@@ -336,6 +337,7 @@ bool Macroblock::macroblock_layer(BitStream& bs)
 	{
 		TransformBypassModeFlag = false;
 	}
+
 	return false;
 }
 
@@ -635,6 +637,7 @@ bool Macroblock::residual(BitStream& bs, int startIdx, int endIdx)
 					//420最大系数有4个   422最大系数有8个  444最大系数有16个   
 					residual_block.residual_block_cavlc(bs, ChromaDCLevel[iCbCr], 0, 4 * NumC8x8 - 1, 4 * NumC8x8, TotalCoeff, RESIDUAL_LEVEL::ChromaDCLevel);
 				}
+				mb_chroma_4x4_non_zero_count_coeff[iCbCr][0] = TotalCoeff;
 			}
 			else
 			{
@@ -719,12 +722,7 @@ int Macroblock::residual_luma(BitStream& bs, int i16x16DClevel[16], int i16x16AC
 	}
 
 
-	if (sliceBase.CurrMbAddr > 97)
-	{
-		int a = 1;
-		int b = bs.getMultiBit(30);
-		printf("%d\n", b);
-	}
+
 	//先循环外面四个8x8
 	for (size_t i8x8 = 0; i8x8 < 4; i8x8++)
 	{
@@ -735,6 +733,8 @@ int Macroblock::residual_luma(BitStream& bs, int i16x16DClevel[16], int i16x16AC
 			for (size_t i4x4 = 0; i4x4 < 4; i4x4++)
 			{
 				const size_t BlkIdx = i8x8 * 4 + i4x4;//第几个块
+				
+
 				//有亮度分量解析量度分析，4*4是不区分AC和DC
 				if (CodedBlockPatternLuma & (1 << i8x8))
 				{
@@ -807,12 +807,7 @@ int Macroblock::residual_luma(BitStream& bs, int i16x16DClevel[16], int i16x16AC
 		}
 	}
 
-	if (sliceBase.CurrMbAddr > 97)
-	{
-		int a = 1;
-		int b = bs.getMultiBit(30);
-		printf("%d\n", b);
-	}
+
 	return 0;
 }
 bool Macroblock::sub_mb_pred(uint32_t mb_type)
