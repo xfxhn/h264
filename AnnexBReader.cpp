@@ -202,7 +202,10 @@ void AnnexBReader::getNaluHeader(uint8_t* buffer, int size)
 				this->slice->parse();
 			}
 
+
 		}
+		this->slice->sliceNumber = sHeader->first_mb_in_slice;
+
 		SliceData sData;
 		sData.slice_data(bs, slice);
 
@@ -228,7 +231,7 @@ void AnnexBReader::getNaluHeader(uint8_t* buffer, int size)
 		sHeader->slice_header(bs, ppsCache, spsCache);
 
 
-		if (this->slice && this->slice->CurrMbAddr > sHeader->PicSizeInMbs - 1)
+		if (this->slice && this->slice->CurrMbAddr >= (sHeader->PicSizeInMbs - 1))
 		{
 			if (slice)
 			{
@@ -256,14 +259,14 @@ void AnnexBReader::getNaluHeader(uint8_t* buffer, int size)
 				this->slice->parse();
 			}
 
+
 		}
+		this->slice->sliceNumber = sHeader->first_mb_in_slice;
 		SliceData sData;
 		sData.slice_data(bs, slice);
 
 		delete sHeader;
 		sHeader = nullptr;
-
-
 
 		break;
 	}

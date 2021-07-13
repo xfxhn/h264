@@ -1,29 +1,18 @@
 #include "Cabac.h"
+#include "ParseSlice.h"
 
 Cabac::Cabac()
 {
+	codIRange = 0;
+	codIOffset = 0;
+
+	memset(stateIdx, 0, sizeof(int32_t) * 1024);
+	memset(MPSValue, 0, sizeof(int32_t) * 1024);
 }
 
 Cabac::~Cabac()
 {
 }
-
-
-//上下文变量的初始化过程
-void Cabac::Initialisation_process_for_context_variables(SLIECETYPE slice_type, int SliceQPY, int cabac_init_idc)
-{
-	//变量pStateIdx对应于概率状态索引，变量 valMPS对应于最大可能
-	int m = 0;
-	int n = 0;
-
-	for (size_t ctxIdx = 0; ctxIdx < 1024; ctxIdx++)
-	{
-		getMN(ctxIdx, slice_type, cabac_init_idc, m, n);
-
-		int preCtxState = Clip3(1, 126, ((m * Clip3(0, 51, SliceQPY)) >> 4) + n);
-	}
-}
-
 void Cabac::getMN(const int ctxIdx, const SLIECETYPE slice_type, const int cabac_init_idc, int m, int n)
 {
 	if (ctxIdx >= 0 && ctxIdx <= 10)
@@ -971,3 +960,98 @@ void Cabac::getMN(const int ctxIdx, const SLIECETYPE slice_type, const int cabac
 		//return -1; //ctxIdx = 276 is assigned to the binIdx of mb_type indicating the I_PCM mode.
 	}
 }
+
+int Cabac::decode_mb_skip_flag(BitStream& bs, ParseSlice* Slice, int _CurrMbAddr)
+{
+	SLIECETYPE sliceType = (SLIECETYPE)Slice->sHeader->slice_type;
+
+	//该语法元素索引的上限，通常也可认为以最多多少个bit位来表示二值化后的语法元素；表9-34
+	int maxBinIdxCtx = 0;
+	//即context index offset，该值作为推导上下文索引的数据来源；
+	int ctxIdxOffset = 0;
+
+	//查找二值化过程中产生的maxBinIdxCtx和ctxIdxOffset
+	if (sliceType == SLIECETYPE::H264_SLIECE_TYPE_P || sliceType == SLIECETYPE::H264_SLIECE_TYPE_SP)
+	{
+
+		maxBinIdxCtx = 0;
+		ctxIdxOffset = 11;
+	}
+	else if (sliceType == SLIECETYPE::H264_SLIECE_TYPE_B)
+	{
+		maxBinIdxCtx = 0;
+		ctxIdxOffset = 24;
+	}
+	int ctxIdxInc = Derivation_process_of_ctxIdxInc_for_the_syntax_element_mb_skip_flag(Slice, _CurrMbAddr);
+	return 0;
+}
+//语法元素mb_skip_flag的ctxIdxInc的推导过程
+int Cabac::Derivation_process_of_ctxIdxInc_for_the_syntax_element_mb_skip_flag(ParseSlice* Slice, int _CurrMbAddr)
+{
+	int xW = NA;
+	int yW = NA;
+
+	int mbAddrA = NA;
+	Slice->getMbAddrNAndLuma4x4BlkIdxN(mbAddrA, (-1), 0, 16, 16, xW, yW);
+
+	int mbAddrB = NA;
+
+	Slice->getMbAddrNAndLuma4x4BlkIdxN(mbAddrB, 0, (-1), 16, 16, xW, yW);
+
+
+	int condTermFlagA = 0;
+	if (mbAddrA == NA || Slice->macroblock[mbAddrA]->mb_skip_flag == 1)
+	{
+		condTermFlagA = 0;
+	}
+	else
+	{
+		condTermFlagA = 1;
+	}
+
+	int condTermFlagB = 0;
+	if (mbAddrB == NA || Slice->macroblock[mbAddrB]->mb_skip_flag == 1)
+	{
+		condTermFlagB = 0;
+	}
+	else
+	{
+		condTermFlagB = 1;
+	}
+
+	return condTermFlagA + condTermFlagB;
+}
+
+//上下文变量的初始化过程
+void Cabac::Initialisation_process_for_context_variables(SLIECETYPE slice_type, int SliceQPY, int cabac_init_idc)
+{
+	//变量pStateIdx对应于概率状态索引，变量 valMPS对应于最大可能
+	int m = 0;
+	int n = 0;
+
+	for (size_t ctxIdx = 0; ctxIdx < 1024; ctxIdx++)
+	{
+		getMN(ctxIdx, slice_type, cabac_init_idc, m, n);
+
+		int preCtxState = Clip3(1, 126, ((m * Clip3(0, 51, SliceQPY)) >> 4) + n);
+		if (preCtxState <= 63)
+		{
+			stateIdx[ctxIdx] = 63 - preCtxState;
+			MPSValue[ctxIdx] = 0;
+		}
+		else
+		{
+			stateIdx[ctxIdx] = preCtxState - 64;
+			MPSValue[ctxIdx] = 1;
+		}
+	}
+}
+//算术解码引擎的初始化过程
+void Cabac::Initialisation_process_for_the_arithmetic_decoding_engine(BitStream& bs)
+{
+	codIRange = 0x01FE; //510 = 0x01FE
+
+	codIOffset = bs.readMultiBit(9); //read_bits(9);
+}
+
+

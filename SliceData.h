@@ -15,6 +15,7 @@ public:
 	uint32_t  mb_field_decoding_flag; //2 u(1) | ae(v)    0-a frame macroblock pair; 1-a field macroblock pair;
 	uint32_t  mb_skip_flag;  //2 ae(v)
 
+
 public:
 
 	SliceData();

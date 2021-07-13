@@ -3,8 +3,9 @@
 #include "CalvcTable.h"
 
 
-ResidualBlockCavlc::ResidualBlockCavlc(ParseSlice& slice) :sliceBase(slice)
+ResidualBlockCavlc::ResidualBlockCavlc(ParseSlice* slice)
 {
+	sliceBase = slice;
 	/*level_suffix = 0;
 	memset(&levelVal, 0, sizeof(int32_t) * 16);*/
 	//memset(&runVal, 0, sizeof(int32_t) * 16);
@@ -199,7 +200,7 @@ int ResidualBlockCavlc::getNumberCurrent(RESIDUAL_LEVEL residualLevel, size_t Bl
 	if (residualLevel == RESIDUAL_LEVEL::ChromaDCLevel)
 	{
 		//色度DC固定码表
-		if (sliceBase.sHeader->sps.ChromaArrayType == 1)
+		if (sliceBase->sHeader->sps.ChromaArrayType == 1)
 		{
 			nC = -1;
 		}
@@ -257,7 +258,7 @@ int ResidualBlockCavlc::getNumberCurrent(RESIDUAL_LEVEL residualLevel, size_t Bl
 			int xW = NA;
 			int yW = NA;
 
-			sliceBase.getMbAddrNAndLuma4x4BlkIdxN(mbAddrA, x + (-1), y + 0, 16, 16, xW, yW);
+			sliceBase->getMbAddrNAndLuma4x4BlkIdxN(mbAddrA, x + (-1), y + 0, 16, 16, xW, yW);
 
 			if (mbAddrA != NA)
 			{
@@ -267,7 +268,7 @@ int ResidualBlockCavlc::getNumberCurrent(RESIDUAL_LEVEL residualLevel, size_t Bl
 
 			//		int mbAddrB = NA;
 			int luma4x4BlkIdxB = NA;
-			sliceBase.getMbAddrNAndLuma4x4BlkIdxN(mbAddrB, x + 0, y + (-1), 16, 16, xW, yW);
+			sliceBase->getMbAddrNAndLuma4x4BlkIdxN(mbAddrB, x + 0, y + (-1), 16, 16, xW, yW);
 
 			if (mbAddrB != NA)
 			{
@@ -285,8 +286,8 @@ int ResidualBlockCavlc::getNumberCurrent(RESIDUAL_LEVEL residualLevel, size_t Bl
 			int x = InverseRasterScan(cb4x4BlkIdx / 4, 8, 8, 16, 0) + InverseRasterScan(cb4x4BlkIdx % 4, 4, 4, 8, 0);
 			int y = InverseRasterScan(cb4x4BlkIdx / 4, 8, 8, 16, 1) + InverseRasterScan(cb4x4BlkIdx % 4, 4, 4, 8, 1);
 
-			int maxW = sliceBase.sHeader->sps.MbWidthC;
-			int maxH = sliceBase.sHeader->sps.MbHeightC;
+			int maxW = sliceBase->sHeader->sps.MbWidthC;
+			int maxH = sliceBase->sHeader->sps.MbHeightC;
 
 			//		int mbAddrA = NA;
 			int chroma4x4BlkIdxA = NA;
@@ -294,7 +295,7 @@ int ResidualBlockCavlc::getNumberCurrent(RESIDUAL_LEVEL residualLevel, size_t Bl
 			int xW = NA;
 			int yW = NA;
 
-			sliceBase.getMbAddrNAndLuma4x4BlkIdxN(mbAddrA, x + (-1), y + 0, maxW, maxH, xW, yW);
+			sliceBase->getMbAddrNAndLuma4x4BlkIdxN(mbAddrA, x + (-1), y + 0, maxW, maxH, xW, yW);
 
 			if (mbAddrA != NA)
 			{
@@ -304,7 +305,7 @@ int ResidualBlockCavlc::getNumberCurrent(RESIDUAL_LEVEL residualLevel, size_t Bl
 
 			//			int mbAddrB = NA;
 			int chroma4x4BlkIdxB = NA;
-			sliceBase.getMbAddrNAndLuma4x4BlkIdxN(mbAddrB, x + 0, y + (-1), maxW, maxH, xW, yW);
+			sliceBase->getMbAddrNAndLuma4x4BlkIdxN(mbAddrB, x + 0, y + (-1), maxW, maxH, xW, yW);
 
 			if (mbAddrB != NA)
 			{
@@ -323,8 +324,8 @@ int ResidualBlockCavlc::getNumberCurrent(RESIDUAL_LEVEL residualLevel, size_t Bl
 			int x = InverseRasterScan(cb4x4BlkIdx / 4, 8, 8, 16, 0) + InverseRasterScan(cb4x4BlkIdx % 4, 4, 4, 8, 0);
 			int y = InverseRasterScan(cb4x4BlkIdx / 4, 8, 8, 16, 1) + InverseRasterScan(cb4x4BlkIdx % 4, 4, 4, 8, 1);
 
-			int maxW = sliceBase.sHeader->sps.MbWidthC;
-			int maxH = sliceBase.sHeader->sps.MbHeightC;
+			int maxW = sliceBase->sHeader->sps.MbWidthC;
+			int maxH = sliceBase->sHeader->sps.MbHeightC;
 
 			//	int mbAddrA = NA;
 			int chroma4x4BlkIdxA = NA;
@@ -332,7 +333,7 @@ int ResidualBlockCavlc::getNumberCurrent(RESIDUAL_LEVEL residualLevel, size_t Bl
 			int xW = NA;
 			int yW = NA;
 
-			sliceBase.getMbAddrNAndLuma4x4BlkIdxN(mbAddrA, x + (-1), y + 0, maxW, maxH, xW, yW);
+			sliceBase->getMbAddrNAndLuma4x4BlkIdxN(mbAddrA, x + (-1), y + 0, maxW, maxH, xW, yW);
 
 			if (mbAddrA != NA)
 			{
@@ -342,7 +343,7 @@ int ResidualBlockCavlc::getNumberCurrent(RESIDUAL_LEVEL residualLevel, size_t Bl
 
 			//		int mbAddrB = NA;
 			int chroma4x4BlkIdxB = NA;
-			sliceBase.getMbAddrNAndLuma4x4BlkIdxN(mbAddrB, x + 0, y + (-1), maxW, maxH, xW, yW);
+			sliceBase->getMbAddrNAndLuma4x4BlkIdxN(mbAddrB, x + 0, y + (-1), maxW, maxH, xW, yW);
 
 			if (mbAddrB != NA)
 			{
@@ -364,8 +365,8 @@ int ResidualBlockCavlc::getNumberCurrent(RESIDUAL_LEVEL residualLevel, size_t Bl
 
 
 
-			int maxW = sliceBase.sHeader->sps.MbWidthC;
-			int maxH = sliceBase.sHeader->sps.MbHeightC;
+			int maxW = sliceBase->sHeader->sps.MbWidthC;
+			int maxH = sliceBase->sHeader->sps.MbHeightC;
 
 			//		int mbAddrA = NA;
 			int chroma4x4BlkIdxA = NA;
@@ -373,7 +374,7 @@ int ResidualBlockCavlc::getNumberCurrent(RESIDUAL_LEVEL residualLevel, size_t Bl
 			int xW = NA;
 			int yW = NA;
 
-			sliceBase.getMbAddrNAndLuma4x4BlkIdxN(mbAddrA, x + (-1), y + 0, maxW, maxH, xW, yW);
+			sliceBase->getMbAddrNAndLuma4x4BlkIdxN(mbAddrA, x + (-1), y + 0, maxW, maxH, xW, yW);
 
 			if (mbAddrA != NA)
 			{
@@ -383,7 +384,7 @@ int ResidualBlockCavlc::getNumberCurrent(RESIDUAL_LEVEL residualLevel, size_t Bl
 
 			//		int mbAddrB = NA;
 			int chroma4x4BlkIdxB = NA;
-			sliceBase.getMbAddrNAndLuma4x4BlkIdxN(mbAddrB, x + 0, y + (-1), maxW, maxH, xW, yW);
+			sliceBase->getMbAddrNAndLuma4x4BlkIdxN(mbAddrB, x + 0, y + (-1), maxW, maxH, xW, yW);
 
 			if (mbAddrB != NA)
 			{
@@ -398,9 +399,9 @@ int ResidualBlockCavlc::getNumberCurrent(RESIDUAL_LEVEL residualLevel, size_t Bl
 		bool availableFlagA = false;
 		bool availableFlagB = false;
 		if (mbAddrA == NA ||
-			(isInterMode(sliceBase.macroblock[sliceBase.CurrMbAddr]->mode) && sliceBase.sHeader->pps.constrained_intra_pred_flag)
-			&& isInterframe(sliceBase.macroblock[mbAddrA]->mode)
-			&& sliceBase.sHeader->nalu.nal_unit_type >= 2 && sliceBase.sHeader->nalu.nal_unit_type <= 4)
+			(isInterMode(sliceBase->macroblock[sliceBase->CurrMbAddr]->mode) && sliceBase->sHeader->pps.constrained_intra_pred_flag)
+			&& isInterframe(sliceBase->macroblock[mbAddrA]->mode)
+			&& sliceBase->sHeader->nalu.nal_unit_type >= 2 && sliceBase->sHeader->nalu.nal_unit_type <= 4)
 		{
 			availableFlagA = false;
 		}
@@ -410,9 +411,9 @@ int ResidualBlockCavlc::getNumberCurrent(RESIDUAL_LEVEL residualLevel, size_t Bl
 		}
 
 		if (mbAddrB == NA ||
-			(isInterMode(sliceBase.macroblock[sliceBase.CurrMbAddr]->mode) && sliceBase.sHeader->pps.constrained_intra_pred_flag)
-			&& isInterframe(sliceBase.macroblock[mbAddrB]->mode)
-			&& sliceBase.sHeader->nalu.nal_unit_type >= 2 && sliceBase.sHeader->nalu.nal_unit_type <= 4)
+			(isInterMode(sliceBase->macroblock[sliceBase->CurrMbAddr]->mode) && sliceBase->sHeader->pps.constrained_intra_pred_flag)
+			&& isInterframe(sliceBase->macroblock[mbAddrB]->mode)
+			&& sliceBase->sHeader->nalu.nal_unit_type >= 2 && sliceBase->sHeader->nalu.nal_unit_type <= 4)
 		{
 			availableFlagB = false;
 		}
@@ -424,11 +425,11 @@ int ResidualBlockCavlc::getNumberCurrent(RESIDUAL_LEVEL residualLevel, size_t Bl
 
 		if (availableFlagA)
 		{
-			if (sliceBase.macroblock[mbAddrA]->mbType == H264_MB_TYPE::P_Skip || sliceBase.macroblock[mbAddrA]->mbType == H264_MB_TYPE::B_Skip)
+			if (sliceBase->macroblock[mbAddrA]->mbType == H264_MB_TYPE::P_Skip || sliceBase->macroblock[mbAddrA]->mbType == H264_MB_TYPE::B_Skip)
 			{
 				nA = 0;
 			}
-			else if (sliceBase.macroblock[mbAddrA]->mbType == H264_MB_TYPE::I_PCM) //if mbAddrN is an I_PCM macroblock, nN is set equal to 16.
+			else if (sliceBase->macroblock[mbAddrA]->mbType == H264_MB_TYPE::I_PCM) //if mbAddrN is an I_PCM macroblock, nN is set equal to 16.
 			{
 				nA = 16;
 			}
@@ -436,23 +437,23 @@ int ResidualBlockCavlc::getNumberCurrent(RESIDUAL_LEVEL residualLevel, size_t Bl
 			{
 				if (residualLevel == RESIDUAL_LEVEL::Intra16x16DCLevel || residualLevel == RESIDUAL_LEVEL::Intra16x16ACLevel || residualLevel == RESIDUAL_LEVEL::LumaLevel4x4)
 				{
-					nA = sliceBase.macroblock[mbAddrA]->mb_luma_4x4_non_zero_count_coeff[BlkIdxA];
+					nA = sliceBase->macroblock[mbAddrA]->mb_luma_4x4_non_zero_count_coeff[BlkIdxA];
 				}
 				else if (residualLevel == RESIDUAL_LEVEL::CbIntra16x16DCLevel || residualLevel == RESIDUAL_LEVEL::CbIntra16x16ACLevel || residualLevel == RESIDUAL_LEVEL::CbLevel4x4)
 				{
-					nA = sliceBase.macroblock[mbAddrA]->mb_chroma_4x4_non_zero_count_coeff[0][BlkIdxA];
+					nA = sliceBase->macroblock[mbAddrA]->mb_chroma_4x4_non_zero_count_coeff[0][BlkIdxA];
 				}
 				else if (residualLevel == RESIDUAL_LEVEL::CrIntra16x16DCLevel || residualLevel == RESIDUAL_LEVEL::CrIntra16x16ACLevel || residualLevel == RESIDUAL_LEVEL::CrLevel4x4)
 				{
-					nA = sliceBase.macroblock[mbAddrA]->mb_chroma_4x4_non_zero_count_coeff[1][BlkIdxA];
+					nA = sliceBase->macroblock[mbAddrA]->mb_chroma_4x4_non_zero_count_coeff[1][BlkIdxA];
 				}
 				else if (residualLevel == RESIDUAL_LEVEL::ChromaACLevelCb)
 				{
-					nA = sliceBase.macroblock[mbAddrA]->mb_chroma_4x4_non_zero_count_coeff[0][BlkIdxA];
+					nA = sliceBase->macroblock[mbAddrA]->mb_chroma_4x4_non_zero_count_coeff[0][BlkIdxA];
 				}
 				else if (residualLevel == RESIDUAL_LEVEL::ChromaACLevelCr)
 				{
-					nA = sliceBase.macroblock[mbAddrA]->mb_chroma_4x4_non_zero_count_coeff[1][BlkIdxA];
+					nA = sliceBase->macroblock[mbAddrA]->mb_chroma_4x4_non_zero_count_coeff[1][BlkIdxA];
 				}
 			}
 		}
@@ -461,11 +462,11 @@ int ResidualBlockCavlc::getNumberCurrent(RESIDUAL_LEVEL residualLevel, size_t Bl
 
 		if (availableFlagB)
 		{
-			if (sliceBase.macroblock[mbAddrB]->mbType == H264_MB_TYPE::P_Skip || sliceBase.macroblock[mbAddrB]->mbType == H264_MB_TYPE::B_Skip)
+			if (sliceBase->macroblock[mbAddrB]->mbType == H264_MB_TYPE::P_Skip || sliceBase->macroblock[mbAddrB]->mbType == H264_MB_TYPE::B_Skip)
 			{
 				nB = 0;
 			}
-			else if (sliceBase.macroblock[mbAddrB]->mbType == H264_MB_TYPE::I_PCM) //if mbAddrN is an I_PCM macroblock, nN is set equal to 16.
+			else if (sliceBase->macroblock[mbAddrB]->mbType == H264_MB_TYPE::I_PCM) //if mbAddrN is an I_PCM macroblock, nN is set equal to 16.
 			{
 				nB = 16;
 			}
@@ -473,23 +474,23 @@ int ResidualBlockCavlc::getNumberCurrent(RESIDUAL_LEVEL residualLevel, size_t Bl
 			{
 				if (residualLevel == RESIDUAL_LEVEL::Intra16x16DCLevel || residualLevel == RESIDUAL_LEVEL::Intra16x16ACLevel || residualLevel == RESIDUAL_LEVEL::LumaLevel4x4)
 				{
-					nB = sliceBase.macroblock[mbAddrB]->mb_luma_4x4_non_zero_count_coeff[BlkIdxB];
+					nB = sliceBase->macroblock[mbAddrB]->mb_luma_4x4_non_zero_count_coeff[BlkIdxB];
 				}
 				else if (residualLevel == RESIDUAL_LEVEL::CbIntra16x16DCLevel || residualLevel == RESIDUAL_LEVEL::CbIntra16x16ACLevel || residualLevel == RESIDUAL_LEVEL::CbLevel4x4)
 				{
-					nB = sliceBase.macroblock[mbAddrB]->mb_chroma_4x4_non_zero_count_coeff[0][BlkIdxB];
+					nB = sliceBase->macroblock[mbAddrB]->mb_chroma_4x4_non_zero_count_coeff[0][BlkIdxB];
 				}
 				else if (residualLevel == RESIDUAL_LEVEL::CrIntra16x16DCLevel || residualLevel == RESIDUAL_LEVEL::CrIntra16x16ACLevel || residualLevel == RESIDUAL_LEVEL::CrLevel4x4)
 				{
-					nB = sliceBase.macroblock[mbAddrB]->mb_chroma_4x4_non_zero_count_coeff[1][BlkIdxB];
+					nB = sliceBase->macroblock[mbAddrB]->mb_chroma_4x4_non_zero_count_coeff[1][BlkIdxB];
 				}
 				else if (residualLevel == RESIDUAL_LEVEL::ChromaACLevelCb)
 				{
-					nB = sliceBase.macroblock[mbAddrB]->mb_chroma_4x4_non_zero_count_coeff[0][BlkIdxB];
+					nB = sliceBase->macroblock[mbAddrB]->mb_chroma_4x4_non_zero_count_coeff[0][BlkIdxB];
 				}
 				else if (residualLevel == RESIDUAL_LEVEL::ChromaACLevelCr)
 				{
-					nB = sliceBase.macroblock[mbAddrB]->mb_chroma_4x4_non_zero_count_coeff[1][BlkIdxB];
+					nB = sliceBase->macroblock[mbAddrB]->mb_chroma_4x4_non_zero_count_coeff[1][BlkIdxB];
 				}
 			}
 		}
@@ -2363,61 +2364,61 @@ int ResidualBlockCavlc::findTable(BitStream& bs, int maxNumber, int* lengthTable
 int ResidualBlockCavlc::findChromaAC_nA_nB(const int CbCr, const int BlkIdx, int& nA, int& nB, bool& availableLeft, bool& availableTop)
 {
 
-	//const int MbWidthC = sliceBase.sHeader->sps.MbWidthC;    //色度宏块宽度 8
-	//const int MbHeightC = sliceBase.sHeader->sps.MbHeightC;	//色度宏块高度 8
+	//const int MbWidthC = sliceBase->sHeader->sps.MbWidthC;    //色度宏块宽度 8
+	//const int MbHeightC = sliceBase->sHeader->sps.MbHeightC;	//色度宏块高度 8
 
-	if (sliceBase.sHeader->sps.ChromaArrayType == 1)//420
+	if (sliceBase->sHeader->sps.ChromaArrayType == 1)//420
 	{
 		if (BlkIdx % 2 == 0)
 		{
-			if (sliceBase.mbX > 0)
+			if (sliceBase->mbX > 0)
 			{
-				const int leftMbIdx = sliceBase.CurrMbAddr - 1;
+				const int leftMbIdx = sliceBase->CurrMbAddr - 1;
 				const int leftIdx = BlkIdx + 1;
 
-				nA = sliceBase.macroblock[leftMbIdx]->mb_chroma_4x4_non_zero_count_coeff[CbCr][leftIdx];
+				nA = sliceBase->macroblock[leftMbIdx]->mb_chroma_4x4_non_zero_count_coeff[CbCr][leftIdx];
 				availableLeft = true;
 			}
 		}
 		else
 		{
-			nA = sliceBase.macroblock[sliceBase.CurrMbAddr]->mb_chroma_4x4_non_zero_count_coeff[CbCr][BlkIdx - 1];
+			nA = sliceBase->macroblock[sliceBase->CurrMbAddr]->mb_chroma_4x4_non_zero_count_coeff[CbCr][BlkIdx - 1];
 			availableLeft = true;
 		}
 
 
 		if (BlkIdx < 2)
 		{
-			if (sliceBase.mbY > 0)
+			if (sliceBase->mbY > 0)
 			{
-				const int topMbIdx = sliceBase.CurrMbAddr - sliceBase.sHeader->sps.PicWidthInMbs;
+				const int topMbIdx = sliceBase->CurrMbAddr - sliceBase->sHeader->sps.PicWidthInMbs;
 				const int leftIdx = BlkIdx + 2;
-				nB = sliceBase.macroblock[topMbIdx]->mb_chroma_4x4_non_zero_count_coeff[CbCr][leftIdx];
+				nB = sliceBase->macroblock[topMbIdx]->mb_chroma_4x4_non_zero_count_coeff[CbCr][leftIdx];
 				availableTop = true;
 			}
 		}
 		else
 		{
-			nB = sliceBase.macroblock[sliceBase.CurrMbAddr]->mb_chroma_4x4_non_zero_count_coeff[CbCr][BlkIdx - 2];
+			nB = sliceBase->macroblock[sliceBase->CurrMbAddr]->mb_chroma_4x4_non_zero_count_coeff[CbCr][BlkIdx - 2];
 			availableTop = true;
 		}
 	}
-	else if (sliceBase.sHeader->sps.ChromaArrayType == 2)//422
+	else if (sliceBase->sHeader->sps.ChromaArrayType == 2)//422
 	{
 		//2 1
 		if (BlkIdx % 2 == 0)
 		{
-			if (sliceBase.mbX > 0)
+			if (sliceBase->mbX > 0)
 			{
-				const int leftMbIdx = sliceBase.CurrMbAddr - 1;
+				const int leftMbIdx = sliceBase->CurrMbAddr - 1;
 				const int leftIdx = BlkIdx + 1;
-				nA = sliceBase.macroblock[leftMbIdx]->mb_chroma_4x4_non_zero_count_coeff[CbCr][leftIdx];
+				nA = sliceBase->macroblock[leftMbIdx]->mb_chroma_4x4_non_zero_count_coeff[CbCr][leftIdx];
 				availableLeft = true;
 			}
 		}
 		else
 		{
-			nA = sliceBase.macroblock[sliceBase.CurrMbAddr]->mb_chroma_4x4_non_zero_count_coeff[CbCr][BlkIdx - 1];
+			nA = sliceBase->macroblock[sliceBase->CurrMbAddr]->mb_chroma_4x4_non_zero_count_coeff[CbCr][BlkIdx - 1];
 			availableLeft = true;
 		}
 
@@ -2425,17 +2426,17 @@ int ResidualBlockCavlc::findChromaAC_nA_nB(const int CbCr, const int BlkIdx, int
 
 		if (BlkIdx < 2)
 		{
-			if (sliceBase.mbY > 0)
+			if (sliceBase->mbY > 0)
 			{
-				const int topMbIdx = sliceBase.CurrMbAddr - sliceBase.sHeader->sps.PicWidthInMbs;
+				const int topMbIdx = sliceBase->CurrMbAddr - sliceBase->sHeader->sps.PicWidthInMbs;
 				const int leftIdx = BlkIdx + 6;
-				nB = sliceBase.macroblock[topMbIdx]->mb_chroma_4x4_non_zero_count_coeff[CbCr][leftIdx];
+				nB = sliceBase->macroblock[topMbIdx]->mb_chroma_4x4_non_zero_count_coeff[CbCr][leftIdx];
 				availableTop = true;
 			}
 		}
 		else
 		{
-			nB = sliceBase.macroblock[sliceBase.CurrMbAddr]->mb_chroma_4x4_non_zero_count_coeff[CbCr][BlkIdx - 2];
+			nB = sliceBase->macroblock[sliceBase->CurrMbAddr]->mb_chroma_4x4_non_zero_count_coeff[CbCr][BlkIdx - 2];
 			availableTop = true;
 		}
 

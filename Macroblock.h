@@ -136,9 +136,15 @@ public:
 	uint8_t predL[16][16];  //存储亮度预测样点值
 
 
+
+	uint32_t sliceNumber;
+
+
+	int  mb_skip_flag;
+
 public:
-	Macroblock(ParseSlice& slice);
-	bool macroblock_layer(BitStream& bs);
+	Macroblock();
+	bool macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* slice_data);
 
 
 
@@ -164,6 +170,6 @@ private:
 	bool isAe;
 
 
-	ParseSlice& sliceBase;
+	ParseSlice* sliceBase;
 };
 

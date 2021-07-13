@@ -10,7 +10,7 @@ class ResidualBlockCavlc
 
 
 public:
-	ResidualBlockCavlc(ParseSlice& slice);
+	ResidualBlockCavlc(ParseSlice* slice);
 
 	bool residual_block_cavlc(BitStream& bs, int* coeffLevel, int startIdx, int endIdx, uint32_t maxNumCoeff, int& TotalCoeff, RESIDUAL_LEVEL residualLevel, size_t BlkIdx = 0);
 
@@ -24,11 +24,11 @@ private:
 
 	int findChromaAC_nA_nB(const int CbCr, const int BlkIdx, int& nA, int& nB, bool& availableLeft, bool& availableTop);
 public:
-	ParseSlice& sliceBase;
+	ParseSlice* sliceBase;
 	bool	trailing_ones_sign_flag;
-	
-	
 
-	
+
+
+
 };
 

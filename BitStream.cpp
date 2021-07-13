@@ -150,7 +150,7 @@ int BitStream::readSE()
 	return r;
 	/*int k = readUE();
 
-	return (pow(-1, k + 1) * ceil((double)(k / 2)));*/
+	return (pow(-1, k + 1) * ceil((k / 2)));*/
 }
 int BitStream::readME(int ChromaArrayType, H264_MB_PART_PRED_MODE mode)
 {

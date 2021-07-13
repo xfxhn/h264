@@ -13,14 +13,14 @@ using namespace std;
 
 void rbsp_trailing_bits(BitStream& bs);
 
-inline bool isMbUsable(int mbAddr, int CurrMbAddr)
-{
-	//地址为mbAddr的宏块和地址为CurrMbAddr的宏块属于不同的条带,这个先不做判断，还没有验证正确性
-	if (mbAddr < 0 || mbAddr > CurrMbAddr) {
-		return true;
-	}
-	return false;
-}
+//inline bool isMbUsable(int mbAddr, int CurrMbAddr, int CurrMbAddrSliceNumber, int mbAddrSliceNumber)
+//{
+//	//地址为mbAddr的宏块和地址为CurrMbAddr的宏块属于不同的条带,这个先不做判断，还没有验证正确性
+//	if (mbAddr < 0 || mbAddr > CurrMbAddr || CurrMbAddrSliceNumber != mbAddrSliceNumber) {
+//		return true;
+//	}
+//	return false;
+//}
 
 
 inline void printError(const char* err) {

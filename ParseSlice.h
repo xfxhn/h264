@@ -39,6 +39,11 @@ public:
 	uint32_t PicHeightInSamplesC;
 	uint32_t PicSizeInMbs;
 
+
+
+
+	uint32_t  sliceNumber; //当前帧第几个slice
+
 public:
 	ParseSlice(ParseNalu& nalu, SliceHeader* sHeader);
 

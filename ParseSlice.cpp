@@ -24,6 +24,10 @@ ParseSlice::ParseSlice(ParseNalu& nalu, SliceHeader* sHeader) :nalu(nalu)
 	PicWidthInSamplesC = sHeader->sps.PicWidthInSamplesC;
 	PicHeightInSamplesC = sHeader->sps.PicHeightInSamplesC;
 	PicSizeInMbs = sHeader->PicSizeInMbs;
+
+
+
+	sliceNumber = 0;
 }
 
 bool ParseSlice::parse()
@@ -49,7 +53,7 @@ bool ParseSlice::parse()
 
 	for (size_t i = 0; i < PicSizeInMbs; i++)
 	{
-		macroblock[i] = new Macroblock(*this);
+		macroblock[i] = new Macroblock;
 	}
 
 	return false;
@@ -1170,12 +1174,17 @@ void ParseSlice::getMbAddrNAndLuma4x4BlkIdxN(
 	int& mbAddrN, const int xN, const int yN, const int maxW, const int maxH, int& xW, int& yW
 )
 {
+
+#define isMbUsable(mbAddr, CurrMbAddr) (mbAddr < 0 || mbAddr > CurrMbAddr || macroblock[CurrMbAddr]->sliceNumber != macroblock[mbAddr]->sliceNumber)
+
+
 	if (xN < 0 && yN < 0)
 	{
 		//6.4.5 节规定的过程的输入为 mbAddrD = CurrMbAddr – PicWidthInMbs – 1，输出为 mbAddrD 是否可用。
 		//另 外，当CurrMbAddr % PicWidthInMbs 等于0 时mbAddrD 将被标识为不可用。
 		int mbAddrD = CurrMbAddr - sHeader->sps.PicWidthInMbs - 1;
 		//不可用
+
 		if (isMbUsable(mbAddrD, CurrMbAddr) || CurrMbAddr % sHeader->sps.PicWidthInMbs == 0)
 		{
 
@@ -1231,6 +1240,7 @@ void ParseSlice::getMbAddrNAndLuma4x4BlkIdxN(
 	xW = (xN + maxW) % maxW;
 	yW = (yN + maxH) % maxH;
 
+#undef isMbUsable
 
 }
 

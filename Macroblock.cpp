@@ -76,9 +76,9 @@ MB_TYPE_SLICES_SI mb_type_sleces_si[1] =
 };
 
 
-Macroblock::Macroblock(ParseSlice& slice) :sliceBase(slice)
+Macroblock::Macroblock()
 {
-
+	sliceBase = nullptr;
 	pcm_alignment_zero_bit = 0;
 	transform_size_8x8_flag = 0;
 	memset(pcm_sample_luma, 0, sizeof(uint8_t) * 256);
@@ -119,6 +119,12 @@ Macroblock::Macroblock(ParseSlice& slice) :sliceBase(slice)
 
 	QSY = 0;
 	QSC = 0;
+
+
+
+	sliceNumber = 0;
+
+	mb_skip_flag = 0;
 }
 //slice type 五种类型
 //I slice中的宏块类型只能是I宏块类型
@@ -138,12 +144,15 @@ Macroblock::Macroblock(ParseSlice& slice) :sliceBase(slice)
 //CodedBlockPatternChroma :如果当前宏块类型采用的预测方式为Intra_16x16，那么该字段有效,它表示了Luma宏块中的CBP
 //
 //一个宏块的色度分量的coded_block_pattern，Cb、Cr的CodedBlockPatternChroma相同
-bool Macroblock::macroblock_layer(BitStream& bs)
+bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* sliceData)
 {
 
+	sliceBase = Slice;
 
+	SliceHeader* sHeader = sliceBase->sHeader;
 
-	SliceHeader* sHeader = sliceBase.sHeader;
+	sliceNumber = sliceBase->sliceNumber;
+	mb_skip_flag = sliceData->mb_skip_flag;
 
 	isAe = sHeader->pps.entropy_coding_mode_flag;  //ae(v)表示CABAC编码
 
@@ -345,7 +354,7 @@ bool Macroblock::macroblock_layer(BitStream& bs)
 //宏块预测语法
 bool Macroblock::mb_pred(BitStream& bs, uint32_t mb_type, uint32_t numMbPart)
 {
-	SliceHeader* sHeader = sliceBase.sHeader;
+	SliceHeader* sHeader = sliceBase->sHeader;
 	if (mode == H264_MB_PART_PRED_MODE::Intra_4x4 || mode == H264_MB_PART_PRED_MODE::Intra_8x8 || mode == H264_MB_PART_PRED_MODE::Intra_16x16)
 	{
 		if (mode == H264_MB_PART_PRED_MODE::Intra_4x4)
@@ -592,7 +601,7 @@ bool Macroblock::residual(BitStream& bs, int startIdx, int endIdx)
 
 
 	int TotalCoeff = 0;
-	SliceHeader* sHeader = sliceBase.sHeader;
+	SliceHeader* sHeader = sliceBase->sHeader;
 	ResidualBlockCavlc residual_block(sliceBase);
 	/*bool isAe = sHeader.pps.entropy_coding_mode_flag;*/
 	if (isAe)
@@ -704,7 +713,7 @@ bool Macroblock::residual(BitStream& bs, int startIdx, int endIdx)
 int Macroblock::residual_luma(BitStream& bs, int i16x16DClevel[16], int i16x16AClevel[16][16], int level4x4[16][16], int level8x8[4][64], int startIdx, int endIdx)
 {
 	ResidualBlockCavlc residual_block(sliceBase);
-	SliceHeader* sHeader = sliceBase.sHeader;
+	SliceHeader* sHeader = sliceBase->sHeader;
 	int TotalCoeff = 0;
 
 	//先解析16*16的DC直流分量
@@ -733,7 +742,7 @@ int Macroblock::residual_luma(BitStream& bs, int i16x16DClevel[16], int i16x16AC
 			for (size_t i4x4 = 0; i4x4 < 4; i4x4++)
 			{
 				const size_t BlkIdx = i8x8 * 4 + i4x4;//第几个块
-				
+
 
 				//有亮度分量解析量度分析，4*4是不区分AC和DC
 				if (CodedBlockPatternLuma & (1 << i8x8))

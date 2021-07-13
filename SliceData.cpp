@@ -32,7 +32,7 @@ int SliceData::NextMbAddress(SliceHeader* sHeader, uint32_t n)
 
 bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice)
 {
-
+	Cabac cabac;
 
 	SliceHeader* sHeader = Slice->sHeader;
 
@@ -47,6 +47,11 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice)
 			  如果还没有字节对齐将出现若干个 cabac_alignment_one_bit 作为填充。*/
 			cabac_alignment_one_bit = bs.readBit(); //2 f(1)
 		}
+
+		//初始化cabac
+		cabac.Initialisation_process_for_context_variables((SLIECETYPE)sHeader->slice_type, sHeader->SliceQPY, sHeader->cabac_init_idc);
+
+		cabac.Initialisation_process_for_the_arithmetic_decoding_engine(bs);
 	}
 
 
@@ -88,7 +93,13 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice)
 
 					Slice->mbX = (CurrMbAddr % Slice->sHeader->sps.PicWidthInMbs);
 					Slice->mbY = (CurrMbAddr / Slice->sHeader->sps.PicWidthInMbs);
+
+
+					Slice->CurrMbAddr = CurrMbAddr;
+
+
 					CurrMbAddr = NextMbAddress(sHeader, CurrMbAddr);
+
 				}
 
 				if (mb_skip_run > 0)
@@ -121,7 +132,7 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice)
 			Slice->CurrMbAddr = CurrMbAddr;
 
 
-			Slice->macroblock[Slice->CurrMbAddr]->macroblock_layer(bs);
+			Slice->macroblock[Slice->CurrMbAddr]->macroblock_layer(bs, Slice, this);
 
 			bool isChromaCb = true;
 			if (Slice->macroblock[Slice->CurrMbAddr]->mode == H264_MB_PART_PRED_MODE::Intra_4x4)
@@ -140,6 +151,14 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice)
 				Slice->transformDecode4x4ChromaResidualProcess(isChromaCb);
 				isChromaCb = false;
 				Slice->transformDecode4x4ChromaResidualProcess(isChromaCb);
+			}
+			else if (Slice->macroblock[Slice->CurrMbAddr]->mbType == H264_MB_TYPE::I_PCM)
+			{
+
+			}
+			else  //帧间预测
+			{
+
 			}
 
 		}
