@@ -144,7 +144,7 @@ Macroblock::Macroblock()
 //CodedBlockPatternChroma :如果当前宏块类型采用的预测方式为Intra_16x16，那么该字段有效,它表示了Luma宏块中的CBP
 //
 //一个宏块的色度分量的coded_block_pattern，Cb、Cr的CodedBlockPatternChroma相同
-bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* sliceData)
+bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* sliceData, Cabac& cabac)
 {
 
 	sliceBase = Slice;
@@ -159,8 +159,7 @@ bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* s
 
 	if (isAe) // ae(v) 表示CABAC编码
 	{
-		//ret = cabac.CABAC_decode_mb_type(picture, bs, mb_type); //2 ue(v) | ae(v)
-		//RETURN_IF_FAILED(ret != 0, ret);
+		mb_type = cabac.decode_mb_type(bs, Slice);
 	}
 	else // ue(v) 表示CAVLC编码
 	{
@@ -174,7 +173,6 @@ bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* s
 
 	//修正过后的
 	uint32_t	 fix_mb_type = mb_type;
-
 
 	//当前宏块是什么类型   //修正过后的
 	fix_slice_type = (SLIECETYPE)(slice_type);

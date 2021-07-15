@@ -1,6 +1,7 @@
 #pragma once
 #include "Common.h"
 #include "ResidualBlockCavlc.h"
+#include "Cabac.h"
 
 
 
@@ -144,7 +145,7 @@ public:
 
 public:
 	Macroblock();
-	bool macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* slice_data);
+	bool macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* slice_data, Cabac& cabac);
 
 
 

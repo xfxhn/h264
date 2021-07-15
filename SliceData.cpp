@@ -3,7 +3,7 @@
 SliceData::SliceData()
 {
 	mb_field_decoding_flag = 0;
-	mb_skip_flag = 0;
+	mb_skip_flag = false;
 	CurrMbAddr = 0;
 	cabac_alignment_one_bit = 0;
 	mb_skip_run = 0;
@@ -112,9 +112,23 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice)
 			}
 			else  //ae(v)表示CABAC编码
 			{
+				Slice->mbX = (CurrMbAddr % Slice->sHeader->sps.PicWidthInMbs);
+				Slice->mbY = (CurrMbAddr / Slice->sHeader->sps.PicWidthInMbs);
+
+				Slice->CurrMbAddr = CurrMbAddr;
 				//cabac编码  暂时不做
-				printError("cabac编码");
-				return -1;
+				mb_skip_flag = cabac.decode_mb_skip_flag(bs, Slice, CurrMbAddr);
+
+
+				if (mb_skip_flag)
+				{
+					//表示本宏块没有残差数据，相应的像素值只需要利用之前已经解码的I/P帧来预测获得
+
+
+
+				}
+
+				moreDataFlag = !mb_skip_flag;
 			}
 		}
 
@@ -132,7 +146,7 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice)
 			Slice->CurrMbAddr = CurrMbAddr;
 
 
-			Slice->macroblock[Slice->CurrMbAddr]->macroblock_layer(bs, Slice, this);
+			Slice->macroblock[Slice->CurrMbAddr]->macroblock_layer(bs, Slice, this, cabac);
 
 			bool isChromaCb = true;
 			if (Slice->macroblock[Slice->CurrMbAddr]->mode == H264_MB_PART_PRED_MODE::Intra_4x4)
