@@ -993,32 +993,26 @@ int Cabac::decode_mb_skip_flag(BitStream& bs, ParseSlice* Slice, int _CurrMbAddr
 
 int Cabac::decode_mb_type(BitStream& bs, ParseSlice* Slice)
 {
-
 	int synElVal = 0;
 	SLIECETYPE sliceType = (SLIECETYPE)Slice->sHeader->slice_type;
 
 	if (sliceType == SLIECETYPE::H264_SLIECE_TYPE_SI)
 	{
-		int ctxIdxOffset = 0; //Table 9-34
-		synElVal = decode_mb_type_in_SI_slices(Slice, bs, ctxIdxOffset);
+		synElVal = decode_mb_type_in_SI_slices(Slice, bs, 0);
 	}
 	else if (sliceType == SLIECETYPE::H264_SLIECE_TYPE_I)
 	{
-		int ctxIdxOffset = 3; //Table 9-34
-
-		synElVal = decode_mb_type_in_I_slice(Slice, bs, ctxIdxOffset);
+		synElVal = decode_mb_type_in_I_slices(Slice, bs, 3);
 	}
 	else if (sliceType == SLIECETYPE::H264_SLIECE_TYPE_P || sliceType == SLIECETYPE::H264_SLIECE_TYPE_SP)
 	{
-		/*ret = CABAC_decode_mb_type_in_P_SP_slices(picture, bs, synElVal);
-		RETURN_IF_FAILED(ret != 0, -1);*/
+		synElVal = decode_mb_type_in_P_SP_slices(Slice, bs, 14);
 	}
 	else if (sliceType == SLIECETYPE::H264_SLIECE_TYPE_B)
 	{
-		/*ret = CABAC_decode_mb_type_in_B_slices(picture, bs, synElVal);
-		RETURN_IF_FAILED(ret != 0, -1);*/
+		synElVal = decode_mb_type_in_B_slices(Slice, bs, 27);
 	}
-	return 0;
+	return synElVal;
 }
 //语法元素mb_skip_flag的ctxIdxInc的推导过程
 int Cabac::Derivation_process_of_ctxIdxInc_for_the_syntax_element_mb_skip_flag(ParseSlice* Slice, int _CurrMbAddr)
@@ -1101,7 +1095,7 @@ int Cabac::Derivation_process_of_ctxIdxInc_for_the_syntax_element_mb_type(ParseS
 	return condTermFlagA + condTermFlagB;
 }
 
-int Cabac::decode_mb_type_in_I_slice(ParseSlice* Slice, BitStream& bs, int ctxIdxOffset)
+int Cabac::decode_mb_type_in_I_slices(ParseSlice* Slice, BitStream& bs, int ctxIdxOffset)
 {
 
 	//如果是I片中的intra宏块，则ctxIdxOffset = 3; 
@@ -1415,14 +1409,13 @@ int Cabac::decode_mb_type_in_I_slice(ParseSlice* Slice, BitStream& bs, int ctxId
 
 int Cabac::decode_mb_type_in_SI_slices(ParseSlice* Slice, BitStream& bs, int ctxIdxOffset)
 {
-	int ctxIdxInc = Derivation_process_of_ctxIdxInc_for_the_syntax_element_mb_type(Slice, ctxIdxOffset);
+	int synElVal = 0;
 
+	int ctxIdxInc = Derivation_process_of_ctxIdxInc_for_the_syntax_element_mb_type(Slice, ctxIdxOffset);
+	ctxIdxOffset = 0;
 	int ctxIdx = ctxIdxOffset + ctxIdxInc;
 
 	int binVal = DecodeBin(bs, false, ctxIdx);
-
-
-	int synElVal = 0;
 
 	//如果是SI宏块b0=0，否则是I宏块
 	if (binVal == 0)
@@ -1431,7 +1424,7 @@ int Cabac::decode_mb_type_in_SI_slices(ParseSlice* Slice, BitStream& bs, int ctx
 	}
 	else
 	{
-		const int ctxIdxOffset = 3;
+		ctxIdxOffset = 3;
 		synElVal = decode_mb_type_in_I_slice(Slice, bs, ctxIdxOffset);
 		//SI条带里面可能包含了I宏块 1-26，所以这里+1是因为后面修正了mb_type，因为SI条带里宏块类型的值可能是1-26
 		synElVal += 1;
@@ -1444,6 +1437,7 @@ int Cabac::decode_mb_type_in_P_SP_slices(ParseSlice* Slice, BitStream& bs, int c
 
 	int synElVal = 0;
 	//P/SP条带里的P宏块ctxIdxOffset=14，I宏块ctxIdxOffset=17
+	ctxIdxOffset = 14;
 	//表9-39 ctxIdxOffset=14和binIdx对应的值是ctxIdxInc=0  （ctxIdxOffset+ctxIdxInc）
 	int ctxIdx = ctxIdxOffset + 0;
 
@@ -1451,7 +1445,6 @@ int Cabac::decode_mb_type_in_P_SP_slices(ParseSlice* Slice, BitStream& bs, int c
 
 	if (binVal == 0)  //0
 	{
-		ctxIdxOffset = 14;
 		ctxIdx = ctxIdxOffset + 1;
 		int binVal = DecodeBin(bs, false, ctxIdx);//binIdx = 1; b1=binVal;
 
@@ -1469,17 +1462,275 @@ int Cabac::decode_mb_type_in_P_SP_slices(ParseSlice* Slice, BitStream& bs, int c
 				synElVal = 3;//3 (P_8x8)
 			}
 		}
-		else
+		else//01
 		{
+			ctxIdx = ctxIdxOffset + 3; //(b1 != 1) ? 2: 3; b1=1; //Table 9-41 //2,3 (clause 9.3.3.1.2)
+			int binVal = DecodeBin(bs, false, ctxIdx);//binIdx = 2;
 
+			if (binVal == 0) //(010)b
+			{
+				synElVal = 2; //2 (P_L0_L0_8x16)
+			}
+			else //if (binVal == 1) //(011)b
+			{
+				synElVal = 1; //1 (P_L0_L0_16x8)
+			}
 		}
 	}
 	else
 	{
+		//p/sp slice里的i宏块
 		ctxIdxOffset = 17;
+		synElVal = decode_mb_type_in_I_slice(Slice, bs, ctxIdxOffset);
+
+		synElVal += 5;
 	}
 
-	return 0;
+	return synElVal;
+}
+
+int Cabac::decode_mb_type_in_B_slices(ParseSlice* Slice, BitStream& bs, int ctxIdxOffset)
+{
+	int synElVal = 0;
+
+	ctxIdxOffset = 27;
+
+	int ctxIdxInc = Derivation_process_of_ctxIdxInc_for_the_syntax_element_mb_type(Slice, ctxIdxOffset);
+
+	int ctxIdx = ctxIdxOffset + ctxIdxInc;
+	int binVal = DecodeBin(bs, false, ctxIdx);
+
+
+	if (binVal == 0)//0
+	{
+		synElVal = 0; //0 (B_Direct_16x16)
+	}
+	else//1
+	{
+		int ctxIdx = ctxIdxOffset + 3;
+
+		binVal = DecodeBin(bs, false, ctxIdx);//binIdx = 1;
+		if (binVal == 0) //10
+		{
+			int ctxIdx = ctxIdxOffset + 5; //(b1 != 0) ? 4: 5; b1=0; //Table 9-41 //2,3 (clause 9.3.3.1.2)
+
+			binVal = DecodeBin(bs, false, ctxIdx);//binIdx = 2;
+
+			if (binVal == 0) //100
+			{
+				synElVal = 1; //1 (B_L0_16x16)
+			}
+			else//101
+			{
+				synElVal = 2; //2 (B_L1_16x16)
+			}
+
+		}
+		else//11
+		{
+			int ctxIdx = ctxIdxOffset + 4; //(b1 != 0) ? 4: 5; b1=1; //Table 9-41 //2,3 (clause 9.3.3.1.2)
+
+			binVal = DecodeBin(bs, false, ctxIdx);//binIdx = 2;
+
+			if (binVal == 0)//110
+			{
+				ctxIdx = ctxIdxOffset + 5; //Table 9-39
+				binVal = DecodeBin(bs, false, ctxIdx); //binIdx = 3;
+
+				if (binVal == 0)//1100
+				{
+					ctxIdx = ctxIdxOffset + 5; //Table 9-39
+					binVal = DecodeBin(bs, false, ctxIdx); //binIdx = 4;
+					if (binVal == 0)//11000
+					{
+						ctxIdx = ctxIdxOffset + 5; //Table 9-39
+						binVal = DecodeBin(bs, false, ctxIdx); //binIdx = 5;
+
+						if (binVal == 0) //(110000)b
+						{
+							synElVal = 3; //3 (B_Bi_16x16)
+						}
+						else //if (binVal == 1) //(110001)b
+						{
+							synElVal = 4; //4 (B_L0_L0_16x8)
+						}
+					}
+					else//11001
+					{
+						ctxIdx = ctxIdxOffset + 5; //Table 9-39
+						binVal = DecodeBin(bs, false, ctxIdx); //binIdx = 5;
+
+						if (binVal == 0) //(110010)b
+						{
+							synElVal = 5; //5 (B_L0_L0_8x16)
+						}
+						else //if (binVal == 1) //(110011)b
+						{
+							synElVal = 6; //6 (B_L1_L1_16x8)
+						}
+					}
+				}
+				else//1101
+				{
+					ctxIdx = ctxIdxOffset + 5; //Table 9-39
+					binVal = DecodeBin(bs, false, ctxIdx); //binIdx = 4;
+
+					if (binVal == 0)//11010
+					{
+						ctxIdx = ctxIdxOffset + 5; //Table 9-39
+						binVal = DecodeBin(bs, false, ctxIdx); //binIdx = 5;
+
+						if (binVal == 0) //(110100)b
+						{
+							synElVal = 7; //7 (B_L1_L1_8x16)
+						}
+						else //if (binVal == 1) //(110101)b
+						{
+							synElVal = 8; //8 (B_L0_L1_16x8)
+						}
+					}
+					else//11011
+					{
+						ctxIdx = ctxIdxOffset + 5; //Table 9-39
+						binVal = DecodeBin(bs, false, ctxIdx); //binIdx = 5;
+
+						if (binVal == 0) //(110110)b
+						{
+							synElVal = 9; //9 (B_L0_L1_8x16)
+						}
+						else //if (binVal == 1) //(110111)b
+						{
+							synElVal = 10; //10 (B_L1_L0_16x8)
+						}
+					}
+				}
+			}
+			else//111
+			{
+				ctxIdx = ctxIdxOffset + 5; //Table 9-39
+				binVal = DecodeBin(bs, false, ctxIdx); //binIdx = 3;
+
+
+				if (binVal == 0)//1110
+				{
+					ctxIdx = ctxIdxOffset + 5; //Table 9-39
+					binVal = DecodeBin(bs, false, ctxIdx); //binIdx = 4;
+					if (binVal == 0)//11100
+					{
+						ctxIdx = ctxIdxOffset + 5; //Table 9-39
+						binVal = DecodeBin(bs, false, ctxIdx); //binIdx = 5;
+
+						if (binVal == 0)//111000
+						{
+							ctxIdx = ctxIdxOffset + 5; //Table 9-39
+							binVal = DecodeBin(bs, false, ctxIdx); //binIdx = 6;
+
+							if (binVal == 0) //(1110000)b
+							{
+								synElVal = 12; //12 (B_L0_Bi_16x8)
+							}
+							else //if (binVal == 1) //(1110001)b
+							{
+								synElVal = 13; //13 (B_L0_Bi_8x16)
+							}
+						}
+						else//111001
+						{
+							ctxIdx = ctxIdxOffset + 5; //Table 9-39
+							binVal = DecodeBin(bs, false, ctxIdx); //binIdx = 6;
+
+							if (binVal == 0) //(1110010)b
+							{
+								synElVal = 14; //14 (B_L1_Bi_16x8)
+							}
+							else //if (binVal == 1) //(1110011)b
+							{
+								synElVal = 15; //15 (B_L1_Bi_8x16)
+							}
+						}
+					}
+					else//11101
+					{
+						ctxIdx = ctxIdxOffset + 5; //Table 9-39
+						binVal = DecodeBin(bs, false, ctxIdx); //binIdx = 5;
+
+						if (binVal == 0)//111010
+						{
+							ctxIdx = ctxIdxOffset + 5; //Table 9-39
+							binVal = DecodeBin(bs, false, ctxIdx); //binIdx = 6;
+
+							if (binVal == 0) //(1110100)b
+							{
+								synElVal = 16; //16 (B_Bi_L0_16x8)
+							}
+							else //if (binVal == 1) //(1110101)b
+							{
+								synElVal = 17; //17 (B_Bi_L0_8x16)
+							}
+						}
+						else//111011
+						{
+							ctxIdx = ctxIdxOffset + 5; //Table 9-39
+							binVal = DecodeBin(bs, false, ctxIdx); //binIdx = 6;
+
+							if (binVal == 0) //(1110110)b
+							{
+								synElVal = 18; //18 (B_Bi_L1_16x8)
+							}
+							else //if (binVal == 1) //(1110111)b
+							{
+								synElVal = 19; //19 (B_Bi_L1_8x16)
+							}
+						}
+					}
+				}
+				else//1111
+				{
+					ctxIdx = ctxIdxOffset + 5; //Table 9-39
+					binVal = DecodeBin(bs, false, ctxIdx); //binIdx = 4;
+					if (binVal == 0)//11110
+					{
+						ctxIdx = ctxIdxOffset + 5; //Table 9-39
+						binVal = DecodeBin(bs, false, ctxIdx); //binIdx = 5;
+
+						if (binVal == 0)//111100
+						{
+							ctxIdx = ctxIdxOffset + 5; //Table 9-39
+							binVal = DecodeBin(bs, false, ctxIdx); //binIdx = 6;
+							if (binVal == 0) //(1111000)b
+							{
+								synElVal = 20; //20 (B_Bi_Bi_16x8)
+							}
+							else //if (binVal == 1) //(1111001)b
+							{
+								synElVal = 21; //21 (B_Bi_Bi_8x16)
+							}
+						}
+						else//111101
+						{
+							ctxIdxOffset = 32;
+							synElVal = decode_mb_type_in_I_slices(Slice, bs, ctxIdx) + 23;
+						}
+					}
+					else//11111
+					{
+						ctxIdx = ctxIdxOffset + 5; //Table 9-39
+						binVal = DecodeBin(bs, false, ctxIdx); //binIdx = 5;
+
+						if (binVal == 0) //(111110)b
+						{
+							synElVal = 11; //11 (B_L1_L0_8x16)
+						}
+						else //if (binVal == 1) //(111111)b
+						{
+							synElVal = 22; //22 (B_8x8)
+						}
+					}
+				}
+			}
+		}
+	}
+	return synElVal;
 }
 
 //这个过程的输出是已解码的值binVal，以及更新的变量codIRange和codIOffset
