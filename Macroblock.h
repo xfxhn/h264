@@ -4,7 +4,7 @@
 #include "Cabac.h"
 
 
-
+class SliceData;
 struct MB_TYPE_SLICES_I
 {
 	uint8_t					mb_type;

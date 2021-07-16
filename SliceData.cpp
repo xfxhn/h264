@@ -117,7 +117,7 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice)
 
 				Slice->CurrMbAddr = CurrMbAddr;
 				//cabac±àÂë  ÔİÊ±²»×ö
-				mb_skip_flag = cabac.decode_mb_skip_flag(bs, Slice, CurrMbAddr);
+				mb_skip_flag = cabac.decode_mb_skip_flag(bs, Slice);
 
 
 				if (mb_skip_flag)

@@ -957,11 +957,13 @@ void Cabac::getMN(const int ctxIdx, const SLIECETYPE slice_type, const int cabac
 	}
 	else if (ctxIdx == 276)
 	{
+		printError("ctxIdx=276");
 		//return -1; //ctxIdx = 276 is assigned to the binIdx of mb_type indicating the I_PCM mode.
 	}
 }
 
-int Cabac::decode_mb_skip_flag(BitStream& bs, ParseSlice* Slice, int _CurrMbAddr)
+
+int Cabac::decode_mb_skip_flag(BitStream& bs, ParseSlice* Slice)
 {
 	SLIECETYPE sliceType = (SLIECETYPE)Slice->sHeader->slice_type;
 
@@ -982,7 +984,7 @@ int Cabac::decode_mb_skip_flag(BitStream& bs, ParseSlice* Slice, int _CurrMbAddr
 		maxBinIdxCtx = 0;
 		ctxIdxOffset = 24;
 	}
-	int ctxIdxInc = Derivation_process_of_ctxIdxInc_for_the_syntax_element_mb_skip_flag(Slice, _CurrMbAddr);
+	int ctxIdxInc = Derivation_process_of_ctxIdxInc_for_the_syntax_element_mb_skip_flag(Slice);
 
 	int ctxIdx = ctxIdxOffset + ctxIdxInc;
 	//binVal 这个bit的值是0还是1
@@ -1014,8 +1016,40 @@ int Cabac::decode_mb_type(BitStream& bs, ParseSlice* Slice)
 	}
 	return synElVal;
 }
+
+int Cabac::decode_transform_size_8x8_flag(BitStream& bs, ParseSlice* Slice)
+{
+	int ctxIdxOffset = 399;
+	int ctxIdxInc = Derivation_process_of_ctxIdxInc_for_the_syntax_element_transform_size_8x8_flag(Slice);
+	int ctxIdx = ctxIdxOffset + ctxIdxInc;
+
+	int binVal = DecodeBin(bs, 0, ctxIdx);
+
+	return binVal;
+}
+
+int Cabac::decode_coded_block_pattern(BitStream& bs, ParseSlice* Slice)
+{
+	int binVal = 0;
+	int binIdx = 0;
+	int ctxIdxInc = 0;
+	int ctxIdx = 0;
+	// ctxIdxOffset = 73表示CodedBlockPatternLuma
+	// ctxIdxOffset = 77表示CodedBlockPatternChroma
+	int ctxIdxOffset = 73;
+
+	//CodedBlockPatternLuma由FL二值化表示给出 cMax = 15;
+	//------b0--------
+	binIdx = 0;
+	ctxIdxInc = Derivation_process_of_ctxIdxInc_for_the_syntax_element_coded_block_pattern(Slice, ctxIdxOffset, binIdx, binVal);
+
+	ctxIdx = ctxIdxOffset + ctxIdxInc;
+
+	binVal = DecodeBin(bs, false, ctxIdx);
+	return 0;
+}
 //语法元素mb_skip_flag的ctxIdxInc的推导过程
-int Cabac::Derivation_process_of_ctxIdxInc_for_the_syntax_element_mb_skip_flag(ParseSlice* Slice, int _CurrMbAddr)
+int Cabac::Derivation_process_of_ctxIdxInc_for_the_syntax_element_mb_skip_flag(ParseSlice* Slice)
 {
 	int xW = NA;
 	int yW = NA;
@@ -1093,6 +1127,163 @@ int Cabac::Derivation_process_of_ctxIdxInc_for_the_syntax_element_mb_type(ParseS
 	}
 
 	return condTermFlagA + condTermFlagB;
+}
+
+int Cabac::Derivation_process_of_ctxIdxInc_for_the_syntax_element_transform_size_8x8_flag(ParseSlice* Slice)
+{
+
+	int xW = NA;
+	int yW = NA;
+
+	int mbAddrA = NA;
+	Slice->getMbAddrNAndLuma4x4BlkIdxN(mbAddrA, (-1), 0, 16, 16, xW, yW);
+
+	int mbAddrB = NA;
+
+	Slice->getMbAddrNAndLuma4x4BlkIdxN(mbAddrB, 0, (-1), 16, 16, xW, yW);
+	int condTermFlagA = 0;
+
+	if (mbAddrA == NA || !Slice->macroblock[mbAddrA]->transform_size_8x8_flag)
+	{
+		condTermFlagA = 0;
+	}
+	else
+	{
+		condTermFlagA = 1;
+	}
+	int condTermFlagB = 0;
+
+	if (mbAddrB == NA || !Slice->macroblock[mbAddrB]->transform_size_8x8_flag)
+	{
+		condTermFlagB = 0;
+	}
+	else
+	{
+		condTermFlagB = 1;
+	}
+	return condTermFlagA + condTermFlagB;
+}
+
+int Cabac::Derivation_process_of_ctxIdxInc_for_the_syntax_element_coded_block_pattern(ParseSlice* Slice, int ctxIdxOffset, int binIdx, int binVal)
+{
+
+	int xW = 0;
+	int yW = 0;
+	if (ctxIdxOffset == 73)
+	{
+		const int luma8x8BlkIdx = binIdx;
+
+		const int xA = (luma8x8BlkIdx % 2) * 8 + (-1);
+		const int yA = (luma8x8BlkIdx / 2) * 8 + (0);
+
+		int luma8x8BlkIdxA = NA;
+		int mbAddrA = NA;
+
+		Slice->getMbAddrNAndLuma4x4BlkIdxN(mbAddrA, xA, yA, 16, 16, xW, yW);
+
+		if (mbAddrA != NA)
+		{
+			luma8x8BlkIdxA = 2 * (yW / 8) + (xW / 8);
+		}
+		int condTermFlagA = 0;
+
+		if (
+			mbAddrA == NA
+			|| Slice->macroblock[mbAddrA]->mbType == H264_MB_TYPE::I_PCM
+			|| (
+				Slice->CurrMbAddr != mbAddrA
+				&& (Slice->macroblock[mbAddrA]->mbType != H264_MB_TYPE::P_Skip && Slice->macroblock[mbAddrA]->mbType != H264_MB_TYPE::B_Skip)
+				&& ((Slice->macroblock[mbAddrA]->CodedBlockPatternLuma >> luma8x8BlkIdxA) & 1) != 0
+				)
+			|| (Slice->CurrMbAddr == mbAddrA && ((binVal >> luma8x8BlkIdxA) & 1) != 0)//前一个解码的coded_block_pattern的二进制值bk（k= luma8x8BlkIdxN）不等于0
+			)
+		{
+			condTermFlagA = 0;
+		}
+		else
+		{
+			condTermFlagA = 1;
+		}
+
+		const int xB = (luma8x8BlkIdx % 2) * 8 + (0);
+		const int yB = (luma8x8BlkIdx / 2) * 8 + (-1);
+		int luma8x8BlkIdxB = NA;
+		int mbAddrB = NA;
+
+		Slice->getMbAddrNAndLuma4x4BlkIdxN(mbAddrB, xB, yB, 16, 16, xW, yW);
+
+		if (mbAddrB != NA)
+		{
+			luma8x8BlkIdxB = 2 * (yW / 8) + (xW / 8);
+		}
+
+		int condTermFlagB = 0;
+
+		if (
+			mbAddrB == NA
+			|| Slice->macroblock[mbAddrB]->mbType == H264_MB_TYPE::I_PCM
+			|| (
+				Slice->CurrMbAddr != mbAddrB
+				&& (Slice->macroblock[mbAddrB]->mbType != H264_MB_TYPE::P_Skip && Slice->macroblock[mbAddrB]->mbType != H264_MB_TYPE::B_Skip)
+				&& ((Slice->macroblock[mbAddrB]->CodedBlockPatternLuma >> luma8x8BlkIdxB) & 1) != 0
+				)
+			|| (Slice->CurrMbAddr == mbAddrB && ((binVal >> luma8x8BlkIdxB) & 1) != 0)//前一个解码的coded_block_pattern的二进制值bk（k= luma8x8BlkIdxN）不等于0
+			)
+		{
+			condTermFlagB = 0;
+		}
+		else
+		{
+			condTermFlagB = 1;
+		}
+
+		return condTermFlagA + 2 * condTermFlagB;
+	}
+	else//ctxIdxOffset等于77
+	{
+		int mbAddrA = NA;
+		Slice->getMbAddrNAndLuma4x4BlkIdxN(mbAddrA, (-1), 0, 16, 16, xW, yW);
+
+		int mbAddrB = NA;
+		Slice->getMbAddrNAndLuma4x4BlkIdxN(mbAddrB, 0, (-1), 16, 16, xW, yW);
+
+		int condTermFlagA = 0;
+		if (mbAddrA >= 0 && Slice->macroblock[mbAddrA]->mbType == H264_MB_TYPE::I_PCM)
+		{
+			condTermFlagA = 1;
+		}
+		else if (
+			(mbAddrA == NA || Slice->macroblock[mbAddrA]->mbType == H264_MB_TYPE::P_Skip || Slice->macroblock[mbAddrA]->mbType == H264_MB_TYPE::B_Skip)
+			|| (binIdx == 0 && Slice->macroblock[mbAddrA]->CodedBlockPatternChroma == 0)
+			|| (binIdx == 1 && Slice->macroblock[mbAddrA]->CodedBlockPatternChroma != 2)
+			)
+		{
+			condTermFlagA = 0;
+		}
+		else
+		{
+			condTermFlagA = 1;
+		}
+
+		int condTermFlagB = 0;
+		if (mbAddrB >= 0 && Slice->macroblock[mbAddrB]->mbType == H264_MB_TYPE::I_PCM)
+		{
+			condTermFlagB = 1;
+		}
+		else if (
+			(mbAddrB == NA || Slice->macroblock[mbAddrB]->mbType == H264_MB_TYPE::P_Skip || Slice->macroblock[mbAddrB]->mbType == H264_MB_TYPE::B_Skip)
+			|| (binIdx == 0 && Slice->macroblock[mbAddrB]->CodedBlockPatternChroma == 0)
+			|| (binIdx == 1 && Slice->macroblock[mbAddrB]->CodedBlockPatternChroma != 2)
+			)
+		{
+			condTermFlagB = 0;
+		}
+		else
+		{
+			condTermFlagB = 1;
+		}
+		return condTermFlagA + 2 * condTermFlagB + ((binIdx == 1) ? 4 : 0);
+	}
 }
 
 int Cabac::decode_mb_type_in_I_slices(ParseSlice* Slice, BitStream& bs, int ctxIdxOffset)
@@ -1425,7 +1616,7 @@ int Cabac::decode_mb_type_in_SI_slices(ParseSlice* Slice, BitStream& bs, int ctx
 	else
 	{
 		ctxIdxOffset = 3;
-		synElVal = decode_mb_type_in_I_slice(Slice, bs, ctxIdxOffset);
+		synElVal = decode_mb_type_in_I_slices(Slice, bs, ctxIdxOffset);
 		//SI条带里面可能包含了I宏块 1-26，所以这里+1是因为后面修正了mb_type，因为SI条带里宏块类型的值可能是1-26
 		synElVal += 1;
 	}
@@ -1481,7 +1672,7 @@ int Cabac::decode_mb_type_in_P_SP_slices(ParseSlice* Slice, BitStream& bs, int c
 	{
 		//p/sp slice里的i宏块
 		ctxIdxOffset = 17;
-		synElVal = decode_mb_type_in_I_slice(Slice, bs, ctxIdxOffset);
+		synElVal = decode_mb_type_in_I_slices(Slice, bs, ctxIdxOffset);
 
 		synElVal += 5;
 	}
@@ -1732,6 +1923,8 @@ int Cabac::decode_mb_type_in_B_slices(ParseSlice* Slice, BitStream& bs, int ctxI
 	}
 	return synElVal;
 }
+
+
 
 //这个过程的输出是已解码的值binVal，以及更新的变量codIRange和codIOffset
 int Cabac::DecodeBin(BitStream& bs, int bypassFlag, int ctxIdx)

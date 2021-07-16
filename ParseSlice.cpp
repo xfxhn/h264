@@ -309,7 +309,7 @@ void ParseSlice::Intra_4x4_prediction(size_t luma4x4BlkIdx, bool isLuam)
 		int mbAddrN = NA;
 		int xW = NA;
 		int yW = NA;
-		int luma4x4BlkIdxN = 0;
+		//int luma4x4BlkIdxN = 0;
 		//xW, yW 当前子块距离mbAddrN左上角样点位置的距离
 		getMbAddrNAndLuma4x4BlkIdxN(mbAddrN, xN, yN, maxW, maxH, xW, yW);
 
@@ -604,7 +604,7 @@ void ParseSlice::Intra_16x16_prediction(bool isLuam)
 		int mbAddrN = NA;
 		int xW = NA;
 		int yW = NA;
-		int luma4x4BlkIdxN = 0;
+		//int luma4x4BlkIdxN = 0;
 
 		//xW, yW 当前子块距离mbAddrN左上角样点位置的距离
 		getMbAddrNAndLuma4x4BlkIdxN(mbAddrN, x, y, maxW, maxH, xW, yW);
@@ -800,7 +800,7 @@ void ParseSlice::Intra_chroma_prediction(bool isChromaCb)
 			int mbAddrN = NA;
 			int xW = NA;
 			int yW = NA;
-			int luma4x4BlkIdxN = 0;
+			//int luma4x4BlkIdxN = 0;
 			//xW, yW 当前子块距离mbAddrN左上角样点位置的距离
 			getMbAddrNAndLuma4x4BlkIdxN(mbAddrN, x, y, MbWidthC, MbHeightC, xW, yW);
 

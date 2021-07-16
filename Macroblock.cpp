@@ -2,6 +2,7 @@
 
 #include "Macroblock.h"
 #include "ParseSlice.h"
+#include "SliceData.h"
 
 MB_TYPE_SLICES_I mb_type_slices_I[27] =
 {
@@ -169,8 +170,6 @@ bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* s
 
 	uint32_t	 slice_type = sHeader->slice_type;
 
-
-
 	//修正过后的
 	uint32_t	 fix_mb_type = mb_type;
 
@@ -220,7 +219,7 @@ bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* s
 	else
 	{
 		bool noSubMbPartSizeLessThan8x8Flag = true;
-		//子宏块  //（只对 8×8MB 分割的帧内 MB）确定每一子宏块的子宏 块分割，每一宏块分割的表 0 和 / 或表 1 的参考图象；每一 宏块子分割的差分编码运动矢量。
+		//子宏块  //（只对 8×8MB 分割的帧内 MB）确定每一子宏块的子宏块分割，每一宏块分割的表 0 和 / 或表1的参考图象；每一宏块子分割的差分编码运动矢量。
 		if (!is_I_NxN(fix_mb_type, fix_slice_type) &&
 			mode != H264_MB_PART_PRED_MODE::Intra_16x16 &&
 			numMbPart == 4)
@@ -246,7 +245,7 @@ bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* s
 				//使用8x8变换解码
 				if (isAe)
 				{
-
+					transform_size_8x8_flag = cabac.decode_transform_size_8x8_flag(bs, Slice);
 				}
 				else
 				{
@@ -276,14 +275,15 @@ bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* s
 
 			}
 			//公式7-33
-			//一个宏块的亮度分量的coded_block_pattern
+			//1、8x8 亮度块中的四个 4x4 亮度块的所有变换系数幅值都等于 0 👉残差（DC、AC）全部不编码
+			//2、8x8 亮度块中的一个或多个 4x4 亮度块的一个或多个变换系数幅值不为 0👉残差（DC、AC）全部编码
 			CodedBlockPatternLuma = coded_block_pattern % 16;
 
 			/*CodedBlockPatternChroma
 				描述
 				0		所有色度变换系数幅值都等于 0。
-				1		一个或多个色度   DC 变换系数幅值不为0。所有色度   AC 变换系数幅值都等 于 0。
-				2		零个或多个色度   DC 变换系数幅值不为0。一个或多个色度   AC 变换系数幅 值不为 0。*/
+				1		一个或多个色度   DC 变换系数幅值不为0。所有色度AC变换系数幅值都等 于 0。
+				2		零个或多个色度   DC 变换系数幅值不为0。一个或多个色度AC变换系数幅 值不为 0。*/
 			CodedBlockPatternChroma = coded_block_pattern / 16;
 
 			if (

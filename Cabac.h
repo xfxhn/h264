@@ -32,17 +32,23 @@ public:
 
 
 
-	int decode_mb_skip_flag(BitStream& bs, ParseSlice* Slice, int _CurrMbAddr);
+	int decode_mb_skip_flag(BitStream& bs, ParseSlice* Slice);
 	int decode_mb_type(BitStream& bs, ParseSlice* Slice);
+	int decode_transform_size_8x8_flag(BitStream& bs, ParseSlice* Slice);
+	int decode_coded_block_pattern(BitStream& bs, ParseSlice* Slice);
 
 private:
-	int Derivation_process_of_ctxIdxInc_for_the_syntax_element_mb_skip_flag(ParseSlice* Slice, int _CurrMbAddr);
+	int Derivation_process_of_ctxIdxInc_for_the_syntax_element_mb_skip_flag(ParseSlice* Slice);
 	int Derivation_process_of_ctxIdxInc_for_the_syntax_element_mb_type(ParseSlice* Slice, int ctxIdxOffset);
+	int Derivation_process_of_ctxIdxInc_for_the_syntax_element_transform_size_8x8_flag(ParseSlice* Slice);
+	int Derivation_process_of_ctxIdxInc_for_the_syntax_element_coded_block_pattern(ParseSlice* Slice, int ctxIdxOffset, int binIdx, int binVal);
 
 	int decode_mb_type_in_I_slices(ParseSlice* Slice, BitStream& bs, int ctxIdxOffset);
 	int decode_mb_type_in_SI_slices(ParseSlice* Slice, BitStream& bs, int ctxIdxOffset);
 	int decode_mb_type_in_P_SP_slices(ParseSlice* Slice, BitStream& bs, int ctxIdxOffset);
 	int decode_mb_type_in_B_slices(ParseSlice* Slice, BitStream& bs, int ctxIdxOffset);
+
+
 
 
 	void getMN(const int ctxIdx, const SLIECETYPE slice_type, const int cabac_init_idc, int m, int n);
