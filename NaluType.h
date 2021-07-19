@@ -167,6 +167,7 @@ enum class H264_MB_PART_PRED_MODE :int
 enum class RESIDUAL_LEVEL
 {
 	LumaLevel4x4,
+	LumaLevel8x8,
 	ChromaDCLevel,
 	ChromaACLevel,
 	ChromaACLevelCb,
@@ -177,6 +178,8 @@ enum class RESIDUAL_LEVEL
 	CbIntra16x16ACLevel,
 	CbLevel4x4,
 	CrLevel4x4,
+	CbLevel8x8,
+	CrLevel8x8,
 	CrIntra16x16DCLevel,
 	CrIntra16x16ACLevel
 };

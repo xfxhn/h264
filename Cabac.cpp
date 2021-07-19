@@ -13,6 +13,7 @@ Cabac::Cabac()
 Cabac::~Cabac()
 {
 }
+
 void Cabac::getMN(const int ctxIdx, const SLIECETYPE slice_type, const int cabac_init_idc, int m, int n)
 {
 	if (ctxIdx >= 0 && ctxIdx <= 10)
@@ -1237,6 +1238,127 @@ int Cabac::decode_intra_chroma_pred_mode(BitStream& bs, ParseSlice* Slice)
 	}
 	return synElVal;
 }
+
+
+bool Cabac::decode_coded_block_flag(ParseSlice* Slice, BitStream& bs, RESIDUAL_LEVEL residualLevel)
+{
+
+	//NumC8x8 = 4 / ( SubWidthC * SubHeightC ) 
+	const int NumC8x8 = 4 / (Slice->sHeader->sps.SubWidthC * Slice->sHeader->sps.SubHeightC);
+	int ctxBlockCats[14][2] = {
+		{16, 0},
+		{15, 1},
+		{16,2},
+		{4 * NumC8x8,3},
+		{15,4},
+		{64,5},
+		{16,6},
+		{15,7},
+		{16,8},
+		{64,9},
+		{16,10},
+		{15,11},
+		{16,12},
+		{64,13}
+	};
+
+	// ctxBlockCats[][1] = ctxBlockCat;
+	// ctxBlockCats[][0] = maxNumCoeff;
+	int ctxBlockCat = NA;
+	switch (residualLevel)
+	{
+	case RESIDUAL_LEVEL::LumaLevel4x4:
+		ctxBlockCat = ctxBlockCats[2][1];
+		break;
+	case RESIDUAL_LEVEL::LumaLevel8x8:
+		ctxBlockCat = ctxBlockCats[5][1];
+		break;
+	case RESIDUAL_LEVEL::ChromaDCLevel:
+		ctxBlockCat = ctxBlockCats[3][1];
+		break;
+	case RESIDUAL_LEVEL::ChromaACLevel:
+		ctxBlockCat = ctxBlockCats[4][1];
+		break;
+	case RESIDUAL_LEVEL::ChromaACLevelCb:
+		break;
+	case RESIDUAL_LEVEL::ChromaACLevelCr:
+		break;
+	case RESIDUAL_LEVEL::Intra16x16DCLevel:
+		ctxBlockCat = ctxBlockCats[0][1];
+		break;
+	case RESIDUAL_LEVEL::Intra16x16ACLevel:
+		ctxBlockCat = ctxBlockCats[1][1];
+		break;
+	case RESIDUAL_LEVEL::CbIntra16x16DCLevel:
+		ctxBlockCat = ctxBlockCats[6][1];
+		break;
+	case RESIDUAL_LEVEL::CbIntra16x16ACLevel:
+		ctxBlockCat = ctxBlockCats[7][1];
+		break;
+	case RESIDUAL_LEVEL::CbLevel4x4:
+		ctxBlockCat = ctxBlockCats[8][1];
+		break;
+	case RESIDUAL_LEVEL::CbLevel8x8:
+		ctxBlockCat = ctxBlockCats[9][1];
+		break;
+	case RESIDUAL_LEVEL::CrLevel4x4:
+		ctxBlockCat = ctxBlockCats[12][1];
+		break;
+	case RESIDUAL_LEVEL::CrLevel8x8:
+		ctxBlockCat = ctxBlockCats[13][1];
+		break;
+	case RESIDUAL_LEVEL::CrIntra16x16DCLevel:
+		ctxBlockCat = ctxBlockCats[10][1];
+		break;
+	case RESIDUAL_LEVEL::CrIntra16x16ACLevel:
+		ctxBlockCat = ctxBlockCats[11][1];
+		break;
+	default:
+		printError("residualLevel匹配不到");
+		exit(-1);
+		break;
+	}
+
+	//FL,cMax = 1 Table 9-34
+	int ctxIdxOffset = 0;
+	if (ctxBlockCat < 5)
+	{
+		ctxIdxOffset = 85;
+	}
+	else if (ctxBlockCat > 5 && ctxBlockCat < 9)
+	{
+		ctxIdxOffset = 460;
+	}
+	else if (ctxBlockCat > 9 && ctxBlockCat < 13)
+	{
+		ctxIdxOffset = 472;
+	}
+	else //if (ctxBlockCat == 5 || ctxBlockCat == 9 || ctxBlockCat == 13)
+	{
+		ctxIdxOffset = 1012;
+	}
+
+	constexpr int ctxIdxBlockCatOffsets[14] = { 0, 4, 8, 12, 16, 0, 0, 4, 8, 4, 0, 4, 8, 8 };
+	const int ctxIdxBlockCatOffset = ctxIdxBlockCatOffsets[ctxBlockCat];
+
+	//9.3.3.1.1.9  ctxIdxInc
+	int ctxIdxInc = Derivation_process_of_ctxIdxInc_for_the_syntax_element_coded_block_flag(Slice, ctxBlockCat);
+
+	return false;
+}
+int Cabac::residual_block_cabac(BitStream& bs, ParseSlice* Slice, int* coeffLevel, int startIdx, int endIdx, uint32_t maxNumCoeff, RESIDUAL_LEVEL residualLevel, int& TotalCoeff)
+{
+
+	memset(coeffLevel, 0, sizeof(uint32_t) * maxNumCoeff);
+	//当coded_block_flag不存在时，它将被推断为等于1。
+	bool coded_block_flag = true;
+	if (maxNumCoeff != 64 || Slice->sHeader->sps.ChromaArrayType == 3)
+	{
+		//coded_block_flag
+		coded_block_flag = decode_coded_block_flag(Slice, bs, residualLevel);
+	}
+	return 0;
+}
 //语法元素mb_skip_flag的ctxIdxInc的推导过程
 int Cabac::Derivation_process_of_ctxIdxInc_for_the_syntax_element_mb_skip_flag(ParseSlice* Slice)
 {
@@ -1544,6 +1666,56 @@ int Cabac::Derivation_process_of_ctxIdxInc_for_the_syntax_element_intra_chroma_p
 		condTermFlagB = 1;
 	}
 	return condTermFlagA + condTermFlagB;
+}
+
+int Cabac::Derivation_process_of_ctxIdxInc_for_the_syntax_element_coded_block_flag(ParseSlice* Slice, int ctxBlockCat)
+{
+	if (ctxBlockCat == 0     //Intra16x16DCLevel
+		|| ctxBlockCat == 6  //CbIntra16x16DCLevel
+		|| ctxBlockCat == 10 //CrIntra16x16DCLevel
+		)
+	{
+
+	}
+	else if (ctxBlockCat == 1 //Intra16x16ACLevel
+		|| ctxBlockCat == 2//LumaLevel4x4
+		)
+	{
+
+	}
+	else if (ctxBlockCat == 3) //ChromaDCLevel
+	{
+
+	}
+	else if (ctxBlockCat == 4) //ChromaACLevel
+	{
+
+	}
+	else if (ctxBlockCat == 5) //LumaLevel8x8
+	{
+
+	}
+	else if (ctxBlockCat == 7 //CbIntra16x16ACLevel
+		|| ctxBlockCat == 8 //CbLevel4x4
+		)
+	{
+
+	}
+	else if (ctxBlockCat == 9) //CbLevel8x8
+	{
+
+	}
+	else if (ctxBlockCat == 11 //CrIntra16x16ACLevel
+		|| ctxBlockCat == 12 //CrLevel4x4
+		)
+	{
+
+	}
+	else//if (ctxBlockCat == 13) //CrLevel8x8
+	{
+
+	}
+	return 0;
 }
 
 int Cabac::decode_mb_type_in_I_slices(ParseSlice* Slice, BitStream& bs, int ctxIdxOffset)
