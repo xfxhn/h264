@@ -266,7 +266,7 @@ bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* s
 		{
 			if (isAe)
 			{
-				//cabac
+				coded_block_pattern = cabac.decode_coded_block_pattern(bs, Slice);
 			}
 			else
 			{
@@ -297,7 +297,7 @@ bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* s
 
 				if (isAe)
 				{
-					//transform_size_8x8_flag
+					transform_size_8x8_flag = cabac.decode_transform_size_8x8_flag(bs, Slice);
 				}
 				else
 				{
@@ -312,7 +312,7 @@ bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* s
 		{
 			if (isAe)
 			{
-				//mb_qp_delta
+				mb_qp_delta = cabac.decode_mb_qp_delta(bs, Slice);
 			}
 			else
 			{

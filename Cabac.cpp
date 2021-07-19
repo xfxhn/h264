@@ -1,4 +1,4 @@
-#include "Cabac.h"
+ï»¿#include "Cabac.h"
 #include "ParseSlice.h"
 
 Cabac::Cabac()
@@ -967,12 +967,12 @@ int Cabac::decode_mb_skip_flag(BitStream& bs, ParseSlice* Slice)
 {
 	SLIECETYPE sliceType = (SLIECETYPE)Slice->sHeader->slice_type;
 
-	//¸ÃÓï·¨ÔªËØË÷ÒıµÄÉÏÏŞ£¬Í¨³£Ò²¿ÉÈÏÎªÒÔ×î¶à¶àÉÙ¸öbitÎ»À´±íÊ¾¶şÖµ»¯ºóµÄÓï·¨ÔªËØ£»±í9-34
+	//è¯¥è¯­æ³•å…ƒç´ ç´¢å¼•çš„ä¸Šé™ï¼Œé€šå¸¸ä¹Ÿå¯è®¤ä¸ºä»¥æœ€å¤šå¤šå°‘ä¸ªbitä½æ¥è¡¨ç¤ºäºŒå€¼åŒ–åçš„è¯­æ³•å…ƒç´ ï¼›è¡¨9-34
 	int maxBinIdxCtx = 0;
-	//¼´context index offset£¬¸ÃÖµ×÷ÎªÍÆµ¼ÉÏÏÂÎÄË÷ÒıµÄÊı¾İÀ´Ô´£»
+	//å³context index offsetï¼Œè¯¥å€¼ä½œä¸ºæ¨å¯¼ä¸Šä¸‹æ–‡ç´¢å¼•çš„æ•°æ®æ¥æºï¼›
 	int ctxIdxOffset = 0;
 
-	//²éÕÒ¶şÖµ»¯¹ı³ÌÖĞ²úÉúµÄmaxBinIdxCtxºÍctxIdxOffset
+	//æŸ¥æ‰¾äºŒå€¼åŒ–è¿‡ç¨‹ä¸­äº§ç”Ÿçš„maxBinIdxCtxå’ŒctxIdxOffset
 	if (sliceType == SLIECETYPE::H264_SLIECE_TYPE_P || sliceType == SLIECETYPE::H264_SLIECE_TYPE_SP)
 	{
 
@@ -987,9 +987,9 @@ int Cabac::decode_mb_skip_flag(BitStream& bs, ParseSlice* Slice)
 	int ctxIdxInc = Derivation_process_of_ctxIdxInc_for_the_syntax_element_mb_skip_flag(Slice);
 
 	int ctxIdx = ctxIdxOffset + ctxIdxInc;
-	//binVal Õâ¸öbitµÄÖµÊÇ0»¹ÊÇ1
+	//binVal è¿™ä¸ªbitçš„å€¼æ˜¯0è¿˜æ˜¯1
 	int binVal = DecodeBin(bs, 0, ctxIdx);
-	//ÒòÎªÒª½âÂëµÄÖ»ÓĞÒ»¸öbitÎ»£¬ËùÒÔ²»ĞèÒªÄæ¶şÖµ»¯µÄ¹ı³Ì
+	//å› ä¸ºè¦è§£ç çš„åªæœ‰ä¸€ä¸ªbitä½ï¼Œæ‰€ä»¥ä¸éœ€è¦é€†äºŒå€¼åŒ–çš„è¿‡ç¨‹
 	return binVal;
 }
 
@@ -1034,12 +1034,12 @@ int Cabac::decode_coded_block_pattern(BitStream& bs, ParseSlice* Slice)
 	int binIdx = 0;
 	int ctxIdxInc = 0;
 	int ctxIdx = 0;
-	// ctxIdxOffset = 73±íÊ¾CodedBlockPatternLuma
-	// ctxIdxOffset = 77±íÊ¾CodedBlockPatternChroma
+	// ctxIdxOffset = 73è¡¨ç¤ºCodedBlockPatternLuma
+	// ctxIdxOffset = 77è¡¨ç¤ºCodedBlockPatternChroma
 	int ctxIdxOffset = 73;
 
 	int CodedBlockPatternLuma = 0;
-	//CodedBlockPatternLumaÓÉFL¶şÖµ»¯±íÊ¾¸ø³ö cMax = 15;¶¨³¤±àÂë£¬½âÎö4¸öbit
+	//CodedBlockPatternLumaç”±FLäºŒå€¼åŒ–è¡¨ç¤ºç»™å‡º cMax = 15;å®šé•¿ç¼–ç ï¼Œè§£æ4ä¸ªbit
 	//------b0--------
 	binIdx = 0;
 	ctxIdxInc = Derivation_process_of_ctxIdxInc_for_the_syntax_element_coded_block_pattern(Slice, ctxIdxOffset, binIdx, CodedBlockPatternLuma);
@@ -1067,14 +1067,14 @@ int Cabac::decode_coded_block_pattern(BitStream& bs, ParseSlice* Slice)
 	ctxIdx = ctxIdxOffset + ctxIdxInc;
 	binVal = DecodeBin(bs, false, ctxIdx);
 	CodedBlockPatternLuma += binVal << 3;
-	//cMax = 15£¬maxBinIdxCtx = 3 ,×î´óÖ»ÓĞ15£¬×î¶à½âÎöµ½binIdx = 3£¬Í£Ö¹½âÎö
+	//cMax = 15ï¼ŒmaxBinIdxCtx = 3 ,æœ€å¤§åªæœ‰15ï¼Œæœ€å¤šè§£æåˆ°binIdx = 3ï¼Œåœæ­¢è§£æ
 
 
-	//µ±ChromaArrayType²»µÈÓÚ0»ò3Ê±£¬ºó×º²¿·Ö»á³öÏÖ
+	//å½“ChromaArrayTypeä¸ç­‰äº0æˆ–3æ—¶ï¼Œåç¼€éƒ¨åˆ†ä¼šå‡ºç°
 	int CodedBlockPatternChroma = 0;
 	if (Slice->sHeader->sps.ChromaArrayType != 0 && Slice->sHeader->sps.ChromaArrayType != 3)
 	{
-		//CodedBlockPatternChromaÓÉTU¶şÖµ»¯±íÊ¾¸ø³ö cMax = 2;½Ø¶ÏÒ»Ôª¶şÖµ»¯£¬µÈÓÚcMax£¬¶ş½øÖÆÂëÈ«²¿Îª1£¬³¤¶ÈÎªcMax¡£²»È»×îºóÒ»Î»Îª0
+		//CodedBlockPatternChromaç”±TUäºŒå€¼åŒ–è¡¨ç¤ºç»™å‡º cMax = 2;æˆªæ–­ä¸€å…ƒäºŒå€¼åŒ–ï¼Œç­‰äºcMaxï¼ŒäºŒè¿›åˆ¶ç å…¨éƒ¨ä¸º1ï¼Œé•¿åº¦ä¸ºcMaxã€‚ä¸ç„¶æœ€åä¸€ä½ä¸º0
 		ctxIdxOffset = 77;
 
 
@@ -1100,19 +1100,68 @@ int Cabac::decode_coded_block_pattern(BitStream& bs, ParseSlice* Slice)
 			if (binVal == 1) //11
 			{
 				CodedBlockPatternChroma = 2;
-				//cMax = 2£¬maxBinIdxCtx = 1 ,×î´óÖ»ÓĞ2£¬×î¶à½âÎöµ½binIdx = 1£¬Í£Ö¹½âÎö
+				//cMax = 2ï¼ŒmaxBinIdxCtx = 1 ,æœ€å¤§åªæœ‰2ï¼Œæœ€å¤šè§£æåˆ°binIdx = 1ï¼Œåœæ­¢è§£æ
 			}
 
 		}
 
 	}
 
-	//°ÑCodedBlockPatternChroma*16ÊÇÒòÎªºóÃæÒª%µôCodedBlockPatternChroma£¬ÕâÑù¾ÍÊ£CodedBlockPatternLuma
+	//æŠŠCodedBlockPatternChroma*16æ˜¯å› ä¸ºåé¢è¦%æ‰CodedBlockPatternChromaï¼Œè¿™æ ·å°±å‰©CodedBlockPatternLuma
 	//CodedBlockPatternLuma = coded_block_pattern % 16;
 	//CodedBlockPatternChroma = coded_block_pattern / 16;
 	return  CodedBlockPatternLuma + CodedBlockPatternChroma * 16;
 }
-//Óï·¨ÔªËØmb_skip_flagµÄctxIdxIncµÄÍÆµ¼¹ı³Ì
+
+int Cabac::decode_mb_qp_delta(BitStream& bs, ParseSlice* Slice)
+{
+	int ctxIdxOffset = 60;
+	int ctxIdxInc = 0;
+	int ctxIdx = 0;
+	int binVal = 0;
+
+	int binIdx = 0;
+
+	ctxIdxInc = Derivation_process_of_ctxIdxInc_for_the_syntax_element_mb_qp_delta(Slice);
+
+	ctxIdx = ctxIdxOffset + ctxIdxInc;
+
+	binVal = DecodeBin(bs, false, ctxIdx);
+
+	//ä¸€å…ƒäºŒå€¼åŒ–ï¼Œå°±æ˜¯ç±»ä¼¼ (111...1110)b è¿™æ ·çš„äºŒè¿›åˆ¶å­—ç¬¦ä¸²ï¼Œæœ€åä¸€ä¸ªäºŒè¿›åˆ¶å€¼ä¸º0ï¼Œå…¶ä»–éƒ½æ˜¯1ï¼Œå…¶ä¸­1çš„ä¸ªæ•°å°±æ˜¯å¯¹åº”çš„è¯­æ³•å…ƒç´ çš„å€¼
+	int synElVal = 0;
+	if (binVal == 0)
+	{
+		synElVal = 0;
+	}
+	else
+	{
+		ctxIdx = ctxIdxOffset + 2;
+		binVal = DecodeBin(bs, false, ctxIdx);
+		binIdx = 1;
+
+		while (binVal == 1)
+		{
+			ctxIdx = ctxIdxOffset + 3;
+			binVal = DecodeBin(bs, false, ctxIdx);
+			binIdx++;
+		}
+
+		//Table 9-3 se(v)
+		if (binIdx & 0x01) //å¥‡æ•°
+		{
+			binIdx = (binIdx + 1) >> 1; //(âˆ’1)^(k+1) * Ceil(kÃ·2)
+		}
+		else//å¶æ•°
+		{
+			binIdx = -(binIdx >> 1); //(âˆ’1)^(k+1) * Ceil(kÃ·2)
+		}
+
+		synElVal = binIdx;
+	}
+	return synElVal;
+}
+//è¯­æ³•å…ƒç´ mb_skip_flagçš„ctxIdxIncçš„æ¨å¯¼è¿‡ç¨‹
 int Cabac::Derivation_process_of_ctxIdxInc_for_the_syntax_element_mb_skip_flag(ParseSlice* Slice)
 {
 	int xW = NA;
@@ -1259,7 +1308,7 @@ int Cabac::Derivation_process_of_ctxIdxInc_for_the_syntax_element_coded_block_pa
 				&& (Slice->macroblock[mbAddrA]->mbType != H264_MB_TYPE::P_Skip && Slice->macroblock[mbAddrA]->mbType != H264_MB_TYPE::B_Skip)
 				&& ((Slice->macroblock[mbAddrA]->CodedBlockPatternLuma >> luma8x8BlkIdxA) & 1) != 0
 				)
-			|| (Slice->CurrMbAddr == mbAddrA && ((binVal >> luma8x8BlkIdxA) & 1) != 0)//Ç°Ò»¸ö½âÂëµÄcoded_block_patternµÄ¶ş½øÖÆÖµbk£¨k= luma8x8BlkIdxN£©²»µÈÓÚ0
+			|| (Slice->CurrMbAddr == mbAddrA && ((binVal >> luma8x8BlkIdxA) & 1) != 0)//å‰ä¸€ä¸ªè§£ç çš„coded_block_patternçš„äºŒè¿›åˆ¶å€¼bkï¼ˆk= luma8x8BlkIdxNï¼‰ä¸ç­‰äº0
 			)
 		{
 			condTermFlagA = 0;
@@ -1291,7 +1340,7 @@ int Cabac::Derivation_process_of_ctxIdxInc_for_the_syntax_element_coded_block_pa
 				&& (Slice->macroblock[mbAddrB]->mbType != H264_MB_TYPE::P_Skip && Slice->macroblock[mbAddrB]->mbType != H264_MB_TYPE::B_Skip)
 				&& ((Slice->macroblock[mbAddrB]->CodedBlockPatternLuma >> luma8x8BlkIdxB) & 1) != 0
 				)
-			|| (Slice->CurrMbAddr == mbAddrB && ((binVal >> luma8x8BlkIdxB) & 1) != 0)//Ç°Ò»¸ö½âÂëµÄcoded_block_patternµÄ¶ş½øÖÆÖµbk£¨k= luma8x8BlkIdxN£©²»µÈÓÚ0
+			|| (Slice->CurrMbAddr == mbAddrB && ((binVal >> luma8x8BlkIdxB) & 1) != 0)//å‰ä¸€ä¸ªè§£ç çš„coded_block_patternçš„äºŒè¿›åˆ¶å€¼bkï¼ˆk= luma8x8BlkIdxNï¼‰ä¸ç­‰äº0
 			)
 		{
 			condTermFlagB = 0;
@@ -1303,7 +1352,7 @@ int Cabac::Derivation_process_of_ctxIdxInc_for_the_syntax_element_coded_block_pa
 
 		return condTermFlagA + 2 * condTermFlagB;
 	}
-	else//ctxIdxOffsetµÈÓÚ77
+	else//ctxIdxOffsetç­‰äº77
 	{
 		int mbAddrA = NA;
 		Slice->getMbAddrNAndLuma4x4BlkIdxN(mbAddrA, (-1), 0, 16, 16, xW, yW);
@@ -1350,14 +1399,41 @@ int Cabac::Derivation_process_of_ctxIdxInc_for_the_syntax_element_coded_block_pa
 	}
 }
 
+int Cabac::Derivation_process_of_ctxIdxInc_for_the_syntax_element_mb_qp_delta(ParseSlice* Slice)
+{
+	int ctxIdxInc = 0;
+	int prevMbAddr = Slice->CurrMbAddr - 1;
+
+	if (Slice->CurrMbAddr == Slice->sHeader->first_mb_in_slice)
+	{
+		prevMbAddr = -1;
+	}
+
+	if (prevMbAddr < 0
+		|| Slice->macroblock[prevMbAddr]->mbType == H264_MB_TYPE::P_Skip
+		|| Slice->macroblock[prevMbAddr]->mbType == H264_MB_TYPE::B_Skip
+		|| Slice->macroblock[prevMbAddr]->mbType == H264_MB_TYPE::I_PCM
+		|| (Slice->macroblock[prevMbAddr]->mode != H264_MB_PART_PRED_MODE::Intra_16x16 && Slice->macroblock[prevMbAddr]->CodedBlockPatternLuma == 0 && Slice->macroblock[prevMbAddr]->CodedBlockPatternChroma == 0)
+		|| Slice->macroblock[prevMbAddr]->mb_qp_delta == 0
+		)
+	{
+		ctxIdxInc = 0;
+	}
+	else
+	{
+		ctxIdxInc = 1;
+	}
+	return ctxIdxInc;
+}
+
 int Cabac::decode_mb_type_in_I_slices(ParseSlice* Slice, BitStream& bs, int ctxIdxOffset)
 {
 
-	//Èç¹ûÊÇIÆ¬ÖĞµÄintraºê¿é£¬ÔòctxIdxOffset = 3; 
-	//Èç¹ûÊÇP/SPÆ¬ÖĞµÄintraºê¿é£¬ÔòctxIdxOffset = 17;
-	//Èç¹ûÊÇBÆ¬ÖĞµÄintraºê¿é£¬ÔòctxIdxOffset = 32;
+	//å¦‚æœæ˜¯Iç‰‡ä¸­çš„intraå®å—ï¼Œåˆ™ctxIdxOffset = 3; 
+	//å¦‚æœæ˜¯P/SPç‰‡ä¸­çš„intraå®å—ï¼Œåˆ™ctxIdxOffset = 17;
+	//å¦‚æœæ˜¯Bç‰‡ä¸­çš„intraå®å—ï¼Œåˆ™ctxIdxOffset = 32;
 
-	//ÔÚ±í9-39ÖĞ17ºÍ32¶ÔÓ¦µÄÖµÊÇ0
+	//åœ¨è¡¨9-39ä¸­17å’Œ32å¯¹åº”çš„å€¼æ˜¯0
 	int ctxIdxInc = 0;
 
 	if (ctxIdxOffset == 3) // I slice
@@ -1370,42 +1446,42 @@ int Cabac::decode_mb_type_in_I_slices(ParseSlice* Slice, BitStream& bs, int ctxI
 		ctxIdxInc = 0;
 	}
 	int ctxIdx = ctxIdxOffset + ctxIdxInc;
-	//binIdx±íÊ¾¶ş½øÖÆÏÂ±ê
+	//binIdxè¡¨ç¤ºäºŒè¿›åˆ¶ä¸‹æ ‡
 	int binVal = DecodeBin(bs, false, ctxIdx);//binIdx = 0;
 	int synElVal = 0;
-	//¶şÖµ»¯¹ı³Ì
+	//äºŒå€¼åŒ–è¿‡ç¨‹
 	if (binVal == 0)//0
 	{
 		synElVal = 0;	//I_NxN
 	}
 	else // 1
 	{
-		//ctxIdx£½276 ±»ÓÃÓÚ mb_type µÄ binIdx ÓÃÓÚÖ¸Ê¾ I_PCM Ä£Ê½
-		//ÔÚ±í9-39ÖĞbinIdx = 1, I/P/SP/B ¶ÔÓ¦µÄÖµ¶¼ÊÇ276
+		//ctxIdxï¼276 è¢«ç”¨äº mb_type çš„ binIdx ç”¨äºæŒ‡ç¤º I_PCM æ¨¡å¼
+		//åœ¨è¡¨9-39ä¸­binIdx = 1, I/P/SP/B å¯¹åº”çš„å€¼éƒ½æ˜¯276
 		ctxIdx = 276;
 		binVal = DecodeBin(bs, false, ctxIdx);//binIdx = 1;
 		if (binVal == 0)//10
 		{
-			//×¢£ºbinIdx¶ÔÓ¦µÄctxIdxÊÇctxIdxOffsetºÍctxIdxIncµÄºÍ
+			//æ³¨ï¼šbinIdxå¯¹åº”çš„ctxIdxæ˜¯ctxIdxOffsetå’ŒctxIdxIncçš„å’Œ
 
-			//ÔÚ±í9-39ÖĞbinIdx = 2,  IÆ¬ÖĞµÄintraºê¿é¶ÔÓ¦µÄÊÇ3£¬P/SP/BÖĞµÄintraºê¿é¶ÔÓ¦µÄÊÇ1
+			//åœ¨è¡¨9-39ä¸­binIdx = 2,  Iç‰‡ä¸­çš„intraå®å—å¯¹åº”çš„æ˜¯3ï¼ŒP/SP/Bä¸­çš„intraå®å—å¯¹åº”çš„æ˜¯1
 			ctxIdx = ctxIdxOffset + ((ctxIdxOffset == 3) ? 3 : 1);
 			binVal = DecodeBin(bs, false, ctxIdx);//binIdx = 2;
 			if (binVal == 0) // 100
 			{
-				//ÔÚ±í9-39ÖĞbinIdx = 3,  IÆ¬ÖĞµÄintraºê¿é¶ÔÓ¦µÄÊÇ4£¬P/SP/BÖĞµÄintraºê¿é¶ÔÓ¦µÄÊÇ2
+				//åœ¨è¡¨9-39ä¸­binIdx = 3,  Iç‰‡ä¸­çš„intraå®å—å¯¹åº”çš„æ˜¯4ï¼ŒP/SP/Bä¸­çš„intraå®å—å¯¹åº”çš„æ˜¯2
 				ctxIdx = ctxIdxOffset + ((ctxIdxOffset == 3) ? 4 : 2);
 				binVal = DecodeBin(bs, false, ctxIdx);//binIdx =3;
 				if (binVal == 0) // 1000
 				{
-					//ÔÚ±í9-39ÖĞbinIdx = 4,I/P/SP/B°´ÕÕ9.3.3.1.2½ÚÍÆµ¼
-					//±í9 - 41 £­ctxIdxOffsetºÍbinIdxµ½ctxIdxIncµÄ¶ÔÓ¦Öµ
-					//ctxIdxIncÊÇÍ¨¹ıÊ¹ÓÃÏÈÇ°½âÂëµÄbinÖµ(b0, b1, b2£¬¡­£¬bk)µÄÒ»Ğ©ÖµÅÉÉú³öÀ´µÄ£¬
+					//åœ¨è¡¨9-39ä¸­binIdx = 4,I/P/SP/BæŒ‰ç…§9.3.3.1.2èŠ‚æ¨å¯¼
+					//è¡¨9 - 41 ï¼ctxIdxOffsetå’ŒbinIdxåˆ°ctxIdxIncçš„å¯¹åº”å€¼
+					//ctxIdxIncæ˜¯é€šè¿‡ä½¿ç”¨å…ˆå‰è§£ç çš„binå€¼(b0, b1, b2ï¼Œâ€¦ï¼Œbk)çš„ä¸€äº›å€¼æ´¾ç”Ÿå‡ºæ¥çš„ï¼Œ
 					if (ctxIdxOffset == 3) // I slice
 					{
 						ctxIdx = ctxIdxOffset + 6; //(b3 != 0) ? 5: 6; b3=0;
 					}
-					else // P/SP/B slice   // 17ºÍ32
+					else // P/SP/B slice   // 17å’Œ32
 					{
 						ctxIdx = ctxIdxOffset + 3; //(b3 != 0) ? 2: 3; b3=0;
 					}
@@ -1415,7 +1491,7 @@ int Cabac::decode_mb_type_in_I_slices(ParseSlice* Slice, BitStream& bs, int ctxI
 
 					if (binVal == 0)  //10000
 					{
-						//ÔÚ±í9-39ÖĞbinIdx = 5,ctxIdxOffset == 3²é±í9 - 41   P/SP/BÖĞµÄintraºê¿é¶ÔÓ¦µÄÊÇ3
+						//åœ¨è¡¨9-39ä¸­binIdx = 5,ctxIdxOffset == 3æŸ¥è¡¨9 - 41   P/SP/Bä¸­çš„intraå®å—å¯¹åº”çš„æ˜¯3
 						ctxIdx = ctxIdxOffset + ((ctxIdxOffset == 3) ? 7 : 3);
 
 						binVal = DecodeBin(bs, false, ctxIdx); //binIdx = 5;
@@ -1451,7 +1527,7 @@ int Cabac::decode_mb_type_in_I_slices(ParseSlice* Slice, BitStream& bs, int ctxI
 
 					if (binVal == 0) //10010
 					{
-						//ÔÚ±í9-39ÖĞbinIdx = 5,²é±í9-41£¬P/SP/BÖĞµÄintraºê¿é¶ÔÓ¦µÄÊÇ3
+						//åœ¨è¡¨9-39ä¸­binIdx = 5,æŸ¥è¡¨9-41ï¼ŒP/SP/Bä¸­çš„intraå®å—å¯¹åº”çš„æ˜¯3
 						ctxIdx = ctxIdxOffset + ((ctxIdxOffset == 3) ? 6 : 3); //(b3 != 0) ? 6: 7; b3=1; //Table 9-41
 						binVal = DecodeBin(bs, false, ctxIdx);//binIdx =5;
 
@@ -1672,7 +1748,7 @@ int Cabac::decode_mb_type_in_SI_slices(ParseSlice* Slice, BitStream& bs, int ctx
 
 	int binVal = DecodeBin(bs, false, ctxIdx);
 
-	//Èç¹ûÊÇSIºê¿éb0=0£¬·ñÔòÊÇIºê¿é
+	//å¦‚æœæ˜¯SIå®å—b0=0ï¼Œå¦åˆ™æ˜¯Iå®å—
 	if (binVal == 0)
 	{
 		synElVal = 0;
@@ -1681,7 +1757,7 @@ int Cabac::decode_mb_type_in_SI_slices(ParseSlice* Slice, BitStream& bs, int ctx
 	{
 		ctxIdxOffset = 3;
 		synElVal = decode_mb_type_in_I_slices(Slice, bs, ctxIdxOffset);
-		//SIÌõ´øÀïÃæ¿ÉÄÜ°üº¬ÁËIºê¿é 1-26£¬ËùÒÔÕâÀï+1ÊÇÒòÎªºóÃæĞŞÕıÁËmb_type£¬ÒòÎªSIÌõ´øÀïºê¿éÀàĞÍµÄÖµ¿ÉÄÜÊÇ1-26
+		//SIæ¡å¸¦é‡Œé¢å¯èƒ½åŒ…å«äº†Iå®å— 1-26ï¼Œæ‰€ä»¥è¿™é‡Œ+1æ˜¯å› ä¸ºåé¢ä¿®æ­£äº†mb_typeï¼Œå› ä¸ºSIæ¡å¸¦é‡Œå®å—ç±»å‹çš„å€¼å¯èƒ½æ˜¯1-26
 		synElVal += 1;
 	}
 	return synElVal;
@@ -1691,9 +1767,9 @@ int Cabac::decode_mb_type_in_P_SP_slices(ParseSlice* Slice, BitStream& bs, int c
 {
 
 	int synElVal = 0;
-	//P/SPÌõ´øÀïµÄPºê¿éctxIdxOffset=14£¬Iºê¿éctxIdxOffset=17
+	//P/SPæ¡å¸¦é‡Œçš„På®å—ctxIdxOffset=14ï¼ŒIå®å—ctxIdxOffset=17
 	ctxIdxOffset = 14;
-	//±í9-39 ctxIdxOffset=14ºÍbinIdx¶ÔÓ¦µÄÖµÊÇctxIdxInc=0  £¨ctxIdxOffset+ctxIdxInc£©
+	//è¡¨9-39 ctxIdxOffset=14å’ŒbinIdxå¯¹åº”çš„å€¼æ˜¯ctxIdxInc=0  ï¼ˆctxIdxOffset+ctxIdxIncï¼‰
 	int ctxIdx = ctxIdxOffset + 0;
 
 	int binVal = DecodeBin(bs, false, ctxIdx);//binIdx = 0;
@@ -1705,7 +1781,7 @@ int Cabac::decode_mb_type_in_P_SP_slices(ParseSlice* Slice, BitStream& bs, int c
 
 		if (binVal == 0)//00
 		{
-			//±í 9-41£­ctxIdxOffsetºÍbinIdxµ½ctxIdxIncµÄ¶ÔÓ¦Öµ
+			//è¡¨ 9-41ï¼ctxIdxOffsetå’ŒbinIdxåˆ°ctxIdxIncçš„å¯¹åº”å€¼
 			ctxIdx = ctxIdxOffset + 2; //(b1 != 1) ? 2: 3; b1=0; //Table 9-41 //2,3 (clause 9.3.3.1.2)
 			int binVal = DecodeBin(bs, false, ctxIdx);//binIdx = 2;
 			if (binVal == 0)//000
@@ -1734,7 +1810,7 @@ int Cabac::decode_mb_type_in_P_SP_slices(ParseSlice* Slice, BitStream& bs, int c
 	}
 	else
 	{
-		//p/sp sliceÀïµÄiºê¿é
+		//p/sp sliceé‡Œçš„iå®å—
 		ctxIdxOffset = 17;
 		synElVal = decode_mb_type_in_I_slices(Slice, bs, ctxIdxOffset);
 
@@ -1990,7 +2066,7 @@ int Cabac::decode_mb_type_in_B_slices(ParseSlice* Slice, BitStream& bs, int ctxI
 
 
 
-//Õâ¸ö¹ı³ÌµÄÊä³öÊÇÒÑ½âÂëµÄÖµbinVal£¬ÒÔ¼°¸üĞÂµÄ±äÁ¿codIRangeºÍcodIOffset
+//è¿™ä¸ªè¿‡ç¨‹çš„è¾“å‡ºæ˜¯å·²è§£ç çš„å€¼binValï¼Œä»¥åŠæ›´æ–°çš„å˜é‡codIRangeå’ŒcodIOffset
 int Cabac::DecodeBin(BitStream& bs, int bypassFlag, int ctxIdx)
 {
 	int binVal = 0;
@@ -2013,7 +2089,7 @@ int Cabac::DecodeBin(BitStream& bs, int bypassFlag, int ctxIdx)
 	}
 	return binVal;
 }
-//¶ş½øÖÆÅĞ¾öµÄËãÊõ½âÂë¹ı³Ì
+//äºŒè¿›åˆ¶åˆ¤å†³çš„ç®—æœ¯è§£ç è¿‡ç¨‹
 int Cabac::DecodeDecision(BitStream& bs, int ctxIdx)
 {
 
@@ -2157,18 +2233,18 @@ int Cabac::DecodeTerminate(BitStream& bs)
 	codIRange = codIRange - 2;
 	if (codIOffset >= codIRange)
 	{
-		//²»Ê¹ÓÃÖØ¹éÒ»»¯¹ı³Ì£¬ÇÒCABAC½âÂë½áÊø
+		//ä¸ä½¿ç”¨é‡å½’ä¸€åŒ–è¿‡ç¨‹ï¼Œä¸”CABACè§£ç ç»“æŸ
 		binVal = 1;
 	}
 	else
 	{
 		binVal = 0;
-		//ËãÊõ½âÂëÒıÇæµÄÖØ¹éÒ»»¯¹ı³Ì
+		//ç®—æœ¯è§£ç å¼•æ“çš„é‡å½’ä¸€åŒ–è¿‡ç¨‹
 		RenormD(bs);
 	}
 	return binVal;
 }
-//ÖØ¹éÒ»»¯¹ı³Ì
+//é‡å½’ä¸€åŒ–è¿‡ç¨‹
 void Cabac::RenormD(BitStream& bs)
 {
 	while (codIRange < 0x0100) //256
@@ -2179,10 +2255,10 @@ void Cabac::RenormD(BitStream& bs)
 	}
 }
 
-//ÉÏÏÂÎÄ±äÁ¿µÄ³õÊ¼»¯¹ı³Ì
+//ä¸Šä¸‹æ–‡å˜é‡çš„åˆå§‹åŒ–è¿‡ç¨‹
 void Cabac::Initialisation_process_for_context_variables(SLIECETYPE slice_type, int SliceQPY, int cabac_init_idc)
 {
-	//±äÁ¿pStateIdx¶ÔÓ¦ÓÚ¸ÅÂÊ×´Ì¬Ë÷Òı£¬±äÁ¿ valMPS¶ÔÓ¦ÓÚ×î´ó¿ÉÄÜ
+	//å˜é‡pStateIdxå¯¹åº”äºæ¦‚ç‡çŠ¶æ€ç´¢å¼•ï¼Œå˜é‡ valMPSå¯¹åº”äºæœ€å¤§å¯èƒ½
 	int m = 0;
 	int n = 0;
 
@@ -2203,7 +2279,7 @@ void Cabac::Initialisation_process_for_context_variables(SLIECETYPE slice_type, 
 		}
 	}
 }
-//ËãÊõ½âÂëÒıÇæµÄ³õÊ¼»¯¹ı³Ì
+//ç®—æœ¯è§£ç å¼•æ“çš„åˆå§‹åŒ–è¿‡ç¨‹
 void Cabac::Initialisation_process_for_the_arithmetic_decoding_engine(BitStream& bs)
 {
 	codIRange = 0x01FE; //510 = 0x01FE
