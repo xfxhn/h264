@@ -183,8 +183,8 @@ bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* s
 	mode = MbPartPredMode(fix_mb_type, fix_slice_type, 0);
 
 	uint32_t  numMbPart = NumMbPart(fix_mb_type, fix_slice_type);
-
-	if (fix_slice_type == SLIECETYPE::H264_SLIECE_TYPE_I && fix_mb_type == 25)  //I_PCM 不经过预测，变换，量化
+	//fix_slice_type == SLIECETYPE::H264_SLIECE_TYPE_I && fix_mb_type == 25
+	if (mbType == H264_MB_TYPE::I_PCM)  //I_PCM 不经过预测，变换，量化
 	{
 		while (!byte_aligned(bs))
 		{
@@ -196,7 +196,7 @@ bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* s
 
 		for (size_t i = 0; i < 256; i++)
 		{
-			int32_t v = sHeader->sps.BitDepthY;
+			int v = sHeader->sps.BitDepthY;
 			/*pcm_sample_luma[i]是一个样点值。第一个 pcm_sample_luma[i]值代表宏块里光栅扫描中的亮度样点值。
 			  比特的数目通常代表这些样点每一个都是BitDepthY 。
 			  当 profile_idc 不等于 100, 110, 122 或 144 时， pcm_sample_luma[i]不能等于0*/
@@ -207,7 +207,7 @@ bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* s
 		pcm_sample_chroma = new uint32_t[2 * sHeader->sps.MbWidthC * sHeader->sps.MbHeightC]();
 		for (size_t i = 0; i < 2 * sHeader->sps.MbWidthC * sHeader->sps.MbHeightC; i++)
 		{
-			int32_t v = sHeader->sps.BitDepthC;
+			int v = sHeader->sps.BitDepthC;
 			/*pcm_sample_ chroma[i]是一个样点值。色度
 			第一个 MbWidthC* MbHeightC pcm_sample_ chroma[i]值代表宏块里光栅扫描中的Cb样点值且其余的MbWidthC* MbHeightC
 			pcm_sample_chroma[i]值代表宏块里光栅扫描中 的 Cr 样点值。比特的数目通常代表这些样点每一个都是 BitDepthC
@@ -220,7 +220,7 @@ bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* s
 	{
 		bool noSubMbPartSizeLessThan8x8Flag = true;
 		//子宏块  //（只对 8×8MB 分割的帧内 MB）确定每一子宏块的子宏块分割，每一宏块分割的表 0 和 / 或表1的参考图象；每一宏块子分割的差分编码运动矢量。
-		if (!is_I_NxN(fix_mb_type, fix_slice_type) &&
+		if (mbType != H264_MB_TYPE::I_NxN &&
 			mode != H264_MB_PART_PRED_MODE::Intra_16x16 &&
 			numMbPart == 4)
 		{
@@ -240,7 +240,7 @@ bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* s
 		else
 		{
 			//8x8解码
-			if (sHeader->pps.transform_8x8_mode_flag && is_I_NxN(fix_mb_type, fix_slice_type))
+			if (sHeader->pps.transform_8x8_mode_flag && mbType == H264_MB_TYPE::I_NxN)
 			{
 				//使用8x8变换解码
 				if (isAe)
@@ -259,8 +259,10 @@ bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* s
 				//........
 			}
 
-			mb_pred(bs, fix_mb_type, numMbPart);
+			mb_pred(bs, numMbPart, Slice, cabac);
 		}
+
+
 
 		if (mode != H264_MB_PART_PRED_MODE::Intra_16x16)
 		{
@@ -289,12 +291,11 @@ bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* s
 			if (
 				CodedBlockPatternLuma > 0 &&
 				sHeader->pps.transform_8x8_mode_flag &&
-				!is_I_NxN(fix_mb_type, fix_slice_type) &&
+				mbType != H264_MB_TYPE::I_NxN &&
 				noSubMbPartSizeLessThan8x8Flag &&
-				(!(fix_slice_type == SLIECETYPE::H264_SLIECE_TYPE_B && mb_type == 0) || sHeader->sps.direct_8x8_inference_flag)
+				(mbType != H264_MB_TYPE::B_Direct_16x16 || sHeader->sps.direct_8x8_inference_flag)
 				)
 			{
-
 				if (isAe)
 				{
 					transform_size_8x8_flag = cabac.decode_transform_size_8x8_flag(bs, Slice);
@@ -350,7 +351,7 @@ bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* s
 
 
 //宏块预测语法
-bool Macroblock::mb_pred(BitStream& bs, uint32_t mb_type, uint32_t numMbPart)
+bool Macroblock::mb_pred(BitStream& bs, uint32_t numMbPart, ParseSlice* Slice, Cabac& cabac)
 {
 	SliceHeader* sHeader = sliceBase->sHeader;
 	if (mode == H264_MB_PART_PRED_MODE::Intra_4x4 || mode == H264_MB_PART_PRED_MODE::Intra_8x8 || mode == H264_MB_PART_PRED_MODE::Intra_16x16)
@@ -362,7 +363,7 @@ bool Macroblock::mb_pred(BitStream& bs, uint32_t mb_type, uint32_t numMbPart)
 				//表示序号为 luma4x4BlkIdx = 0到15 的4x4 亮度块的帧内Intra_4x4 预测。
 				if (isAe) // ae(v) 表示CABAC编码
 				{
-
+					prev_intra4x4_pred_mode_flag[luma4x4BlkIdx] = cabac.decode_prev_intra4x4_pred_mode_flag_or_prev_intra8x8_pred_mode_flag(bs);
 				}
 				else
 				{
@@ -373,7 +374,7 @@ bool Macroblock::mb_pred(BitStream& bs, uint32_t mb_type, uint32_t numMbPart)
 				if (!prev_intra4x4_pred_mode_flag[luma4x4BlkIdx]) {
 					if (isAe) // ae(v) 表示CABAC编码
 					{
-
+						rem_intra4x4_pred_mode[luma4x4BlkIdx] = cabac.decode_rem_intra4x4_pred_mode_or_rem_intra8x8_pred_mode(bs);
 					}
 					else
 					{
@@ -397,7 +398,7 @@ bool Macroblock::mb_pred(BitStream& bs, uint32_t mb_type, uint32_t numMbPart)
 				//表示序号为 luma8x8BlkIdx = 0到3 的8x8 亮度块的Intra_8x8 预测
 				if (isAe) // ae(v) 表示CABAC编码
 				{
-
+					prev_intra8x8_pred_mode_flag[luma8x8BlkIdx] = cabac.decode_prev_intra4x4_pred_mode_flag_or_prev_intra8x8_pred_mode_flag(bs);
 				}
 				else
 				{
@@ -407,7 +408,7 @@ bool Macroblock::mb_pred(BitStream& bs, uint32_t mb_type, uint32_t numMbPart)
 				if (!prev_intra8x8_pred_mode_flag[luma8x8BlkIdx]) {
 					if (isAe) // ae(v) 表示CABAC编码
 					{
-
+						rem_intra8x8_pred_mode[luma8x8BlkIdx] = cabac.decode_rem_intra4x4_pred_mode_or_rem_intra8x8_pred_mode(bs);
 					}
 					else
 					{
@@ -429,7 +430,7 @@ bool Macroblock::mb_pred(BitStream& bs, uint32_t mb_type, uint32_t numMbPart)
 			//	3 = 平面的
 			if (isAe) // ae(v) 表示CABAC编码
 			{
-
+				intra_chroma_pred_mode = cabac.decode_intra_chroma_pred_mode(bs, Slice);
 			}
 			else
 			{
@@ -580,16 +581,6 @@ int Macroblock::fixed_mb_type(uint32_t slice_type, uint32_t& fix_mb_type, SLIECE
 
 
 	return 0;
-}
-
-bool Macroblock::is_I_NxN(uint32_t mb_type, SLIECETYPE slice_type)
-{
-	if (slice_type == SLIECETYPE::H264_SLIECE_TYPE_I && mb_type == 0)
-	{
-		return true;
-	}
-
-	return false;
 }
 
 

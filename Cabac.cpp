@@ -1161,6 +1161,82 @@ int Cabac::decode_mb_qp_delta(BitStream& bs, ParseSlice* Slice)
 	}
 	return synElVal;
 }
+
+int Cabac::decode_prev_intra4x4_pred_mode_flag_or_prev_intra8x8_pred_mode_flag(BitStream& bs)
+{
+	int ctxIdxOffset = 68;
+
+	int ctxIdx = ctxIdxOffset + 0;
+
+	int binVal = DecodeBin(bs, false, ctxIdx);
+
+	return binVal;
+}
+
+int Cabac::decode_rem_intra4x4_pred_mode_or_rem_intra8x8_pred_mode(BitStream& bs)
+{
+	//FL, cMax=7
+	int ctxIdxOffset = 69;
+	int synElVal = 0;
+
+	int ctxIdx = ctxIdxOffset + 0;
+
+	int binVal = DecodeBin(bs, false, ctxIdx);
+	synElVal += binVal << 0;
+
+	int binVal = DecodeBin(bs, false, ctxIdx);
+	synElVal += binVal << 1;
+
+	int binVal = DecodeBin(bs, false, ctxIdx);
+	synElVal += binVal << 2;
+
+	return synElVal;
+}
+
+int Cabac::decode_intra_chroma_pred_mode(BitStream& bs, ParseSlice* Slice)
+{
+	//TU, cMax=3 
+	constexpr int ctxIdxOffset = 64;
+	int ctxIdxInc = 0;
+	int ctxIdx = 0;
+	int binVal = 0;
+	int synElVal = 0;
+
+	ctxIdxInc = Derivation_process_of_ctxIdxInc_for_the_syntax_element_intra_chroma_pred_mode(Slice);
+	ctxIdx = ctxIdxOffset + ctxIdxInc;
+
+	binVal = DecodeBin(bs, false, ctxIdx);
+
+	if (binVal == 0)
+	{
+		synElVal = 0;
+	}
+	else //1
+	{
+		ctxIdx = ctxIdxOffset + 3; //Table 9-39
+		binVal = DecodeBin(bs, false, ctxIdx);
+
+		if (binVal == 0) //10
+		{
+			synElVal = 1;
+		}
+		else//11
+		{
+			ctxIdx = ctxIdxOffset + 3; //Table 9-39
+			binVal = DecodeBin(bs, false, ctxIdx);//binIdx = 2;
+
+			if (binVal == 0) //110
+			{
+				synElVal = 2;
+			}
+			else //111
+			{
+				synElVal = 3;//TU, cMax=3
+			}
+		}
+	}
+	return synElVal;
+}
 //语法元素mb_skip_flag的ctxIdxInc的推导过程
 int Cabac::Derivation_process_of_ctxIdxInc_for_the_syntax_element_mb_skip_flag(ParseSlice* Slice)
 {
@@ -1424,6 +1500,50 @@ int Cabac::Derivation_process_of_ctxIdxInc_for_the_syntax_element_mb_qp_delta(Pa
 		ctxIdxInc = 1;
 	}
 	return ctxIdxInc;
+}
+
+int Cabac::Derivation_process_of_ctxIdxInc_for_the_syntax_element_intra_chroma_pred_mode(ParseSlice* Slice)
+{
+
+	int xW = 0;
+	int yW = 0;
+
+
+	int mbAddrA = NA;
+	Slice->getMbAddrNAndLuma4x4BlkIdxN(mbAddrA, (-1), 0, 16, 16, xW, yW);
+
+	int condTermFlagA = 0;
+	if (mbAddrA == NA
+		|| !isInterMode(Slice->macroblock[mbAddrA]->mode)
+		|| Slice->macroblock[mbAddrA]->mbType == H264_MB_TYPE::I_PCM
+		|| Slice->macroblock[mbAddrA]->intra_chroma_pred_mode == 0
+		)
+	{
+		condTermFlagA = 0;
+	}
+	else
+	{
+		condTermFlagA = 1;
+	}
+
+
+	int mbAddrB = NA;
+	Slice->getMbAddrNAndLuma4x4BlkIdxN(mbAddrB, 0, (-1), 16, 16, xW, yW);
+
+	int condTermFlagB = 0;
+	if (mbAddrB == NA
+		|| !isInterMode(Slice->macroblock[mbAddrB]->mode)
+		|| Slice->macroblock[mbAddrB]->mbType == H264_MB_TYPE::I_PCM
+		|| Slice->macroblock[mbAddrB]->intra_chroma_pred_mode == 0
+		)
+	{
+		condTermFlagB = 0;
+	}
+	else
+	{
+		condTermFlagB = 1;
+	}
+	return condTermFlagA + condTermFlagB;
 }
 
 int Cabac::decode_mb_type_in_I_slices(ParseSlice* Slice, BitStream& bs, int ctxIdxOffset)

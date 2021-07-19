@@ -156,8 +156,9 @@ private:
 	H264_MB_PART_PRED_MODE MbPartPredMode(uint32_t mb_type, SLIECETYPE slice_type, uint32_t mbPartIdx);
 	H264_MB_PART_PRED_MODE MbPartPredMode2(uint32_t mb_type, SLIECETYPE slice_type, uint32_t mbPartIdx);
 	int fixed_mb_type(uint32_t slice_type, uint32_t& fix_mb_type, SLIECETYPE& fix_slice_type);
-	bool is_I_NxN(uint32_t mb_type, SLIECETYPE slice_type);
-	bool mb_pred(BitStream& bs, uint32_t mb_type, uint32_t numMbPart);
+
+	bool mb_pred(BitStream& bs, uint32_t numMbPart, ParseSlice* Slice, Cabac& cabac);
+
 	bool residual(BitStream& bs, int startIdx, int endIdx);
 	bool sub_mb_pred(uint32_t mb_type);
 	uint32_t NumMbPart(uint32_t mb_type, SLIECETYPE slice_type);
