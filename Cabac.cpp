@@ -1038,15 +1038,79 @@ int Cabac::decode_coded_block_pattern(BitStream& bs, ParseSlice* Slice)
 	// ctxIdxOffset = 77表示CodedBlockPatternChroma
 	int ctxIdxOffset = 73;
 
-	//CodedBlockPatternLuma由FL二值化表示给出 cMax = 15;
+	int CodedBlockPatternLuma = 0;
+	//CodedBlockPatternLuma由FL二值化表示给出 cMax = 15;定长编码，解析4个bit
 	//------b0--------
 	binIdx = 0;
-	ctxIdxInc = Derivation_process_of_ctxIdxInc_for_the_syntax_element_coded_block_pattern(Slice, ctxIdxOffset, binIdx, binVal);
-
+	ctxIdxInc = Derivation_process_of_ctxIdxInc_for_the_syntax_element_coded_block_pattern(Slice, ctxIdxOffset, binIdx, CodedBlockPatternLuma);
 	ctxIdx = ctxIdxOffset + ctxIdxInc;
-
 	binVal = DecodeBin(bs, false, ctxIdx);
-	return 0;
+	CodedBlockPatternLuma = binVal;
+
+	//------b1--------
+	binIdx = 1;
+	ctxIdxInc = Derivation_process_of_ctxIdxInc_for_the_syntax_element_coded_block_pattern(Slice, ctxIdxOffset, binIdx, CodedBlockPatternLuma);
+	ctxIdx = ctxIdxOffset + ctxIdxInc;
+	binVal = DecodeBin(bs, false, ctxIdx);
+	CodedBlockPatternLuma += binVal << 1;
+
+	//------b2--------
+	binIdx = 2;
+	ctxIdxInc = Derivation_process_of_ctxIdxInc_for_the_syntax_element_coded_block_pattern(Slice, ctxIdxOffset, binIdx, CodedBlockPatternLuma);
+	ctxIdx = ctxIdxOffset + ctxIdxInc;
+	binVal = DecodeBin(bs, false, ctxIdx);
+	CodedBlockPatternLuma += binVal << 2;
+
+	//------b3--------
+	binIdx = 3;
+	ctxIdxInc = Derivation_process_of_ctxIdxInc_for_the_syntax_element_coded_block_pattern(Slice, ctxIdxOffset, binIdx, CodedBlockPatternLuma);
+	ctxIdx = ctxIdxOffset + ctxIdxInc;
+	binVal = DecodeBin(bs, false, ctxIdx);
+	CodedBlockPatternLuma += binVal << 3;
+	//cMax = 15，maxBinIdxCtx = 3 ,最大只有15，最多解析到binIdx = 3，停止解析
+
+
+	//当ChromaArrayType不等于0或3时，后缀部分会出现
+	int CodedBlockPatternChroma = 0;
+	if (Slice->sHeader->sps.ChromaArrayType != 0 && Slice->sHeader->sps.ChromaArrayType != 3)
+	{
+		//CodedBlockPatternChroma由TU二值化表示给出 cMax = 2;截断一元二值化，等于cMax，二进制码全部为1，长度为cMax。不然最后一位为0
+		ctxIdxOffset = 77;
+
+
+		binIdx = 0;
+		ctxIdxInc = Derivation_process_of_ctxIdxInc_for_the_syntax_element_coded_block_pattern(Slice, ctxIdxOffset, binIdx, binVal);
+		ctxIdx = ctxIdxOffset + ctxIdxInc;
+		binVal = DecodeBin(bs, false, ctxIdx);
+
+		if (binVal == 0) //0
+		{
+			CodedBlockPatternChroma = 0;
+		}
+		else // 1
+		{
+
+			CodedBlockPatternChroma = 1;
+
+			binIdx = 1;
+			ctxIdxInc = Derivation_process_of_ctxIdxInc_for_the_syntax_element_coded_block_pattern(Slice, ctxIdxOffset, binIdx, binVal);
+			ctxIdx = ctxIdxOffset + ctxIdxInc;
+			binVal = DecodeBin(bs, false, ctxIdx);
+
+			if (binVal == 1) //11
+			{
+				CodedBlockPatternChroma = 2;
+				//cMax = 2，maxBinIdxCtx = 1 ,最大只有2，最多解析到binIdx = 1，停止解析
+			}
+
+		}
+
+	}
+
+	//把CodedBlockPatternChroma*16是因为后面要%掉CodedBlockPatternChroma，这样就剩CodedBlockPatternLuma
+	//CodedBlockPatternLuma = coded_block_pattern % 16;
+	//CodedBlockPatternChroma = coded_block_pattern / 16;
+	return  CodedBlockPatternLuma + CodedBlockPatternChroma * 16;
 }
 //语法元素mb_skip_flag的ctxIdxInc的推导过程
 int Cabac::Derivation_process_of_ctxIdxInc_for_the_syntax_element_mb_skip_flag(ParseSlice* Slice)
