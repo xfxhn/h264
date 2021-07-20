@@ -143,6 +143,9 @@ public:
 
 	int  mb_skip_flag;
 
+	uint8_t     coded_block_flag_DC_pattern; //3个bit位表示CABAC残差相应4x4子宏块中的DC直流系数block的coded_block_flag值，(b7,...,b2,b1,b0)=(x,...,cr,cb,luma)
+	uint16_t    coded_block_flag_AC_pattern[3]; //16个bit位表示CABAC残差相应4x4子宏块中的AC交流系数block的coded_block_flag值(0或1)(全部默认为1)，[0]-luma,[1]-cb,[2]-cr
+
 public:
 	Macroblock();
 	bool macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* slice_data, Cabac& cabac);

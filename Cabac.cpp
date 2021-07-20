@@ -1179,16 +1179,16 @@ int Cabac::decode_rem_intra4x4_pred_mode_or_rem_intra8x8_pred_mode(BitStream& bs
 	//FL, cMax=7
 	int ctxIdxOffset = 69;
 	int synElVal = 0;
-
+	int binVal = 0;
 	int ctxIdx = ctxIdxOffset + 0;
 
-	int binVal = DecodeBin(bs, false, ctxIdx);
+	binVal = DecodeBin(bs, false, ctxIdx);
 	synElVal += binVal << 0;
 
-	int binVal = DecodeBin(bs, false, ctxIdx);
+	binVal = DecodeBin(bs, false, ctxIdx);
 	synElVal += binVal << 1;
 
-	int binVal = DecodeBin(bs, false, ctxIdx);
+	binVal = DecodeBin(bs, false, ctxIdx);
 	synElVal += binVal << 2;
 
 	return synElVal;
@@ -1240,7 +1240,7 @@ int Cabac::decode_intra_chroma_pred_mode(BitStream& bs, ParseSlice* Slice)
 }
 
 
-bool Cabac::decode_coded_block_flag(ParseSlice* Slice, BitStream& bs, RESIDUAL_LEVEL residualLevel)
+bool Cabac::decode_coded_block_flag(ParseSlice* Slice, BitStream& bs, RESIDUAL_LEVEL residualLevel, int BlkIdx, int iCbCr)
 {
 
 	//NumC8x8 = 4 / ( SubWidthC * SubHeightC ) 
@@ -1264,7 +1264,7 @@ bool Cabac::decode_coded_block_flag(ParseSlice* Slice, BitStream& bs, RESIDUAL_L
 
 	// ctxBlockCats[][1] = ctxBlockCat;
 	// ctxBlockCats[][0] = maxNumCoeff;
-	int ctxBlockCat = NA;
+	int ctxBlockCat = 0;
 	switch (residualLevel)
 	{
 	case RESIDUAL_LEVEL::LumaLevel4x4:
@@ -1342,11 +1342,14 @@ bool Cabac::decode_coded_block_flag(ParseSlice* Slice, BitStream& bs, RESIDUAL_L
 	const int ctxIdxBlockCatOffset = ctxIdxBlockCatOffsets[ctxBlockCat];
 
 	//9.3.3.1.1.9  ctxIdxInc
-	int ctxIdxInc = Derivation_process_of_ctxIdxInc_for_the_syntax_element_coded_block_flag(Slice, ctxBlockCat);
+	int ctxIdxInc = Derivation_process_of_ctxIdxInc_for_the_syntax_element_coded_block_flag(Slice, ctxBlockCat, BlkIdx, iCbCr);
 
 	return false;
 }
-int Cabac::residual_block_cabac(BitStream& bs, ParseSlice* Slice, int* coeffLevel, int startIdx, int endIdx, uint32_t maxNumCoeff, RESIDUAL_LEVEL residualLevel, int& TotalCoeff)
+int Cabac::residual_block_cabac(
+	BitStream& bs, ParseSlice* Slice, int* coeffLevel, int startIdx, int endIdx,
+	uint32_t maxNumCoeff, RESIDUAL_LEVEL residualLevel, int& TotalCoeff, int BlkIdx, int iCbCr
+)
 {
 
 	memset(coeffLevel, 0, sizeof(uint32_t) * maxNumCoeff);
@@ -1355,7 +1358,7 @@ int Cabac::residual_block_cabac(BitStream& bs, ParseSlice* Slice, int* coeffLeve
 	if (maxNumCoeff != 64 || Slice->sHeader->sps.ChromaArrayType == 3)
 	{
 		//coded_block_flag
-		coded_block_flag = decode_coded_block_flag(Slice, bs, residualLevel);
+		coded_block_flag = decode_coded_block_flag(Slice, bs, residualLevel, BlkIdx, iCbCr);
 	}
 	return 0;
 }
@@ -1668,31 +1671,311 @@ int Cabac::Derivation_process_of_ctxIdxInc_for_the_syntax_element_intra_chroma_p
 	return condTermFlagA + condTermFlagB;
 }
 
-int Cabac::Derivation_process_of_ctxIdxInc_for_the_syntax_element_coded_block_flag(ParseSlice* Slice, int ctxBlockCat)
+int Cabac::Derivation_process_of_ctxIdxInc_for_the_syntax_element_coded_block_flag(ParseSlice* Slice, int ctxBlockCat, int BlkIdx, int iCbCr)
 {
+
+	int xW = 0;
+	int yW = 0;
+
+	int mbAddrA = NA;
+	int mbAddrB = NA;
+
+	int transBlockA = NA;
+	int transBlockB = NA;
+
+
+	bool transBlockA_coded_block_flag = false;
+	bool transBlockB_coded_block_flag = false;
+
+
+
+	const bool isLuam = (iCbCr < 0);
+	int maxW = 0;
+	int maxH = 0;
+
+	if (isLuam)
+	{
+		maxW = maxH = 16;
+	}
+	else
+	{
+		//色度块高度和宽度
+		maxH = Slice->sHeader->sps.MbHeightC;
+		maxW = Slice->sHeader->sps.MbWidthC;
+	}
 	if (ctxBlockCat == 0     //Intra16x16DCLevel
 		|| ctxBlockCat == 6  //CbIntra16x16DCLevel
 		|| ctxBlockCat == 10 //CrIntra16x16DCLevel
 		)
 	{
 
+		Slice->getMbAddrNAndLuma4x4BlkIdxN(mbAddrA, (-1), 0, maxW, maxH, xW, yW);
+
+		Slice->getMbAddrNAndLuma4x4BlkIdxN(mbAddrB, 0, (-1), maxW, maxH, xW, yW);
+
+
+
+		if (mbAddrA != NA && Slice->macroblock[mbAddrA]->mode == H264_MB_PART_PRED_MODE::Intra_16x16)
+		{
+			transBlockA = 1;
+			transBlockA_coded_block_flag = (Slice->macroblock[mbAddrA]->coded_block_flag_DC_pattern >> (iCbCr + 1)) & 1;
+		}
+		else
+		{
+			transBlockA = NA; //transBlockN is marked as not available.
+		}
+
+
+
+		if (mbAddrB != NA && Slice->macroblock[mbAddrB]->mode == H264_MB_PART_PRED_MODE::Intra_16x16)
+		{
+			transBlockB = 1;
+			transBlockB_coded_block_flag = (Slice->macroblock[mbAddrB]->coded_block_flag_DC_pattern >> (iCbCr + 1)) & 1;
+		}
+		else
+		{
+			transBlockB = NA; //transBlockN is marked as not available.
+		}
 	}
 	else if (ctxBlockCat == 1 //Intra16x16ACLevel
 		|| ctxBlockCat == 2//LumaLevel4x4
 		)
 	{
+		//位于4×4块luma4x4BlkIdx左侧和上侧的4×4亮度块的索引及其可用性状态
+		int luma4x4BlkIdxA = NA;
+		int luma4x4BlkIdxB = NA;
+
+
+		//6.4.3 Inverse 4x4 luma block scanning process
+		const int x = InverseRasterScan(BlkIdx / 4, 8, 8, 16, 0) + InverseRasterScan(BlkIdx % 4, 4, 4, 8, 0);
+		const int y = InverseRasterScan(BlkIdx / 4, 8, 8, 16, 1) + InverseRasterScan(BlkIdx % 4, 4, 4, 8, 1);
+
+		//亮度位置的差分值 表6-2（ xD, yD ）
+		//当前子块距离mbAddrN左上角样点距离（ xW, yW)
+		Slice->getMbAddrNAndLuma4x4BlkIdxN(mbAddrA, x + (-1), y + 0, maxW, maxH, xW, yW);
+
+		if (mbAddrA != NA)
+		{
+			//左侧宏块子块索引
+			luma4x4BlkIdxA = 8 * (yW / 8) + 4 * (xW / 8) + 2 * ((yW % 8) / 4) + ((xW % 8) / 4);
+		}
+
+		Slice->getMbAddrNAndLuma4x4BlkIdxN(mbAddrB, x + 0, y + (-1), maxW, maxH, xW, yW);
+		if (mbAddrB != NA)
+		{
+			//上侧宏块子块索引
+			luma4x4BlkIdxB = 8 * (yW / 8) + 4 * (xW / 8) + 2 * ((yW % 8) / 4) + ((xW % 8) / 4);
+		}
+
+
+
+		if (mbAddrA != NA
+			&& Slice->macroblock[mbAddrA]->mbType != H264_MB_TYPE::P_Skip
+			&& Slice->macroblock[mbAddrA]->mbType != H264_MB_TYPE::B_Skip
+			&& Slice->macroblock[mbAddrA]->mbType != H264_MB_TYPE::I_PCM
+			&& ((Slice->macroblock[mbAddrA]->CodedBlockPatternLuma >> (luma4x4BlkIdxA >> 2)) & 1)
+			&& Slice->macroblock[mbAddrA]->transform_size_8x8_flag == false
+			)
+		{
+			transBlockA = 1;
+			transBlockA_coded_block_flag = (Slice->macroblock[mbAddrA]->coded_block_flag_AC_pattern[iCbCr + 1] >> (luma4x4BlkIdxA)) & 1;
+		}
+		else if (mbAddrA != NA
+			&& Slice->macroblock[mbAddrA]->mbType != H264_MB_TYPE::P_Skip
+			&& Slice->macroblock[mbAddrA]->mbType != H264_MB_TYPE::B_Skip
+			&& ((Slice->macroblock[mbAddrA]->CodedBlockPatternLuma >> (luma4x4BlkIdxA >> 2)) & 1)
+			&& Slice->macroblock[mbAddrA]->transform_size_8x8_flag
+			)
+		{
+			transBlockA = 1;
+			transBlockA_coded_block_flag = (Slice->macroblock[mbAddrA]->coded_block_flag_AC_pattern[iCbCr + 1] >> (luma4x4BlkIdxA >> 2)) & 1;
+		}
+		else
+		{
+			transBlockA = NA; //transBlockN is marked as not available.
+		}
+
+
+
+		if (mbAddrB != NA
+			&& Slice->macroblock[mbAddrB]->mbType != H264_MB_TYPE::P_Skip
+			&& Slice->macroblock[mbAddrB]->mbType != H264_MB_TYPE::B_Skip
+			&& Slice->macroblock[mbAddrB]->mbType != H264_MB_TYPE::I_PCM
+			&& ((Slice->macroblock[mbAddrB]->CodedBlockPatternLuma >> (luma4x4BlkIdxB >> 2)) & 1)
+			&& Slice->macroblock[mbAddrB]->transform_size_8x8_flag == false
+			)
+		{
+			transBlockB = 1;
+			transBlockB_coded_block_flag = (Slice->macroblock[mbAddrB]->coded_block_flag_AC_pattern[iCbCr + 1] >> (luma4x4BlkIdxB)) & 1;
+		}
+		else if (mbAddrB != NA
+			&& Slice->macroblock[mbAddrB]->mbType != H264_MB_TYPE::P_Skip
+			&& Slice->macroblock[mbAddrB]->mbType != H264_MB_TYPE::B_Skip
+			&& ((Slice->macroblock[mbAddrB]->CodedBlockPatternLuma >> (luma4x4BlkIdxB >> 2)) & 1)
+			&& Slice->macroblock[mbAddrB]->transform_size_8x8_flag
+			)
+		{
+			transBlockB = 1;
+			transBlockB_coded_block_flag = (Slice->macroblock[mbAddrB]->coded_block_flag_AC_pattern[iCbCr + 1] >> (luma4x4BlkIdxB >> 2)) & 1;
+		}
+		else
+		{
+			transBlockB = NA; //transBlockN is marked as not available.
+		}
 
 	}
 	else if (ctxBlockCat == 3) //ChromaDCLevel
 	{
+		Slice->getMbAddrNAndLuma4x4BlkIdxN(mbAddrA, (-1), 0, maxW, maxH, xW, yW);
 
+		Slice->getMbAddrNAndLuma4x4BlkIdxN(mbAddrB, 0, (-1), maxW, maxH, xW, yW);
+
+		if (mbAddrA != NA
+			&& Slice->macroblock[mbAddrA]->mbType != H264_MB_TYPE::P_Skip
+			&& Slice->macroblock[mbAddrA]->mbType != H264_MB_TYPE::B_Skip
+			&& Slice->macroblock[mbAddrA]->mbType != H264_MB_TYPE::I_PCM
+			&& Slice->macroblock[mbAddrA]->CodedBlockPatternChroma != 0)
+		{
+			transBlockA = 1;
+			transBlockA_coded_block_flag = (Slice->macroblock[mbAddrA]->coded_block_flag_DC_pattern >> (iCbCr + 1)) & 1;
+		}
+		else
+		{
+			transBlockA = NA; //transBlockN is marked as not available.
+		}
+
+
+
+		if (mbAddrB != NA
+			&& Slice->macroblock[mbAddrB]->mbType != H264_MB_TYPE::P_Skip
+			&& Slice->macroblock[mbAddrB]->mbType != H264_MB_TYPE::B_Skip
+			&& Slice->macroblock[mbAddrB]->mbType != H264_MB_TYPE::I_PCM
+			&& Slice->macroblock[mbAddrB]->CodedBlockPatternChroma != 0)
+		{
+			transBlockB = 1;
+			transBlockB_coded_block_flag = (Slice->macroblock[mbAddrB]->coded_block_flag_DC_pattern >> (iCbCr + 1)) & 1;
+		}
+		else
+		{
+			transBlockB = NA; //transBlockN is marked as not available.
+		}
 	}
 	else if (ctxBlockCat == 4) //ChromaACLevel
 	{
 
+		int chroma4x4BlkIdxA = NA;
+		int chroma4x4BlkIdxB = NA;
+
+		//6.4.7 Inverse 4x4 chroma block scanning process
+		const int x = InverseRasterScan(BlkIdx, 4, 4, 8, 0);
+		const int y = InverseRasterScan(BlkIdx, 4, 4, 8, 1);
+
+
+		//亮度位置的差分值 表6-2（ xD, yD ）
+		//当前子块距离mbAddrN左上角样点距离（ xW, yW)
+		Slice->getMbAddrNAndLuma4x4BlkIdxN(mbAddrA, x + (-1), y + 0, maxW, maxH, xW, yW);
+		if (mbAddrA != NA)
+		{
+			//左侧宏块子块索引
+			chroma4x4BlkIdxA = 2 * (yW / 4) + (xW / 4);
+		}
+
+		Slice->getMbAddrNAndLuma4x4BlkIdxN(mbAddrB, x + 0, y + (-1), maxW, maxH, xW, yW);
+		if (mbAddrB != NA)
+		{
+			//上侧宏块子块索引
+			chroma4x4BlkIdxB = 2 * (yW / 4) + (xW / 4);
+		}
+
+
+		if (mbAddrA != NA
+			&& Slice->macroblock[mbAddrA]->mbType != H264_MB_TYPE::P_Skip
+			&& Slice->macroblock[mbAddrA]->mbType != H264_MB_TYPE::B_Skip
+			&& Slice->macroblock[mbAddrA]->mbType != H264_MB_TYPE::I_PCM
+			&& Slice->macroblock[mbAddrA]->CodedBlockPatternChroma == 2
+			)
+		{
+			transBlockA = 1;
+			transBlockA_coded_block_flag = (Slice->macroblock[mbAddrA]->coded_block_flag_AC_pattern[iCbCr + 1] >> (chroma4x4BlkIdxA)) & 1;
+		}
+		else
+		{
+			transBlockA = NA; //transBlockN is marked as not available.
+		}
+
+
+		if (mbAddrB != NA
+			&& Slice->macroblock[mbAddrB]->mbType != H264_MB_TYPE::P_Skip
+			&& Slice->macroblock[mbAddrB]->mbType != H264_MB_TYPE::B_Skip
+			&& Slice->macroblock[mbAddrB]->mbType != H264_MB_TYPE::I_PCM
+			&& Slice->macroblock[mbAddrB]->CodedBlockPatternChroma == 2
+			)
+		{
+			transBlockB = 1;
+			transBlockB_coded_block_flag = (Slice->macroblock[mbAddrB]->coded_block_flag_AC_pattern[iCbCr + 1] >> (chroma4x4BlkIdxB)) & 1;
+		}
+		else
+		{
+			transBlockB = NA; //transBlockN is marked as not available.
+		}
 	}
 	else if (ctxBlockCat == 5) //LumaLevel8x8
 	{
+		//邻近8x8亮块的推导过程
+		int luma8x8BlkIdxA = 0;
+		int luma8x8BlkIdxB = 0;
+
+		const int xA = (BlkIdx % 2) * 8 - 1;
+		const int yA = (BlkIdx / 2) * 8 + 0;
+		Slice->getMbAddrNAndLuma4x4BlkIdxN(mbAddrA, xA, yA, maxW, maxH, xW, yW);
+		if (mbAddrA != NA)
+		{
+			//左侧宏块子块索引
+			luma8x8BlkIdxA = 2 * (yW / 8) + (xW / 8);
+		}
+
+
+		const int xB = (BlkIdx % 2) * 8 - 0;
+		const int yB = (BlkIdx / 2) * 8 - 1;
+		Slice->getMbAddrNAndLuma4x4BlkIdxN(mbAddrB, xB, yB, maxW, maxH, xW, yW);
+		if (mbAddrB != NA)
+		{
+			//上侧宏块子块索引
+			luma8x8BlkIdxB = 2 * (yW / 8) + (xW / 8);
+		}
+
+		if (mbAddrA != NA
+			&& Slice->macroblock[mbAddrA]->mbType != H264_MB_TYPE::P_Skip
+			&& Slice->macroblock[mbAddrA]->mbType != H264_MB_TYPE::B_Skip
+			&& Slice->macroblock[mbAddrA]->mbType != H264_MB_TYPE::I_PCM
+			&& ((Slice->macroblock[mbAddrA]->CodedBlockPatternLuma >> BlkIdx) & 1) != 0
+			&& Slice->macroblock[mbAddrA]->transform_size_8x8_flag
+			)
+		{
+			transBlockA = 1;
+			transBlockA_coded_block_flag = (Slice->macroblock[mbAddrA]->coded_block_flag_AC_pattern[iCbCr + 1] >> (luma8x8BlkIdxA)) & 1;
+		}
+		else
+		{
+			transBlockA = NA;
+		}
+
+
+		if (mbAddrB != NA
+			&& Slice->macroblock[mbAddrB]->mbType != H264_MB_TYPE::P_Skip
+			&& Slice->macroblock[mbAddrB]->mbType != H264_MB_TYPE::B_Skip
+			&& Slice->macroblock[mbAddrB]->mbType != H264_MB_TYPE::I_PCM
+			&& ((Slice->macroblock[mbAddrB]->CodedBlockPatternLuma >> BlkIdx) & 1) != 0
+			&& Slice->macroblock[mbAddrB]->transform_size_8x8_flag
+			)
+		{
+			transBlockB = 1;
+			transBlockB_coded_block_flag = (Slice->macroblock[mbAddrB]->coded_block_flag_AC_pattern[iCbCr + 1] >> (luma8x8BlkIdxB)) & 1;
+		}
+		else
+		{
+			transBlockB = NA;
+		}
 
 	}
 	else if (ctxBlockCat == 7 //CbIntra16x16ACLevel

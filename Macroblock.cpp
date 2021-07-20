@@ -126,6 +126,14 @@ Macroblock::Macroblock()
 	sliceNumber = 0;
 
 	mb_skip_flag = 0;
+
+
+
+
+	coded_block_flag_DC_pattern = 0x07;
+	coded_block_flag_AC_pattern[0] = 0xFFFF; //cabac: coded_block_flag-luma
+	coded_block_flag_AC_pattern[1] = 0xFFFF; //cabac: coded_block_flag-cb
+	coded_block_flag_AC_pattern[2] = 0xFFFF; //cabac: coded_block_flag-cr
 }
 //slice type 五种类型
 //I slice中的宏块类型只能是I宏块类型

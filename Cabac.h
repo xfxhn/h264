@@ -40,7 +40,7 @@ public:
 	int decode_prev_intra4x4_pred_mode_flag_or_prev_intra8x8_pred_mode_flag(BitStream& bs);
 	int decode_rem_intra4x4_pred_mode_or_rem_intra8x8_pred_mode(BitStream& bs);
 	int decode_intra_chroma_pred_mode(BitStream& bs, ParseSlice* Slice);
-	int residual_block_cabac(BitStream& bs, ParseSlice* Slice, int* coeffLevel, int startIdx, int endIdx, uint32_t maxNumCoeff, RESIDUAL_LEVEL residualLevel, int& TotalCoeff);
+	int residual_block_cabac(BitStream& bs, ParseSlice* Slice, int* coeffLevel, int startIdx, int endIdx, uint32_t maxNumCoeff, RESIDUAL_LEVEL residualLevel, int& TotalCoeff, int BlkIdx, int iCbCr = -1);
 
 private:
 	int Derivation_process_of_ctxIdxInc_for_the_syntax_element_mb_skip_flag(ParseSlice* Slice);
@@ -49,7 +49,7 @@ private:
 	int Derivation_process_of_ctxIdxInc_for_the_syntax_element_coded_block_pattern(ParseSlice* Slice, int ctxIdxOffset, int binIdx, int binVal);
 	int Derivation_process_of_ctxIdxInc_for_the_syntax_element_mb_qp_delta(ParseSlice* Slice);
 	int Derivation_process_of_ctxIdxInc_for_the_syntax_element_intra_chroma_pred_mode(ParseSlice* Slice);
-	int Derivation_process_of_ctxIdxInc_for_the_syntax_element_coded_block_flag(ParseSlice* Slice, int ctxBlockCat);
+	int Derivation_process_of_ctxIdxInc_for_the_syntax_element_coded_block_flag(ParseSlice* Slice, int ctxBlockCat, int BlkIdx, int iCbCr);
 
 	int decode_mb_type_in_I_slices(ParseSlice* Slice, BitStream& bs, int ctxIdxOffset);
 	int decode_mb_type_in_SI_slices(ParseSlice* Slice, BitStream& bs, int ctxIdxOffset);
@@ -57,7 +57,7 @@ private:
 	int decode_mb_type_in_B_slices(ParseSlice* Slice, BitStream& bs, int ctxIdxOffset);
 
 
-	bool decode_coded_block_flag(ParseSlice* Slice, BitStream& bs, RESIDUAL_LEVEL residualLevel);
+	bool decode_coded_block_flag(ParseSlice* Slice, BitStream& bs, RESIDUAL_LEVEL residualLevel, int BlkIdx, int iCbCr);
 
 	void getMN(const int ctxIdx, const SLIECETYPE slice_type, const int cabac_init_idc, int m, int n);
 	int DecodeBin(BitStream& bs, int bypassFlag, int ctxIdx);
