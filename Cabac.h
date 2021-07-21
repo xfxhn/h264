@@ -58,6 +58,7 @@ private:
 
 
 	bool decode_coded_block_flag(ParseSlice* Slice, BitStream& bs, RESIDUAL_LEVEL residualLevel, int BlkIdx, int iCbCr);
+	bool decode_significant_coeff_flag_and_last_significant_coeff_flag(ParseSlice* Slice, BitStream& bs, RESIDUAL_LEVEL residualLevel, int levelListIdx, bool lastFlag);
 
 	void getMN(const int ctxIdx, const SLIECETYPE slice_type, const int cabac_init_idc, int m, int n);
 	int DecodeBin(BitStream& bs, int bypassFlag, int ctxIdx);

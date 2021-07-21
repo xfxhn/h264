@@ -1248,18 +1248,18 @@ bool Cabac::decode_coded_block_flag(ParseSlice* Slice, BitStream& bs, RESIDUAL_L
 	int ctxBlockCats[14][2] = {
 		{16, 0},
 		{15, 1},
-		{16,2},
-		{4 * NumC8x8,3},
-		{15,4},
-		{64,5},
-		{16,6},
-		{15,7},
-		{16,8},
-		{64,9},
-		{16,10},
-		{15,11},
-		{16,12},
-		{64,13}
+		{16, 2},
+		{4 * NumC8x8, 3},
+		{15, 4},
+		{64, 5},
+		{16, 6},
+		{15, 7},
+		{16, 8},
+		{64, 9},
+		{16, 10},
+		{15, 11},
+		{16, 12},
+		{64, 13}
 	};
 
 	// ctxBlockCats[][1] = ctxBlockCat;
@@ -1347,6 +1347,257 @@ bool Cabac::decode_coded_block_flag(ParseSlice* Slice, BitStream& bs, RESIDUAL_L
 
 	return DecodeBin(bs, false, ctxIdx);
 }
+bool Cabac::decode_significant_coeff_flag_and_last_significant_coeff_flag(ParseSlice* Slice, BitStream& bs, RESIDUAL_LEVEL residualLevel, int levelListIdx, bool lastFlag)
+{
+	const int NumC8x8 = 4 / (Slice->sHeader->sps.SubWidthC * Slice->sHeader->sps.SubHeightC);
+
+
+	int ctxIdxOffset = 0;
+	int ctxBlockCat = 0;
+
+	int ctxBlockCats[14][2] = {
+		{16, 0},
+		{15, 1},
+		{16, 2},
+		{1 , 3},
+		{15, 4},
+		{64, 5},
+		{16, 6},
+		{15, 7},
+		{16, 8},
+		{64, 9},
+		{16, 10},
+		{15, 11},
+		{16, 12},
+		{64, 13}
+	};
+
+
+	switch (residualLevel)
+	{
+	case RESIDUAL_LEVEL::LumaLevel4x4:
+		ctxBlockCat = ctxBlockCats[2][1];
+		break;
+	case RESIDUAL_LEVEL::LumaLevel8x8:
+		ctxBlockCat = ctxBlockCats[5][1];
+		break;
+	case RESIDUAL_LEVEL::ChromaDCLevel:
+		ctxBlockCat = ctxBlockCats[3][1];
+		break;
+	case RESIDUAL_LEVEL::ChromaACLevel:
+		ctxBlockCat = ctxBlockCats[4][1];
+		break;
+	case RESIDUAL_LEVEL::ChromaACLevelCb:
+		break;
+	case RESIDUAL_LEVEL::ChromaACLevelCr:
+		break;
+	case RESIDUAL_LEVEL::Intra16x16DCLevel:
+		ctxBlockCat = ctxBlockCats[0][1];
+		break;
+	case RESIDUAL_LEVEL::Intra16x16ACLevel:
+		ctxBlockCat = ctxBlockCats[1][1];
+		break;
+	case RESIDUAL_LEVEL::CbIntra16x16DCLevel:
+		ctxBlockCat = ctxBlockCats[6][1];
+		break;
+	case RESIDUAL_LEVEL::CbIntra16x16ACLevel:
+		ctxBlockCat = ctxBlockCats[7][1];
+		break;
+	case RESIDUAL_LEVEL::CbLevel4x4:
+		ctxBlockCat = ctxBlockCats[8][1];
+		break;
+	case RESIDUAL_LEVEL::CbLevel8x8:
+		ctxBlockCat = ctxBlockCats[9][1];
+		break;
+	case RESIDUAL_LEVEL::CrLevel4x4:
+		ctxBlockCat = ctxBlockCats[12][1];
+		break;
+	case RESIDUAL_LEVEL::CrLevel8x8:
+		ctxBlockCat = ctxBlockCats[13][1];
+		break;
+	case RESIDUAL_LEVEL::CrIntra16x16DCLevel:
+		ctxBlockCat = ctxBlockCats[10][1];
+		break;
+	case RESIDUAL_LEVEL::CrIntra16x16ACLevel:
+		ctxBlockCat = ctxBlockCats[11][1];
+		break;
+	default:
+		printError("residualLevel匹配不到");
+		exit(-1);
+		break;
+	}
+
+	if (ctxBlockCat < 5) //(frame coded blocks with ctxBlockCat < 5) FL, cMax=1
+	{
+		if (lastFlag)//last_significant_coeff_flag
+		{
+			ctxIdxOffset = 166;
+		}
+		else//significant_coeff_flag
+		{
+			ctxIdxOffset = 105;
+		}
+	}
+	else if (ctxBlockCat == 5)
+	{
+
+
+		if (lastFlag)//last_significant_coeff_flag
+		{
+			ctxIdxOffset = 417;
+		}
+		else//significant_coeff_flag 
+		{
+			ctxIdxOffset = 402;
+		}
+	}
+	else if (ctxBlockCat > 5 && ctxBlockCat < 9)
+	{
+		if (lastFlag)//last_significant_coeff_flag
+		{
+			ctxIdxOffset = 572;
+		}
+		else //significant_coeff_flag
+		{
+			ctxIdxOffset = 484;
+		}
+	}
+	else if (ctxBlockCat > 9 && ctxBlockCat < 13)
+	{
+
+		if (lastFlag)//last_significant_coeff_flag
+		{
+			ctxIdxOffset = 616;
+		}
+		else //significant_coeff_flag
+		{
+			ctxIdxOffset = 528;
+		}
+	}
+	else if (ctxBlockCat == 9)
+	{
+
+		if (lastFlag)
+		{
+			ctxIdxOffset = 690;
+		}
+		else
+		{
+			ctxIdxOffset = 660;
+		}
+	}
+	else //if (ctxBlockCat == 13)
+	{
+		if (lastFlag)
+		{
+			ctxIdxOffset = 748;
+		}
+		else
+		{
+			ctxIdxOffset = 718;
+		}
+	}
+
+	constexpr int ctxIdxBlockCatOffsets[14] = { 0, 15, 29, 44, 47, 0, 0, 15, 29, 0, 0, 15, 29, 0 };
+	const int ctxIdxBlockCatOffset = ctxIdxBlockCatOffsets[ctxBlockCat];
+
+	int ctxIdxInc = 0;
+	if (ctxBlockCat != 3
+		&& ctxBlockCat != 5
+		&& ctxBlockCat != 9
+		&& ctxBlockCat != 13
+		)
+	{
+		//levelListIdx=变换系数等级列表的索引(64个系数的索引)
+		ctxIdxInc = levelListIdx;
+	}
+	else if (ctxBlockCat == 3)
+	{
+		//levelListIdx 范围为[0,4×NumC8x8-2] 
+		ctxIdxInc = std::min(levelListIdx / NumC8x8, 2);
+	}
+	else if (ctxBlockCat == 5 || ctxBlockCat == 9 || ctxBlockCat == 13)
+	{
+		constexpr int ctxIdxIncs[63][2] =
+		{
+			{0, 0},
+			{1, 1},
+			{2, 1},
+			{3, 1},
+			{4, 1},
+			{5,  1},
+			{5, 1},
+			{4, 1},
+			{4,  1},
+			{3, 1},
+			{3,  1},
+			{4, 1},
+			{4, 1},
+			{4, 1},
+			{5, 1},
+			{5, 1},
+			{4, 2},
+			{4, 2},
+			{4, 2},
+			{4,  2},
+			{3,  2},
+			{3,  2},
+			{6, 2},
+			{7,  2},
+			{7, 2},
+			{7, 2},
+			{8,  2},
+			{9, 2},
+			{10, 2},
+			{9,  2},
+			{8,  2},
+			{7, 2},
+			{7, 3},
+			{6, 3},
+			{11,  3},
+			{12, 3},
+			{13, 3},
+			{11,  3},
+			{6,  3},
+			{7,  3},
+			{8, 4},
+			{9, 4},
+			{14, 4},
+			{10, 4},
+			{9, 4},
+			{8, 4},
+			{6, 4},
+			{11, 4},
+			{12,  5},
+			{13,  5},
+			{11,  5},
+			{6, 5},
+			{9, 6},
+			{14,  6},
+			{10, 6},
+			{9, 6},
+			{11,  7},
+			{12,  7},
+			{13,  7},
+			{11,  7},
+			{14, 8},
+			{10, 8},
+			{12, 8}
+		};
+		if (lastFlag)
+		{
+			ctxIdxInc = ctxIdxIncs[levelListIdx][1];
+		}
+		else
+		{
+			ctxIdxInc = ctxIdxIncs[levelListIdx][0];
+		}
+	}
+
+	const int ctxIdx = ctxIdxOffset + ctxIdxBlockCatOffset + ctxIdxInc;
+
+	return DecodeBin(bs, false, ctxIdx);
+}
 int Cabac::residual_block_cabac(
 	BitStream& bs, ParseSlice* Slice, int* coeffLevel, int startIdx, int endIdx,
 	uint32_t maxNumCoeff, RESIDUAL_LEVEL residualLevel, int& TotalCoeff, int BlkIdx, int iCbCr
@@ -1354,6 +1605,9 @@ int Cabac::residual_block_cabac(
 {
 
 	memset(coeffLevel, 0, sizeof(uint32_t) * maxNumCoeff);
+
+	int significant_coeff_flag[64] = { 0 };
+	int last_significant_coeff_flag[64] = { 0 };
 	//是指块中是否包含非零变换系数幅值 
 	// =0 则块中不包含非零变换系数幅值
 	// =1 至少包含一个非零变换系数幅值。
@@ -1372,7 +1626,18 @@ int Cabac::residual_block_cabac(
 
 		while (i < numCoeff - 1)
 		{
+			const int levelListIdx = i;
+			//significant_coeff_flag[ i ]是指扫描位置i上的变换系数幅值是否非零
+			//等于0，则扫描位置  i 上的变换系数幅值等于0,否则扫描位置i上的变换系数幅值不等于零
+			significant_coeff_flag[i] = decode_significant_coeff_flag_and_last_significant_coeff_flag(Slice, bs, residualLevel, levelListIdx, false);
 
+			if (significant_coeff_flag[i])
+			{
+				last_significant_coeff_flag[i] = decode_significant_coeff_flag_and_last_significant_coeff_flag(Slice, bs, residualLevel, levelListIdx, true);
+			}
+			//last_significant_coeff_flag[ i ]是指对于扫描位置i，其后续的扫描位置（从 i + 1 到 maxNumCoeff – 1）上是否有非零的变换系数幅值
+			//如果last_significant_coeff_flag[ i ]等于1，则块中的所有后续（按扫描顺序排序）的变换系数幅值其值均为0。
+			//否则（last_significant_coeff_flag[ i ]等于0），扫描路径上有更多的非零变换系数幅值。
 		}
 	}
 	return 0;
