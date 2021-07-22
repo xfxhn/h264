@@ -134,6 +134,11 @@ Macroblock::Macroblock()
 	coded_block_flag_AC_pattern[0] = 0xFFFF; //cabac: coded_block_flag-luma
 	coded_block_flag_AC_pattern[1] = 0xFFFF; //cabac: coded_block_flag-cb
 	coded_block_flag_AC_pattern[2] = 0xFFFF; //cabac: coded_block_flag-cr
+
+	coded_block_flag_DC_pattern = 0;
+	coded_block_flag_AC_pattern[0] = 0; //cabac: coded_block_flag-luma
+	coded_block_flag_AC_pattern[1] = 0; //cabac: coded_block_flag-cb
+	coded_block_flag_AC_pattern[2] = 0; //cabac: coded_block_flag-cr
 }
 //slice type 五种类型
 //I slice中的宏块类型只能是I宏块类型
@@ -331,7 +336,7 @@ bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* s
 				mb_qp_delta = bs.readSE();
 			}
 
-			residual(bs, 0, 1, cabac);
+			residual(bs, 0, 15, cabac);
 		}
 	}
 

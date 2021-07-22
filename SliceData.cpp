@@ -7,6 +7,7 @@ SliceData::SliceData()
 	CurrMbAddr = 0;
 	cabac_alignment_one_bit = 0;
 	mb_skip_run = 0;
+	end_of_slice_flag = false;
 }
 
 //跳过宏块
@@ -116,7 +117,7 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice)
 				Slice->mbY = (CurrMbAddr / Slice->sHeader->sps.PicWidthInMbs);
 
 				Slice->CurrMbAddr = CurrMbAddr;
-				//cabac编码  暂时不做
+
 				mb_skip_flag = cabac.decode_mb_skip_flag(bs, Slice);
 
 
@@ -144,8 +145,8 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice)
 			Slice->mbY = (CurrMbAddr / Slice->sHeader->sps.PicWidthInMbs);
 
 			Slice->CurrMbAddr = CurrMbAddr;
-
-
+			
+			sHeader->PicSizeInMbs;
 			Slice->macroblock[Slice->CurrMbAddr]->macroblock_layer(bs, Slice, this, cabac);
 
 			bool isChromaCb = true;
@@ -196,15 +197,14 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice)
 			}
 			else
 			{
-				//ret = cabac.CABAC_decode_end_of_slice_flag(picture, bs, end_of_slice_flag); //2 ae(v)
-				//RETURN_IF_FAILED(ret != 0, ret);
-
-				//moreDataFlag = !end_of_slice_flag;
+				end_of_slice_flag = cabac.decode_end_of_slice_flag(bs, Slice);
+				moreDataFlag = !end_of_slice_flag;
 			}
 		}
 		CurrMbAddr = NextMbAddress(sHeader, CurrMbAddr);
 	} while (moreDataFlag);
 
+	int a = 1;
 	return false;
 }
 

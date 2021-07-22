@@ -42,6 +42,8 @@ public:
 	int decode_intra_chroma_pred_mode(BitStream& bs, ParseSlice* Slice);
 	int residual_block_cabac(BitStream& bs, ParseSlice* Slice, int* coeffLevel, int startIdx, int endIdx, uint32_t maxNumCoeff, RESIDUAL_LEVEL residualLevel, int& TotalCoeff, int BlkIdx, int iCbCr = -1);
 
+	int decode_end_of_slice_flag(BitStream& bs, ParseSlice* Slice);
+
 private:
 	int Derivation_process_of_ctxIdxInc_for_the_syntax_element_mb_skip_flag(ParseSlice* Slice);
 	int Derivation_process_of_ctxIdxInc_for_the_syntax_element_mb_type(ParseSlice* Slice, int ctxIdxOffset);
@@ -62,7 +64,7 @@ private:
 	int decode_coeff_abs_level_minus1(ParseSlice* Slice, BitStream& bs, RESIDUAL_LEVEL residualLevel, int numDecodAbsLevelEq1, int numDecodAbsLevelGt1);
 	int decode_coeff_sign_flag(ParseSlice* Slice, BitStream& bs);
 
-	void getMN(const int ctxIdx, const SLIECETYPE slice_type, const int cabac_init_idc, int m, int n);
+	void getMN(const int ctxIdx, const SLIECETYPE slice_type, const int cabac_init_idc, int& m, int& n);
 	int DecodeBin(BitStream& bs, int bypassFlag, int ctxIdx);
 	int DecodeDecision(BitStream& bs, int ctxIdx);
 	int DecodeBypass(BitStream& bs);

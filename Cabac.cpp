@@ -14,11 +14,11 @@ Cabac::~Cabac()
 {
 }
 
-void Cabac::getMN(const int ctxIdx, const SLIECETYPE slice_type, const int cabac_init_idc, int m, int n)
+void Cabac::getMN(const int ctxIdx, const SLIECETYPE slice_type, const int cabac_init_idc, int& m, int& n)
 {
 	if (ctxIdx >= 0 && ctxIdx <= 10)
 	{
-		const int8_t mn[11][2] =
+		constexpr int8_t mn[11][2] =
 		{
 			{20, -15}, {2, 54}, {3, 74}, {20, -15}, {2, 54}, {3, 74}, {-28, 127}, {-23, 104}, {-6, 53}, {-1, 54},
 			{7, 51}
@@ -1641,7 +1641,7 @@ int Cabac::residual_block_cabac(
 		}
 
 
-		for (size_t i = numCoeff - 2; i >= startIdx; i--)
+		for (int i = numCoeff - 2; i >= startIdx; i--)
 		{
 			if (significant_coeff_flag[i]) {
 				//统计非0系数
@@ -1680,6 +1680,14 @@ int Cabac::residual_block_cabac(
 		}
 	}
 	return 0;
+}
+int Cabac::decode_end_of_slice_flag(BitStream& bs, ParseSlice* Slice)
+{
+	constexpr int ctxIdxOffset = 276;
+	//FL, cMax=1
+	constexpr int ctxIdx = ctxIdxOffset + 0;
+
+	return DecodeBin(bs, false, ctxIdx);
 }
 //语法元素mb_skip_flag的ctxIdxInc的推导过程
 int Cabac::Derivation_process_of_ctxIdxInc_for_the_syntax_element_mb_skip_flag(ParseSlice* Slice)
@@ -1747,9 +1755,9 @@ int Cabac::Derivation_process_of_ctxIdxInc_for_the_syntax_element_mb_type(ParseS
 
 	int condTermFlagB = 0;
 	if (mbAddrB < 0
-		|| (ctxIdxOffset == 0 && Slice->macroblock[mbAddrA]->mbType == H264_MB_TYPE::SI)
-		|| (ctxIdxOffset == 3 && Slice->macroblock[mbAddrA]->mbType == H264_MB_TYPE::I_NxN)
-		|| (ctxIdxOffset == 27 && (Slice->macroblock[mbAddrA]->mbType == H264_MB_TYPE::B_Skip || Slice->macroblock[mbAddrA]->mbType == H264_MB_TYPE::B_Direct_16x16))
+		|| (ctxIdxOffset == 0 && Slice->macroblock[mbAddrB]->mbType == H264_MB_TYPE::SI)
+		|| (ctxIdxOffset == 3 && Slice->macroblock[mbAddrB]->mbType == H264_MB_TYPE::I_NxN)
+		|| (ctxIdxOffset == 27 && (Slice->macroblock[mbAddrB]->mbType == H264_MB_TYPE::B_Skip || Slice->macroblock[mbAddrB]->mbType == H264_MB_TYPE::B_Direct_16x16))
 		)
 	{
 		condTermFlagB = 0;
@@ -3438,7 +3446,7 @@ int Cabac::DecodeBypass(BitStream& bs)
 	}
 	return binVal;
 }
-
+//解析终止符
 int Cabac::DecodeTerminate(BitStream& bs)
 {
 	int binVal = 0;
