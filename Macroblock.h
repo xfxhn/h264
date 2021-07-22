@@ -162,13 +162,13 @@ private:
 
 	bool mb_pred(BitStream& bs, uint32_t numMbPart, ParseSlice* Slice, Cabac& cabac);
 
-	bool residual(BitStream& bs, int startIdx, int endIdx);
+	bool residual(BitStream& bs, int startIdx, int endIdx, Cabac& cabac);
 	bool sub_mb_pred(uint32_t mb_type);
 	uint32_t NumMbPart(uint32_t mb_type, SLIECETYPE slice_type);
 
 
 	int residual_luma(BitStream& bs, int i16x16DClevel[16], int i16x16AClevel[16][16], int level4x4[16][16],
-		int level8x8[4][64], int startIdx, int endIdx);
+		int level8x8[4][64], int startIdx, int endIdx, Cabac& cabac);
 
 	//void getChromaQuantisationParameters();
 private:

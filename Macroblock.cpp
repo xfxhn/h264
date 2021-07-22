@@ -331,7 +331,7 @@ bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* s
 				mb_qp_delta = bs.readSE();
 			}
 
-			residual(bs, 0, 15);
+			residual(bs, 0, 1, cabac);
 		}
 	}
 
@@ -593,26 +593,17 @@ int Macroblock::fixed_mb_type(uint32_t slice_type, uint32_t& fix_mb_type, SLIECE
 
 
 //计算残差数据
-bool Macroblock::residual(BitStream& bs, int startIdx, int endIdx)
+bool Macroblock::residual(BitStream& bs, int startIdx, int endIdx, Cabac& cabac)
 {
 
 
 	int TotalCoeff = 0;
 	SliceHeader* sHeader = sliceBase->sHeader;
 	ResidualBlockCavlc residual_block(sliceBase);
-	/*bool isAe = sHeader.pps.entropy_coding_mode_flag;*/
-	if (isAe)
-	{
-		//residual_block = residual_block_cabac
-	}
-	else
-	{
-		//ResidualBlockCavlc residual_block;
-	}
 
 
 	//解析量度
-	residual_luma(bs, i16x16DClevel, i16x16AClevel, level4x4, level8x8, startIdx, endIdx);
+	residual_luma(bs, i16x16DClevel, i16x16AClevel, level4x4, level8x8, startIdx, endIdx, cabac);
 
 	//chroma_format_idc = 0	单色
 	//chroma_format_idc = 1	YUV 4 : 2 : 0
@@ -635,7 +626,7 @@ bool Macroblock::residual(BitStream& bs, int startIdx, int endIdx)
 
 				if (isAe)
 				{
-
+					cabac.residual_block_cabac(bs, sliceBase, ChromaDCLevel[iCbCr], 0, 4 * NumC8x8 - 1, 4 * NumC8x8, RESIDUAL_LEVEL::ChromaDCLevel, TotalCoeff, 0, iCbCr);
 				}
 				else
 				{
@@ -672,14 +663,14 @@ bool Macroblock::residual(BitStream& bs, int startIdx, int endIdx)
 					{
 						if (isAe)
 						{
-
+							cabac.residual_block_cabac(bs, sliceBase, ChromaACLevel[iCbCr][BlkIdx], std::max(0, startIdx - 1), endIdx - 1, 15, RESIDUAL_LEVEL::ChromaACLevel, TotalCoeff, BlkIdx, iCbCr);
 						}
 						else
 						{
 
 							RESIDUAL_LEVEL level = iCbCr == 0 ? RESIDUAL_LEVEL::ChromaACLevelCb : RESIDUAL_LEVEL::ChromaACLevelCr;
 							//能走到这里DC系数最少被取走了一个，所以这里最多15
-							residual_block.residual_block_cavlc(bs, ChromaACLevel[iCbCr][BlkIdx], max(0, startIdx - 1), endIdx - 1, 15, TotalCoeff, level, BlkIdx);
+							residual_block.residual_block_cavlc(bs, ChromaACLevel[iCbCr][BlkIdx], std::max(0, startIdx - 1), endIdx - 1, 15, TotalCoeff, level, BlkIdx);
 
 						}
 						//色度非0系数
@@ -707,7 +698,7 @@ bool Macroblock::residual(BitStream& bs, int startIdx, int endIdx)
 	return false;
 }
 //亮度块预测
-int Macroblock::residual_luma(BitStream& bs, int i16x16DClevel[16], int i16x16AClevel[16][16], int level4x4[16][16], int level8x8[4][64], int startIdx, int endIdx)
+int Macroblock::residual_luma(BitStream& bs, int i16x16DClevel[16], int i16x16AClevel[16][16], int level4x4[16][16], int level8x8[4][64], int startIdx, int endIdx, Cabac& cabac)
 {
 	ResidualBlockCavlc residual_block(sliceBase);
 	SliceHeader* sHeader = sliceBase->sHeader;
@@ -718,7 +709,7 @@ int Macroblock::residual_luma(BitStream& bs, int i16x16DClevel[16], int i16x16AC
 	{
 		if (isAe)
 		{
-
+			cabac.residual_block_cabac(bs, sliceBase, i16x16DClevel, 0, 15, 16, RESIDUAL_LEVEL::Intra16x16DCLevel, TotalCoeff, 0);
 		}
 		else
 		{
@@ -749,7 +740,7 @@ int Macroblock::residual_luma(BitStream& bs, int i16x16DClevel[16], int i16x16AC
 					{
 						if (isAe)
 						{
-
+							cabac.residual_block_cabac(bs, sliceBase, i16x16AClevel[BlkIdx], max(0, startIdx - 1), endIdx - 1, 15, RESIDUAL_LEVEL::Intra16x16ACLevel, TotalCoeff, BlkIdx);
 						}
 						else
 						{
@@ -762,7 +753,7 @@ int Macroblock::residual_luma(BitStream& bs, int i16x16DClevel[16], int i16x16AC
 					{
 						if (isAe)
 						{
-
+							cabac.residual_block_cabac(bs, sliceBase, level4x4[BlkIdx], startIdx, endIdx, 16, RESIDUAL_LEVEL::LumaLevel4x4, TotalCoeff, BlkIdx);
 						}
 						else
 						{

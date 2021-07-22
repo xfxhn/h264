@@ -1245,79 +1245,11 @@ bool Cabac::decode_coded_block_flag(ParseSlice* Slice, BitStream& bs, RESIDUAL_L
 
 	//NumC8x8 = 4 / ( SubWidthC * SubHeightC ) 
 	const int NumC8x8 = 4 / (Slice->sHeader->sps.SubWidthC * Slice->sHeader->sps.SubHeightC);
-	int ctxBlockCats[14][2] = {
-		{16, 0},
-		{15, 1},
-		{16, 2},
-		{4 * NumC8x8, 3},
-		{15, 4},
-		{64, 5},
-		{16, 6},
-		{15, 7},
-		{16, 8},
-		{64, 9},
-		{16, 10},
-		{15, 11},
-		{16, 12},
-		{64, 13}
-	};
 
-	// ctxBlockCats[][1] = ctxBlockCat;
-	// ctxBlockCats[][0] = maxNumCoeff;
-	int ctxBlockCat = 0;
-	switch (residualLevel)
-	{
-	case RESIDUAL_LEVEL::LumaLevel4x4:
-		ctxBlockCat = ctxBlockCats[2][1];
-		break;
-	case RESIDUAL_LEVEL::LumaLevel8x8:
-		ctxBlockCat = ctxBlockCats[5][1];
-		break;
-	case RESIDUAL_LEVEL::ChromaDCLevel:
-		ctxBlockCat = ctxBlockCats[3][1];
-		break;
-	case RESIDUAL_LEVEL::ChromaACLevel:
-		ctxBlockCat = ctxBlockCats[4][1];
-		break;
-	case RESIDUAL_LEVEL::ChromaACLevelCb:
-		break;
-	case RESIDUAL_LEVEL::ChromaACLevelCr:
-		break;
-	case RESIDUAL_LEVEL::Intra16x16DCLevel:
-		ctxBlockCat = ctxBlockCats[0][1];
-		break;
-	case RESIDUAL_LEVEL::Intra16x16ACLevel:
-		ctxBlockCat = ctxBlockCats[1][1];
-		break;
-	case RESIDUAL_LEVEL::CbIntra16x16DCLevel:
-		ctxBlockCat = ctxBlockCats[6][1];
-		break;
-	case RESIDUAL_LEVEL::CbIntra16x16ACLevel:
-		ctxBlockCat = ctxBlockCats[7][1];
-		break;
-	case RESIDUAL_LEVEL::CbLevel4x4:
-		ctxBlockCat = ctxBlockCats[8][1];
-		break;
-	case RESIDUAL_LEVEL::CbLevel8x8:
-		ctxBlockCat = ctxBlockCats[9][1];
-		break;
-	case RESIDUAL_LEVEL::CrLevel4x4:
-		ctxBlockCat = ctxBlockCats[12][1];
-		break;
-	case RESIDUAL_LEVEL::CrLevel8x8:
-		ctxBlockCat = ctxBlockCats[13][1];
-		break;
-	case RESIDUAL_LEVEL::CrIntra16x16DCLevel:
-		ctxBlockCat = ctxBlockCats[10][1];
-		break;
-	case RESIDUAL_LEVEL::CrIntra16x16ACLevel:
-		ctxBlockCat = ctxBlockCats[11][1];
-		break;
-	default:
-		printError("residualLevel匹配不到");
-		exit(-1);
-		break;
-	}
+
+
+	int ctxBlockCat = getCtxBlockCat(NumC8x8, residualLevel);
+
 
 	//FL,cMax = 1 Table 9-34
 	int ctxIdxOffset = 0;
@@ -1352,80 +1284,9 @@ bool Cabac::decode_significant_coeff_flag_and_last_significant_coeff_flag(ParseS
 	const int NumC8x8 = 4 / (Slice->sHeader->sps.SubWidthC * Slice->sHeader->sps.SubHeightC);
 
 
+
+	int ctxBlockCat = getCtxBlockCat(NumC8x8, residualLevel);
 	int ctxIdxOffset = 0;
-	int ctxBlockCat = 0;
-
-	int ctxBlockCats[14][2] = {
-		{16, 0},
-		{15, 1},
-		{16, 2},
-		{1 , 3},
-		{15, 4},
-		{64, 5},
-		{16, 6},
-		{15, 7},
-		{16, 8},
-		{64, 9},
-		{16, 10},
-		{15, 11},
-		{16, 12},
-		{64, 13}
-	};
-
-
-	switch (residualLevel)
-	{
-	case RESIDUAL_LEVEL::LumaLevel4x4:
-		ctxBlockCat = ctxBlockCats[2][1];
-		break;
-	case RESIDUAL_LEVEL::LumaLevel8x8:
-		ctxBlockCat = ctxBlockCats[5][1];
-		break;
-	case RESIDUAL_LEVEL::ChromaDCLevel:
-		ctxBlockCat = ctxBlockCats[3][1];
-		break;
-	case RESIDUAL_LEVEL::ChromaACLevel:
-		ctxBlockCat = ctxBlockCats[4][1];
-		break;
-	case RESIDUAL_LEVEL::ChromaACLevelCb:
-		break;
-	case RESIDUAL_LEVEL::ChromaACLevelCr:
-		break;
-	case RESIDUAL_LEVEL::Intra16x16DCLevel:
-		ctxBlockCat = ctxBlockCats[0][1];
-		break;
-	case RESIDUAL_LEVEL::Intra16x16ACLevel:
-		ctxBlockCat = ctxBlockCats[1][1];
-		break;
-	case RESIDUAL_LEVEL::CbIntra16x16DCLevel:
-		ctxBlockCat = ctxBlockCats[6][1];
-		break;
-	case RESIDUAL_LEVEL::CbIntra16x16ACLevel:
-		ctxBlockCat = ctxBlockCats[7][1];
-		break;
-	case RESIDUAL_LEVEL::CbLevel4x4:
-		ctxBlockCat = ctxBlockCats[8][1];
-		break;
-	case RESIDUAL_LEVEL::CbLevel8x8:
-		ctxBlockCat = ctxBlockCats[9][1];
-		break;
-	case RESIDUAL_LEVEL::CrLevel4x4:
-		ctxBlockCat = ctxBlockCats[12][1];
-		break;
-	case RESIDUAL_LEVEL::CrLevel8x8:
-		ctxBlockCat = ctxBlockCats[13][1];
-		break;
-	case RESIDUAL_LEVEL::CrIntra16x16DCLevel:
-		ctxBlockCat = ctxBlockCats[10][1];
-		break;
-	case RESIDUAL_LEVEL::CrIntra16x16ACLevel:
-		ctxBlockCat = ctxBlockCats[11][1];
-		break;
-	default:
-		printError("residualLevel匹配不到");
-		exit(-1);
-		break;
-	}
 
 	if (ctxBlockCat < 5) //(frame coded blocks with ctxBlockCat < 5) FL, cMax=1
 	{
@@ -1598,16 +1459,124 @@ bool Cabac::decode_significant_coeff_flag_and_last_significant_coeff_flag(ParseS
 
 	return DecodeBin(bs, false, ctxIdx);
 }
+
+int Cabac::decode_coeff_abs_level_minus1(ParseSlice* Slice, BitStream& bs, RESIDUAL_LEVEL residualLevel, int numDecodAbsLevelEq1, int numDecodAbsLevelGt1)
+{
+
+	const int NumC8x8 = 4 / (Slice->sHeader->sps.SubWidthC * Slice->sHeader->sps.SubHeightC);
+
+
+	int ctxIdxInc = 0;
+	int ctxIdx = 0;
+	const int ctxBlockCat = getCtxBlockCat(NumC8x8, residualLevel);
+
+	int ctxIdxOffset = 0;
+	if (ctxBlockCat < 5) //(blocks with ctxBlockCat < 5)
+	{
+		ctxIdxOffset = 227;
+	}
+	else if (ctxBlockCat == 5)
+	{
+		ctxIdxOffset = 426;
+	}
+	else if (ctxBlockCat > 5 && ctxBlockCat < 9)
+	{
+		ctxIdxOffset = 952;
+	}
+	else if (ctxBlockCat > 9 && ctxBlockCat < 13)
+	{
+		ctxIdxOffset = 982;
+	}
+	else if (ctxBlockCat == 9)
+	{
+		ctxIdxOffset = 708;
+	}
+	else //if (ctxBlockCat == 13)
+	{
+		ctxIdxOffset = 766;
+	}
+	constexpr int ctxIdxBlockCatOffsets[14] = { 0, 10, 20, 30, 39, 0, 0, 10, 20, 0, 0, 10, 20, 0 };
+	const int ctxIdxBlockCatOffset = ctxIdxBlockCatOffsets[ctxBlockCat];
+
+
+	constexpr int uCoff = 14;
+	int synElVal = 0;
+	int binVal = 0;
+
+	ctxIdxInc = ((numDecodAbsLevelGt1 != 0) ? 0 : std::min(4, 1 + numDecodAbsLevelEq1)); //if (binIdx == 0)
+	ctxIdx = ctxIdxOffset + ctxIdxBlockCatOffset + ctxIdxInc;
+	//signedValFlag=0, uCoff=14 
+	//UEGk（k阶指数哥伦布编码，这里是0阶）编码是由 prefix(TU binarization) + suffix(Exp-Golomb) + signedValFlag, 三部分组成
+
+	binVal = DecodeBin(bs, false, ctxIdx); //if (binIdx == 0)
+
+	//解码前缀 TU 
+	ctxIdxInc = 5 + std::min(4 - ((ctxBlockCat == 3) ? 1 : 0), numDecodAbsLevelGt1); //if (binIdx > 0)
+	ctxIdx = ctxIdxOffset + ctxIdxBlockCatOffset + ctxIdxInc;
+	while (binVal == 1)
+	{
+		synElVal++;
+
+		//Min( uCoff, Abs( synElVal ) )
+		if (synElVal >= uCoff)
+		{
+			break;
+		}
+
+		binVal = DecodeBin(bs, false, ctxIdx);//binIdx > 0
+	}
+
+	//解码后缀  Exp-Golomb（0阶哥伦布编码）
+	/*如果如下条件的一个为真，带有synElVal 值的语法元素的码串仅包含前缀码串。
+		— signedValFlag 等于0，前缀比特串不是长度为uCoff、所有比特为1的比特串。
+		— signedValFlag 等于1，前缀比特串是包含了单个比特值为0的比特串*/
+	if (synElVal != uCoff)
+	{
+		//synElVal只包含一个前缀位字符串
+	}
+	else//synElVal == 14
+	{
+		int k = 0; //0阶指数哥伦布编码
+
+		if (synElVal >= uCoff)
+		{
+			binVal = DecodeBypass(bs);
+			while (binVal == 1)
+			{
+				synElVal += 1 << k;
+				++k;
+				binVal = DecodeBypass(bs);
+			}
+
+			while (k--)
+			{
+				binVal = DecodeBypass(bs);
+				synElVal += binVal << k;
+			}
+		}
+		//signedValFlag=0代表结果是无符号整数，所以不需要处理最后一个符号位
+	}
+	return synElVal;
+}
+
+int Cabac::decode_coeff_sign_flag(ParseSlice* Slice, BitStream& bs)
+{
+	return DecodeBypass(bs);
+}
+
 int Cabac::residual_block_cabac(
 	BitStream& bs, ParseSlice* Slice, int* coeffLevel, int startIdx, int endIdx,
 	uint32_t maxNumCoeff, RESIDUAL_LEVEL residualLevel, int& TotalCoeff, int BlkIdx, int iCbCr
 )
 {
-
+	int numDecodAbsLevelEq1 = 0;
+	int numDecodAbsLevelGt1 = 0;
 	memset(coeffLevel, 0, sizeof(uint32_t) * maxNumCoeff);
 
 	int significant_coeff_flag[64] = { 0 };
 	int last_significant_coeff_flag[64] = { 0 };
+	int coeff_abs_level_minus1[64] = { 0 };
+	int coeff_sign_flag[64] = { 0 };
 	//是指块中是否包含非零变换系数幅值 
 	// =0 则块中不包含非零变换系数幅值
 	// =1 至少包含一个非零变换系数幅值。
@@ -1633,11 +1602,81 @@ int Cabac::residual_block_cabac(
 
 			if (significant_coeff_flag[i])
 			{
+				//last_significant_coeff_flag[ i ]是指对于扫描位置i，其后续的扫描位置（从 i + 1 到 maxNumCoeff – 1）上是否有非零的变换系数幅值
+				//如果last_significant_coeff_flag[ i ]等于1，则块中的所有后续（按扫描顺序排序）的变换系数幅值其值均为0。
+				//否则（last_significant_coeff_flag[ i ]等于0），扫描路径上有更多的非零变换系数幅值。
 				last_significant_coeff_flag[i] = decode_significant_coeff_flag_and_last_significant_coeff_flag(Slice, bs, residualLevel, levelListIdx, true);
+
+				//以下所有系数都为0
+				if (last_significant_coeff_flag[i])
+				{
+					numCoeff = i + 1; //跳出循环，因为剩下的DCT变换系数都是0了
+				}
 			}
-			//last_significant_coeff_flag[ i ]是指对于扫描位置i，其后续的扫描位置（从 i + 1 到 maxNumCoeff – 1）上是否有非零的变换系数幅值
-			//如果last_significant_coeff_flag[ i ]等于1，则块中的所有后续（按扫描顺序排序）的变换系数幅值其值均为0。
-			//否则（last_significant_coeff_flag[ i ]等于0），扫描路径上有更多的非零变换系数幅值。
+			i++;
+		}
+
+		//coeff_abs_level_minus1[i]是变换系数幅值减1的绝对值
+		coeff_abs_level_minus1[numCoeff - 1] = decode_coeff_abs_level_minus1(Slice, bs, residualLevel, numDecodAbsLevelEq1, numDecodAbsLevelEq1);
+		//coeff_sign_flag[ i ]是指变换系数幅值的正负符号
+		//如果 coeff_sign_flag 等于0，则相应的变换系数幅值为正
+		//否则（coeff_sign_flag 等于 1），相应的变换系数幅值为负
+		coeff_sign_flag[numCoeff - 1] = decode_coeff_sign_flag(Slice, bs);
+
+		coeffLevel[numCoeff - 1] = (coeff_abs_level_minus1[numCoeff - 1] + 1) * (1 - 2 * coeff_sign_flag[numCoeff - 1]);
+
+		TotalCoeff = 1;
+
+
+		//两个数值都是当前解码过程中关于同一个变换系数块的值
+		if (std::abs(coeffLevel[numCoeff - 1]) == 1)
+		{
+			//numDecodAbsLevelEql 为绝对值等于 1 的累积解码变换系数等级
+			numDecodAbsLevelEq1++;
+		}
+		else if (std::abs(coeffLevel[numCoeff - 1]) > 1)
+		{
+			//numDecodAbsLevelGt1 为绝对值 大于 1 的累积的解码变换系数等级
+			numDecodAbsLevelGt1++;
+		}
+
+
+		for (size_t i = numCoeff - 2; i >= startIdx; i--)
+		{
+			if (significant_coeff_flag[i]) {
+				//统计非0系数
+				TotalCoeff++;
+				coeff_abs_level_minus1[i] = decode_coeff_abs_level_minus1(Slice, bs, residualLevel, numDecodAbsLevelEq1, numDecodAbsLevelGt1);
+				coeff_sign_flag[i] = decode_coeff_sign_flag(Slice, bs);
+
+				coeffLevel[i] = (coeff_abs_level_minus1[i] + 1) * (1 - 2 * coeff_sign_flag[i]);
+
+				if (std::abs(coeffLevel[i]) == 1)
+				{
+					//numDecodAbsLevelEql 为绝对值等于 1 的累积解码变换系数等级
+					numDecodAbsLevelEq1++;
+				}
+				else if (std::abs(coeffLevel[i]) > 1)
+				{
+					//numDecodAbsLevelGt1 为绝对值 大于 1 的累积的解码变换系数等级
+					numDecodAbsLevelGt1++;
+				}
+			}
+		}
+
+
+		//--------------将coded_block_flag值保存起来----------------------------------------
+		if (residualLevel == RESIDUAL_LEVEL::Intra16x16DCLevel
+			|| residualLevel == RESIDUAL_LEVEL::ChromaDCLevel
+			|| residualLevel == RESIDUAL_LEVEL::CbIntra16x16DCLevel
+			|| residualLevel == RESIDUAL_LEVEL::CrIntra16x16DCLevel
+			) //for DC
+		{
+			Slice->macroblock[Slice->CurrMbAddr]->coded_block_flag_DC_pattern ^= 1 << (iCbCr + 1);//iCbCr=-1 --> luma, iCbCr=0 --> cb, iCbCr=1 --> cr
+		}
+		else  //for AC
+		{
+			Slice->macroblock[Slice->CurrMbAddr]->coded_block_flag_AC_pattern[iCbCr + 1] ^= 1 << BlkIdx; //iCbCr=-1 --> luma, iCbCr=0 --> cb, iCbCr=1 --> cr
 		}
 	}
 	return 0;
@@ -3426,6 +3465,84 @@ void Cabac::RenormD(BitStream& bs)
 		codIOffset = codIOffset << 1;
 		codIOffset = codIOffset | bs.readBit();
 	}
+}
+
+int Cabac::getCtxBlockCat(int NumC8x8, RESIDUAL_LEVEL residualLevel)
+{
+	// ctxBlockCats[][1] = ctxBlockCat;
+	// ctxBlockCats[][0] = maxNumCoeff;
+	//NumC8x8 = 4 / ( SubWidthC * SubHeightC ) 
+	int ctxBlockCats[14][2] = {
+		{16, 0},
+		{15, 1},
+		{16, 2},
+		{4 * NumC8x8, 3},
+		{15, 4},
+		{64, 5},
+		{16, 6},
+		{15, 7},
+		{16, 8},
+		{64, 9},
+		{16, 10},
+		{15, 11},
+		{16, 12},
+		{64, 13}
+	};
+
+	int ctxBlockCat = NA;
+
+	switch (residualLevel)
+	{
+	case RESIDUAL_LEVEL::LumaLevel4x4:
+		ctxBlockCat = ctxBlockCats[2][1];
+		break;
+	case RESIDUAL_LEVEL::LumaLevel8x8:
+		ctxBlockCat = ctxBlockCats[5][1];
+		break;
+	case RESIDUAL_LEVEL::ChromaDCLevel:
+		ctxBlockCat = ctxBlockCats[3][1];
+		break;
+	case RESIDUAL_LEVEL::ChromaACLevelCb:
+	case RESIDUAL_LEVEL::ChromaACLevelCr:
+	case RESIDUAL_LEVEL::ChromaACLevel:
+		ctxBlockCat = ctxBlockCats[4][1];
+		break;
+	case RESIDUAL_LEVEL::Intra16x16DCLevel:
+		ctxBlockCat = ctxBlockCats[0][1];
+		break;
+	case RESIDUAL_LEVEL::Intra16x16ACLevel:
+		ctxBlockCat = ctxBlockCats[1][1];
+		break;
+	case RESIDUAL_LEVEL::CbIntra16x16DCLevel:
+		ctxBlockCat = ctxBlockCats[6][1];
+		break;
+	case RESIDUAL_LEVEL::CbIntra16x16ACLevel:
+		ctxBlockCat = ctxBlockCats[7][1];
+		break;
+	case RESIDUAL_LEVEL::CbLevel4x4:
+		ctxBlockCat = ctxBlockCats[8][1];
+		break;
+	case RESIDUAL_LEVEL::CbLevel8x8:
+		ctxBlockCat = ctxBlockCats[9][1];
+		break;
+	case RESIDUAL_LEVEL::CrLevel4x4:
+		ctxBlockCat = ctxBlockCats[12][1];
+		break;
+	case RESIDUAL_LEVEL::CrLevel8x8:
+		ctxBlockCat = ctxBlockCats[13][1];
+		break;
+	case RESIDUAL_LEVEL::CrIntra16x16DCLevel:
+		ctxBlockCat = ctxBlockCats[10][1];
+		break;
+	case RESIDUAL_LEVEL::CrIntra16x16ACLevel:
+		ctxBlockCat = ctxBlockCats[11][1];
+		break;
+	default:
+		printError("residualLevel匹配不到");
+		exit(-1);
+		break;
+	}
+	return ctxBlockCat;
 }
 
 //上下文变量的初始化过程
