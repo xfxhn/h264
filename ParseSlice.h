@@ -44,6 +44,8 @@ public:
 
 	uint32_t  sliceNumber; //当前帧第几个slice
 
+	uint32_t  mbCount; //解码的宏块的计数
+
 public:
 	ParseSlice(ParseNalu& nalu, SliceHeader* sHeader);
 

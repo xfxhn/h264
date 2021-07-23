@@ -181,6 +181,9 @@ bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* s
 		mb_type = bs.readUE(); //2 ue(v) | ae(v)
 	}
 
+
+
+
 	uint32_t	 slice_type = sHeader->slice_type;
 
 	//修正过后的
@@ -197,6 +200,8 @@ bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* s
 
 	uint32_t  numMbPart = NumMbPart(fix_mb_type, fix_slice_type);
 	//fix_slice_type == SLIECETYPE::H264_SLIECE_TYPE_I && fix_mb_type == 25
+
+	
 	if (mbType == H264_MB_TYPE::I_PCM)  //I_PCM 不经过预测，变换，量化
 	{
 		while (!byte_aligned(bs))
@@ -252,9 +257,11 @@ bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* s
 		}
 		else
 		{
+
 			//8x8解码
 			if (sHeader->pps.transform_8x8_mode_flag && mbType == H264_MB_TYPE::I_NxN)
 			{
+
 				//使用8x8变换解码
 				if (isAe)
 				{
@@ -268,6 +275,8 @@ bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* s
 					  如果 transform_size_8x8_flag 在比特流中不存在，则默认其值为0。*/
 					transform_size_8x8_flag = bs.readBit();
 				}
+
+				mode = MbPartPredMode(fix_mb_type, fix_slice_type, 0);
 
 				//........
 			}
@@ -317,6 +326,7 @@ bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* s
 				{
 					transform_size_8x8_flag = bs.readBit();
 				}
+				mode = MbPartPredMode(fix_mb_type, fix_slice_type, 0);
 
 			}
 		}
@@ -367,12 +377,15 @@ bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* s
 bool Macroblock::mb_pred(BitStream& bs, uint32_t numMbPart, ParseSlice* Slice, Cabac& cabac)
 {
 	SliceHeader* sHeader = sliceBase->sHeader;
+
 	if (mode == H264_MB_PART_PRED_MODE::Intra_4x4 || mode == H264_MB_PART_PRED_MODE::Intra_8x8 || mode == H264_MB_PART_PRED_MODE::Intra_16x16)
 	{
+
 		if (mode == H264_MB_PART_PRED_MODE::Intra_4x4)
 		{
 			for (size_t luma4x4BlkIdx = 0; luma4x4BlkIdx < 16; luma4x4BlkIdx++)
 			{
+
 				//表示序号为 luma4x4BlkIdx = 0到15 的4x4 亮度块的帧内Intra_4x4 预测。
 				if (isAe) // ae(v) 表示CABAC编码
 				{
@@ -380,6 +393,7 @@ bool Macroblock::mb_pred(BitStream& bs, uint32_t numMbPart, ParseSlice* Slice, C
 				}
 				else
 				{
+
 					//表示帧内预测模式预测标识。如果该标识位为1，表示帧内预测模式的预测值就是实际的模式，否则就需要另外传递实际的帧内预测模式。
 					prev_intra4x4_pred_mode_flag[luma4x4BlkIdx] = bs.readBit();
 				}
@@ -431,6 +445,8 @@ bool Macroblock::mb_pred(BitStream& bs, uint32_t numMbPart, ParseSlice* Slice, C
 				}
 			}
 		}
+
+
 		// YUV 4 : 2 : 0 || YUV 4 : 2 : 2，yuv一起编码
 		if (sHeader->sps.ChromaArrayType == 1 || sHeader->sps.ChromaArrayType == 2)
 		{
@@ -619,6 +635,7 @@ bool Macroblock::residual(BitStream& bs, int startIdx, int endIdx, Cabac& cabac)
 	//解析色度
 	if (sHeader->sps.ChromaArrayType == 1 || sHeader->sps.ChromaArrayType == 2)
 	{
+		TotalCoeff = 0;
 		//sps.SubWidthC=2,  sHeader->sps.SubHeightC=1		//422
 		//sps.SubWidthC=2,  sHeader->sps.SubHeightC=2		//420
 		int NumC8x8 = 4 / (sHeader->sps.SubWidthC * sHeader->sps.SubHeightC);
@@ -666,6 +683,7 @@ bool Macroblock::residual(BitStream& bs, int startIdx, int endIdx, Cabac& cabac)
 					//AC系数解码
 					if (CodedBlockPatternChroma & 2)
 					{
+						TotalCoeff = 0;
 						if (isAe)
 						{
 							cabac.residual_block_cabac(bs, sliceBase, ChromaACLevel[iCbCr][BlkIdx], std::max(0, startIdx - 1), endIdx - 1, 15, RESIDUAL_LEVEL::ChromaACLevel, TotalCoeff, BlkIdx, iCbCr);
@@ -694,6 +712,8 @@ bool Macroblock::residual(BitStream& bs, int startIdx, int endIdx, Cabac& cabac)
 				}
 			}
 		}
+
+
 
 	}
 	else if (sHeader->sps.ChromaArrayType == 3)
@@ -728,8 +748,8 @@ int Macroblock::residual_luma(BitStream& bs, int i16x16DClevel[16], int i16x16AC
 	//先循环外面四个8x8
 	for (size_t i8x8 = 0; i8x8 < 4; i8x8++)
 	{
-		//不是8x8解码或者是cavlc
-		if (!transform_size_8x8_flag || !isAe)
+
+		if (!transform_size_8x8_flag || !isAe)//不是8x8解码或者是cavlc
 		{
 			//在循环里面四个4x4
 			for (size_t i4x4 = 0; i4x4 < 4; i4x4++)
@@ -756,6 +776,7 @@ int Macroblock::residual_luma(BitStream& bs, int i16x16DClevel[16], int i16x16AC
 					}
 					else
 					{
+						//4*4系数，也有可能8*8
 						if (isAe)
 						{
 							cabac.residual_block_cabac(bs, sliceBase, level4x4[BlkIdx], startIdx, endIdx, 16, RESIDUAL_LEVEL::LumaLevel4x4, TotalCoeff, BlkIdx);
@@ -767,15 +788,13 @@ int Macroblock::residual_luma(BitStream& bs, int i16x16DClevel[16], int i16x16AC
 					}
 					//存储当前4x4块非0系数数目
 					mb_luma_4x4_non_zero_count_coeff[BlkIdx] = TotalCoeff;
-					//存储当前8x8块非0系数数目
-					mb_luma_8x8_non_zero_count_coeff[i8x8] += mb_luma_4x4_non_zero_count_coeff[BlkIdx];
 				}
 				else if (mode == H264_MB_PART_PRED_MODE::Intra_16x16)
 				{
 					//因为取走了一个直流分量所以最多15个
 					for (size_t i = 0; i < 15; i++)
 					{
-						i16x16AClevel[i8x8 * 4 + i4x4][i] = 0;
+						i16x16AClevel[BlkIdx][i] = 0;
 					}
 
 				}
@@ -783,17 +802,19 @@ int Macroblock::residual_luma(BitStream& bs, int i16x16DClevel[16], int i16x16AC
 				{
 					for (size_t i = 0; i < 16; i++)
 					{
-						level4x4[i8x8 * 4 + i4x4][i] = 0;
+						level4x4[BlkIdx][i] = 0;
 					}
 				}
 
-
+				//cavlc，并且8*8模式
 				if (!sHeader->pps.entropy_coding_mode_flag && transform_size_8x8_flag)
 				{
 					for (size_t i = 0; i < 16; i++)
 					{
+						//直接把4*4解码的系数给level8x8
 						level8x8[i8x8][4 * i + i4x4] = level4x4[i8x8 * 4 + i4x4][i];
 					}
+					//存储当前8x8块非0系数数目
 					mb_luma_8x8_non_zero_count_coeff[i8x8] += mb_luma_4x4_non_zero_count_coeff[i8x8 * 4 + i4x4];
 				}
 			}
@@ -801,11 +822,15 @@ int Macroblock::residual_luma(BitStream& bs, int i16x16DClevel[16], int i16x16AC
 		}
 		else if (CodedBlockPatternLuma & (1 << i8x8))
 		{
-
+			// 8*8 cabac
+			cabac.residual_block_cabac(bs, sliceBase, level8x8[i8x8], 4 * startIdx, 4 * endIdx + 3, 64, RESIDUAL_LEVEL::LumaLevel8x8, TotalCoeff, i8x8);
 		}
 		else
 		{
-
+			for (size_t i = 0; i < 64; i++)
+			{
+				level8x8[i8x8][i] = 0;
+			}
 		}
 	}
 

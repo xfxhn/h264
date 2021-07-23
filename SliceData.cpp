@@ -98,7 +98,7 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice)
 
 					Slice->CurrMbAddr = CurrMbAddr;
 
-
+					Slice->mbCount++;
 					CurrMbAddr = NextMbAddress(sHeader, CurrMbAddr);
 
 				}
@@ -118,11 +118,13 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice)
 
 				Slice->CurrMbAddr = CurrMbAddr;
 
+
 				mb_skip_flag = cabac.decode_mb_skip_flag(bs, Slice);
 
 
 				if (mb_skip_flag)
 				{
+					Slice->mbCount++;
 					//表示本宏块没有残差数据，相应的像素值只需要利用之前已经解码的I/P帧来预测获得
 
 
@@ -145,7 +147,8 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice)
 			Slice->mbY = (CurrMbAddr / Slice->sHeader->sps.PicWidthInMbs);
 
 			Slice->CurrMbAddr = CurrMbAddr;
-			
+			Slice->mbCount++;
+
 			sHeader->PicSizeInMbs;
 			Slice->macroblock[Slice->CurrMbAddr]->macroblock_layer(bs, Slice, this, cabac);
 
@@ -204,7 +207,10 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice)
 		CurrMbAddr = NextMbAddress(sHeader, CurrMbAddr);
 	} while (moreDataFlag);
 
-	int a = 1;
+	if (Slice->mbCount == Slice->PicSizeInMbs)
+	{
+		int a = 0;
+	}
 	return false;
 }
 

@@ -28,6 +28,7 @@ ParseSlice::ParseSlice(ParseNalu& nalu, SliceHeader* sHeader) :nalu(nalu)
 
 
 	sliceNumber = 0;
+	mbCount = 0;
 }
 
 bool ParseSlice::parse()

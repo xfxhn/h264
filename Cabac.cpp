@@ -2725,9 +2725,18 @@ int Cabac::decode_mb_type_in_I_slices(ParseSlice* Slice, BitStream& bs, int ctxI
 							synElVal = 2; //2 (I_16x16_1_0_0)
 						}
 					}
-					else
+					else  //10001
 					{
+						ctxIdx = ctxIdxOffset + ((ctxIdxOffset == 3) ? 7 : 3); //(b3 != 0) ? 6: 7; b3=0; //Table 9-41
 
+						if (binVal == 0) //(100010)b
+						{
+							synElVal = 3; //3 (I_16x16_2_0_0)
+						}
+						else //if (binVal == 1) //(100011)b
+						{
+							synElVal = 4; //4 (I_16x16_3_0_0)
+						}
 					}
 				}
 				else   // 1001
