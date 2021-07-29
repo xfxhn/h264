@@ -201,7 +201,7 @@ bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* s
 	uint32_t  numMbPart = NumMbPart(fix_mb_type, fix_slice_type);
 	//fix_slice_type == SLIECETYPE::H264_SLIECE_TYPE_I && fix_mb_type == 25
 
-	
+
 	if (mbType == H264_MB_TYPE::I_PCM)  //I_PCM 不经过预测，变换，量化
 	{
 		while (!byte_aligned(bs))
@@ -236,6 +236,7 @@ bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* s
 	}
 	else
 	{
+
 		bool noSubMbPartSizeLessThan8x8Flag = true;
 		//子宏块  //（只对 8×8MB 分割的帧内 MB）确定每一子宏块的子宏块分割，每一宏块分割的表 0 和 / 或表1的参考图象；每一宏块子分割的差分编码运动矢量。
 		if (mbType != H264_MB_TYPE::I_NxN &&
@@ -349,6 +350,8 @@ bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* s
 			residual(bs, 0, 15, cabac);
 		}
 	}
+
+
 
 	//QPY = ( ( QPY,PREV + mb_qp_delta + 52 + 2 * QpBdOffsetY ) % ( 52 + QpBdOffsetY ) ) －QpBdOffsetY
 	//QpBdOffsetY  亮度偏移

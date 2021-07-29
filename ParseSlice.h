@@ -19,7 +19,14 @@ public:
 	const ParseNalu& nalu;
 	SliceHeader* sHeader;
 	Macroblock** macroblock;
+private:
+
 public:
+
+	uint8_t** lumaData;//存储解码后图片的Y分量数据
+	uint8_t** chromaCbData;//存储解码后图片的cb分量数据
+	uint8_t** chromaCrData;//存储解码后图片的cr分量数据
+
 	uint32_t	CurrMbAddr;  //当前宏块的位置
 	uint32_t	mbX;        //当前宏块x的位置（相对于图片左上角位置）
 	uint32_t	mbY;		//当前宏块y的位置（相对于图片左上角位置）
@@ -27,9 +34,7 @@ public:
 
 	int LevelScale4x4[6][4][4];
 	int LevelScale8x8[6][8][8];
-	uint8_t** lumaData;//存储解码后图片的Y分量数据
-	uint8_t** chromaCbData;//存储解码后图片的cb分量数据
-	uint8_t** chromaCrData;//存储解码后图片的cr分量数据
+
 
 
 
@@ -81,6 +86,7 @@ public:
 	void Picture_construction_process_prior_to_deblocking_filter_process(int* u, const char* type, const size_t BlkIdx, const bool isLuam, bool isChromaCb = true);
 
 	void scaling(bool isLuam, bool isChromaCb);
+	void free();
 
 private:
 	void transformDecodeChromaArrayTypeEqualTo3Process(bool isChromaCb);

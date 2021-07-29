@@ -207,10 +207,7 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice)
 		CurrMbAddr = NextMbAddress(sHeader, CurrMbAddr);
 	} while (moreDataFlag);
 
-	if (Slice->mbCount == Slice->PicSizeInMbs)
-	{
-		int a = 0;
-	}
+
 	return false;
 }
 

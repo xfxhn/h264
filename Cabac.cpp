@@ -2728,6 +2728,7 @@ int Cabac::decode_mb_type_in_I_slices(ParseSlice* Slice, BitStream& bs, int ctxI
 					else  //10001
 					{
 						ctxIdx = ctxIdxOffset + ((ctxIdxOffset == 3) ? 7 : 3); //(b3 != 0) ? 6: 7; b3=0; //Table 9-41
+						binVal = DecodeBin(bs, false, ctxIdx); //binIdx = 5;
 
 						if (binVal == 0) //(100010)b
 						{

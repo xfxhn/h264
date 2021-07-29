@@ -35,12 +35,6 @@ bool ParseSlice::parse()
 {
 
 
-	lumaData = new uint8_t * [PicWidthInSamplesL];
-	for (size_t i = 0; i < PicWidthInSamplesL; i++)
-	{
-		lumaData[i] = new uint8_t[PicHeightInSamplesL]();
-	}
-
 	chromaCbData = new uint8_t * [PicWidthInSamplesC];
 	chromaCrData = new uint8_t * [PicWidthInSamplesC];
 
@@ -49,6 +43,21 @@ bool ParseSlice::parse()
 		chromaCbData[i] = new uint8_t[PicHeightInSamplesC]();
 		chromaCrData[i] = new uint8_t[PicHeightInSamplesC]();
 	}
+
+
+
+
+
+	lumaData = new uint8_t * [PicWidthInSamplesL];
+	for (size_t i = 0; i < PicWidthInSamplesL; i++)
+	{
+		lumaData[i] = new uint8_t[PicHeightInSamplesL]();
+	}
+
+
+
+
+
 
 	this->macroblock = new Macroblock * [PicSizeInMbs];
 
@@ -59,7 +68,24 @@ bool ParseSlice::parse()
 
 	return false;
 }
+void ParseSlice::free()
+{
 
+	if (chromaCbData)
+	{
+		for (size_t i = 0; i < PicWidthInSamplesC; i++)
+		{
+			if (chromaCbData[i])
+			{
+				delete[] chromaCbData[i];
+				chromaCbData[i] = nullptr;
+			}
+		}
+		delete[] chromaCbData;
+		chromaCbData = nullptr;
+	}
+
+}
 void ParseSlice::init()
 {
 
@@ -69,6 +95,7 @@ void ParseSlice::init()
 
 ParseSlice::~ParseSlice()
 {
+
 	if (macroblock)
 	{
 		for (size_t i = 0; i < PicSizeInMbs; i++)
@@ -82,6 +109,8 @@ ParseSlice::~ParseSlice()
 		delete[] macroblock;
 		macroblock = nullptr;
 	}
+
+
 	if (lumaData)
 	{
 		for (size_t i = 0; i < PicWidthInSamplesL; i++)
@@ -1862,7 +1891,6 @@ void ParseSlice::Picture_construction_process_prior_to_deblocking_filter_process
 		int MbHeightC = sHeader->sps.MbHeightC;
 
 
-
 		if (sHeader->sps.ChromaArrayType == 1 || sHeader->sps.ChromaArrayType == 2) // YUV420 or YUV422
 		{
 			//6.4.7 Inverse 4x4 chroma block scanning process chroma4x4BlkIdx
@@ -1880,6 +1908,8 @@ void ParseSlice::Picture_construction_process_prior_to_deblocking_filter_process
 			{
 				chromaData = chromaCrData;
 			}
+
+
 			for (size_t i = 0; i < MbWidthC; i++)
 			{
 				for (size_t j = 0; j < MbHeightC; j++)
@@ -2029,6 +2059,7 @@ void ParseSlice::scaling(bool isLuam, bool isChromaCb)
 		}
 	}
 }
+
 //transformDecodeChromaArrayTypeEqualTo3Process
 void ParseSlice::transformDecodeChromaArrayTypeEqualTo3Process(bool isChromaCb)
 {
