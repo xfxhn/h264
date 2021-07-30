@@ -134,7 +134,7 @@ public:
 	uint8_t luma16x16PredSamples[16][16]; //存储16*16亮度块预测样点值
 	uint8_t chromaPredSamples[8][16]; //存储色度块预测样点值  //最大422 8*16
 
-	uint8_t predL[16][16];  //存储亮度预测样点值
+	//uint8_t predL[16][16];  //存储亮度预测样点值
 
 
 

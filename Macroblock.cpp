@@ -108,7 +108,15 @@ Macroblock::Macroblock()
 
 	memset(Intra4x4PredMode, 0, sizeof(uint8_t) * 16);
 
-	memset(predL, 0, sizeof(uint8_t) * 16 * 16);
+	/*memset(predL, 0, sizeof(uint8_t) * 16 * 16);*/
+
+
+
+	memset(lumaPredSamples, 0, sizeof(uint8_t) * 16 * 4 * 4);
+
+	memset(luma16x16PredSamples, 0, sizeof(uint8_t) * 16 * 16);
+
+	memset(chromaPredSamples, 0, sizeof(uint8_t) * 8 * 16);
 
 	intra_chroma_pred_mode = 0;
 	QPY = 0;

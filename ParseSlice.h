@@ -66,16 +66,22 @@ public:
 
 
 	void transformDecode4x4LuamResidualProcess();
-	void transformDecode4x4ChromaResidualProcess(bool isChromaCb);
+
+	void transformDecode8x8LuamResidualProcess();
 
 	void transformDecode16x16LuamResidualProcess(const int i16x16DClevel[16], const int i16x16AClevel[16][16], bool isLuam, bool isChromaCb);
 
+	void transformDecodeChromaResidualProcess(bool isChromaCb);
 
-	void inverseScanner4x4Process(const int value[16], int c[4][4]);
 
-	void inverseScanner8x8Process(int value[64], int c[8][8]);
 
-	void scalingTransformProcess(int c[4][4], int r[4][4], bool isLuam, bool isChromaCb);
+
+
+
+
+
+
+
 
 	void getChromaQuantisationParameters(bool isChromaCb);
 	void getIntra4x4PredMode(size_t luma4x4BlkIdx, bool isLuam);
@@ -100,5 +106,14 @@ private:
 	void Intra_16x16_prediction(bool isLuam);
 
 	void Intra_chroma_prediction(bool isChromaCb);
+
+	void inverseScanner4x4Process(const int value[16], int c[4][4]);
+
+	void inverseScanner8x8Process(int value[64], int c[8][8]);
+
+
+	void scalingTransformProcess(int c[4][4], int r[4][4], bool isLuam, bool isChromaCb);
+
+	void Scaling_and_transformation_process_for_residual_8x8_blocks(int c[8][8], int r[8][8], bool isLuam, bool isChromaCb);
 };
 

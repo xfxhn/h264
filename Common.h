@@ -44,7 +44,7 @@ inline int Clip3(int x, int y, int z)
 	}
 }
 
-inline int InverseRasterScan(int32_t a, int32_t b, int32_t c, int32_t d, int32_t e)
+inline int InverseRasterScan(int a, int b, int c, int d, int e)
 {
 	int ret = 0;
 
@@ -70,6 +70,8 @@ inline bool isInterframe(H264_MB_PART_PRED_MODE mode)
 {
 	return (mode == H264_MB_PART_PRED_MODE::Pred_L0) || (mode == H264_MB_PART_PRED_MODE::Pred_L1) || (mode == H264_MB_PART_PRED_MODE::BiPred);
 }
+
+
 
 string printHex(unsigned char* data, int len);
 
