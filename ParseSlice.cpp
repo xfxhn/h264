@@ -301,8 +301,8 @@ void ParseSlice::Intra_4x4_prediction(size_t luma4x4BlkIdx, bool isLuam)
 	//参考文档https://blog.csdn.net/shaqoneal/article/details/78820128
 
 
-	int referenceCoordinateX[13] = { -1, -1, -1, -1, -1,  0,  1,  2,  3,  4,  5,  6,  7 };
-	int referenceCoordinateY[13] = { -1,  0,  1,  2,  3, -1, -1, -1, -1, -1, -1, -1, -1 };
+	constexpr int referenceCoordinateX[13] = { -1, -1, -1, -1, -1,  0,  1,  2,  3,  4,  5,  6,  7 };
+	constexpr int referenceCoordinateY[13] = { -1,  0,  1,  2,  3, -1, -1, -1, -1, -1, -1, -1, -1 };
 
 	/*int referenceCoordinateX[13] = { -1, -1, -1, -1, -1,  0,  1,  2,  3,  4,  5,  6,  7 };
 	int referenceCoordinateY[13] = { 3,  2,  1,  0, -1,   1,  -1, -1, -1, -1, -1, -1, -1 };*/
@@ -599,6 +599,53 @@ void ParseSlice::Intra_4x4_prediction(size_t luma4x4BlkIdx, bool isLuam)
 	}
 
 #undef P;
+
+}
+
+void ParseSlice::Intra_8x8_prediction(size_t luma8x8BlkIdx, bool isLuam)
+{
+
+	constexpr int referenceCoordinateX[25] = { -1, -1, -1, -1, -1, -1, -1, -1, -1,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15 };
+	constexpr int referenceCoordinateY[25] = { -1,  0,  1,  2,  3,  4,  5,  6,  7, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 };
+
+	int p[9 * 17] = { 0 }; //x范围[-1,15]，y范围[-1,7]，共9行17列，原点为pp[1][1]
+
+	memset(p, -1, sizeof(int) * 9 * 17);
+#define P(x, y)      p[((y) + 1) * 17 + ((x) + 1)]
+
+	const int xO = InverseRasterScan(luma8x8BlkIdx, 8, 8, 16, 0);
+	const int yO = InverseRasterScan(luma8x8BlkIdx, 8, 8, 16, 1);
+
+	for (size_t i = 0; i < 25; i++)
+	{
+
+		const int x = referenceCoordinateX[i];
+		const int y = referenceCoordinateY[i];
+		const int xN = xO + x;
+		const int yN = yO + y;
+
+		int maxW = 0;
+		int maxH = 0;
+		if (isLuam)
+		{
+			maxW = maxH = 16;
+		}
+		else
+		{
+			maxH = sHeader->sps.MbHeightC;
+			maxW = sHeader->sps.MbWidthC;
+		}
+		int mbAddrN = NA;
+		int xW = NA;
+		int yW = NA;
+		getMbAddrNAndLuma4x4BlkIdxN(mbAddrN, xN, yN, maxW, maxH, xW, yW);
+
+
+
+	}
+
+
+#undef P
 
 }
 
@@ -1276,6 +1323,7 @@ void ParseSlice::getMbAddrNAndLuma4x4BlkIdxN(
 }
 
 
+//4*4亮度残差
 void ParseSlice::transformDecode4x4LuamResidualProcess()
 {
 
@@ -1352,10 +1400,27 @@ void ParseSlice::transformDecode8x8LuamResidualProcess()
 		int c[8][8] = { 0 };
 		//逆zigzag扫描
 		inverseScanner8x8Process(macroblock[CurrMbAddr]->level8x8[luma8x8BlkIdx], c);
+		int r[8][8] = { 0 };
+		Scaling_and_transformation_process_for_residual_8x8_blocks(c, r, true, false);
+
+
+		//对近似均匀分布的语法元素，在编码和解码时选择旁路（bypass）模式，可以免除上下文建模，提高编解码的速度,不经过量化和dct。
+		if (macroblock[CurrMbAddr]->TransformBypassModeFlag
+			&& macroblock[CurrMbAddr]->mode == H264_MB_PART_PRED_MODE::Intra_8x8
+			&& (macroblock[CurrMbAddr]->Intra4x4PredMode[luma8x8BlkIdx] == 0 || macroblock[CurrMbAddr]->Intra4x4PredMode[luma8x8BlkIdx] == 1)
+			)
+		{
+			printError("不支持旁路变换解码");
+			exit(0);
+		}
+
+		int xO = InverseRasterScan(luma8x8BlkIdx, 8, 8, 16, 0);
+		int yO = InverseRasterScan(luma8x8BlkIdx, 8, 8, 16, 1);
 	}
 
 }
 
+//16*16亮度残差
 void ParseSlice::transformDecode16x16LuamResidualProcess(const int i16x16DClevel[16], const int i16x16AClevel[16][16], bool isLuam, bool isChromaCb)
 {
 
@@ -1440,6 +1505,7 @@ void ParseSlice::transformDecode16x16LuamResidualProcess(const int i16x16DClevel
 
 }
 
+//色度解码
 void ParseSlice::transformDecodeChromaResidualProcess(bool isChromaCb)
 {
 	if (sHeader->sps.ChromaArrayType == 0)
@@ -1692,7 +1758,8 @@ void ParseSlice::scalingTransformProcess(int c[4][4], int r[4][4], bool isLuam, 
 
 	bool sMbFlag = false;
 	//如果mb_type=si，或者为sp条带的帧内预测模式
-	if (macroblock[CurrMbAddr]->fix_slice_type == SLIECETYPE::H264_SLIECE_TYPE_SI || (macroblock[CurrMbAddr]->fix_slice_type == SLIECETYPE::H264_SLIECE_TYPE_SP && isInterMode(macroblock[CurrMbAddr]->mode)))
+	if (macroblock[CurrMbAddr]->fix_slice_type == SLIECETYPE::H264_SLIECE_TYPE_SI
+		|| (macroblock[CurrMbAddr]->fix_slice_type == SLIECETYPE::H264_SLIECE_TYPE_SP && isInterframe(macroblock[CurrMbAddr]->mode)))
 	{
 		sMbFlag = true;
 	}
@@ -1758,7 +1825,7 @@ void ParseSlice::scalingTransformProcess(int c[4][4], int r[4][4], bool isLuam, 
 					}
 					else //if (qP < 24)
 					{
-						d[i][j] = (c[i][j] * LevelScale4x4[qP % 6][i][j] + static_cast<int>(pow(2, 3 - qP / 6))) >> (4 - qP / 6);
+						d[i][j] = (c[i][j] * LevelScale4x4[qP % 6][i][j] + static_cast<int>(std::pow(2, 3 - qP / 6))) >> (4 - qP / 6);
 					}
 				}
 			}
@@ -1811,6 +1878,8 @@ void ParseSlice::scalingTransformProcess(int c[4][4], int r[4][4], bool isLuam, 
 //用于残差8x8块的缩放和变换过程
 void ParseSlice::Scaling_and_transformation_process_for_residual_8x8_blocks(int c[8][8], int r[8][8], bool isLuam, bool isChromaCb)
 {
+	getChromaQuantisationParameters(isChromaCb);
+
 	int bitDepth = 0;
 	int qP = 0;
 	if (isLuam)
@@ -1823,10 +1892,106 @@ void ParseSlice::Scaling_and_transformation_process_for_residual_8x8_blocks(int 
 		bitDepth = sHeader->sps.BitDepthC;
 		qP = macroblock[CurrMbAddr]->QP1C;
 	}
-
+	//这里表示要旁路变换，不用经过量化dct变换过程
 	if (macroblock[CurrMbAddr]->TransformBypassModeFlag)
 	{
+		memcpy(r, c, sizeof(int) * 16);
+	}
+	else
+	{
+		//8.5.13.1 Scaling process for residual 8x8 blocks
+		int d[8][8] = { 0 };
 
+		for (int32_t i = 0; i < 8; i++)
+		{
+			for (int32_t j = 0; j < 8; j++)
+			{
+				if (qP >= 36)
+				{
+					//这里多了个weightScale4x4，即多乘上了16,故在后面向右移了4位，即将原来书上的">>(QP/6-2)"变成了">>(QP/6-6）
+					d[i][j] = (c[i][j] * LevelScale8x8[qP % 6][i][j]) << (qP / 6 - 6);
+				}
+				else //if (qP < 36)
+				{
+					d[i][j] = (c[i][j] * LevelScale8x8[qP % 6][i][j] + static_cast<int>(std::pow(2, 5 - qP / 6))) >> (6 - qP / 6);
+				}
+			}
+		}
+
+
+		//类似4x4 IDC离散余弦反变换蝶形运算
+
+		int g[8][8];
+		int m[8][8];
+
+		for (int i = 0; i < 8; i++) //先行变换
+		{
+			int ei0 = d[i][0] + d[i][4];
+			int ei1 = -d[i][3] + d[i][5] - d[i][7] - (d[i][7] >> 1);
+			int ei2 = d[i][0] - d[i][4];
+			int ei3 = d[i][1] + d[i][7] - d[i][3] - (d[i][3] >> 1);
+			int ei4 = (d[i][2] >> 1) - d[i][6];
+			int ei5 = -d[i][1] + d[i][7] + d[i][5] + (d[i][5] >> 1);
+			int ei6 = d[i][2] + (d[i][6] >> 1);
+			int ei7 = d[i][3] + d[i][5] + d[i][1] + (d[i][1] >> 1);
+
+			int fi0 = ei0 + ei6;
+			int fi1 = ei1 + (ei7 >> 2);
+			int fi2 = ei2 + ei4;
+			int fi3 = ei3 + (ei5 >> 2);
+			int fi4 = ei2 - ei4;
+			int fi5 = (ei3 >> 2) - ei5;
+			int fi6 = ei0 - ei6;
+			int fi7 = ei7 - (ei1 >> 2);
+
+			g[i][0] = fi0 + fi7;
+			g[i][1] = fi2 + fi5;
+			g[i][2] = fi4 + fi3;
+			g[i][3] = fi6 + fi1;
+			g[i][4] = fi6 - fi1;
+			g[i][5] = fi4 - fi3;
+			g[i][6] = fi2 - fi5;
+			g[i][7] = fi0 - fi7;
+		}
+
+		for (int j = 0; j < 8; j++) //再列变换
+		{
+			int h0j = g[0][j] + g[4][j];
+			int h1j = -g[3][j] + g[5][j] - g[7][j] - (g[7][j] >> 1);
+			int h2j = g[0][j] - g[4][j];
+			int h3j = g[1][j] + g[7][j] - g[3][j] - (g[3][j] >> 1);
+			int h4j = (g[2][j] >> 1) - g[6][j];
+			int h5j = -g[1][j] + g[7][j] + g[5][j] + (g[5][j] >> 1);
+			int h6j = g[2][j] + (g[6][j] >> 1);
+			int h7j = g[3][j] + g[5][j] + g[1][j] + (g[1][j] >> 1);
+
+			int k0j = h0j + h6j;
+			int k1j = h1j + (h7j >> 2);
+			int k2j = h2j + h4j;
+			int k3j = h3j + (h5j >> 2);
+			int k4j = h2j - h4j;
+			int k5j = (h3j >> 2) - h5j;
+			int k6j = h0j - h6j;
+			int k7j = h7j - (h1j >> 2);
+
+			m[0][j] = k0j + k7j;
+			m[1][j] = k2j + k5j;
+			m[2][j] = k4j + k3j;
+			m[3][j] = k6j + k1j;
+			m[4][j] = k6j - k1j;
+			m[5][j] = k4j - k3j;
+			m[6][j] = k2j - k5j;
+			m[7][j] = k0j - k7j;
+		}
+
+		//------------------------------------
+		for (int i = 0; i <= 7; i++)
+		{
+			for (int j = 0; j <= 7; j++)
+			{
+				r[i][j] = (m[i][j] + 32) >> 6;
+			}
+		}
 	}
 }
 //色度量化参数和缩放功能的推导过程
@@ -2123,12 +2288,10 @@ void ParseSlice::transformDecodeIntra_16x16DCProcess(int c[4][4], int dcY[4][4],
 {
 
 	int qP = 0;
-	//int BitDepth = sHeader->sps.BitDepthY;
 
 	if (isLuam)
 	{
 		qP = macroblock[CurrMbAddr]->QP1Y;
-		//int BitDepth = sHeader->sps.BitDepthY;
 	}
 	else
 	{

@@ -103,6 +103,8 @@ private:
 
 	void Intra_4x4_prediction(size_t luma4x4BlkIdx, bool isLuam);
 
+	void Intra_8x8_prediction(size_t luma8x8BlkIdx, bool isLuam);
+
 	void Intra_16x16_prediction(bool isLuam);
 
 	void Intra_chroma_prediction(bool isChromaCb);
