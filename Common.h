@@ -25,7 +25,7 @@ void rbsp_trailing_bits(BitStream& bs);
 
 inline void printError(const char* err) {
 
-	cout << err << endl;
+	std::cout << err << std::endl;
 }
 
 inline int Clip3(int x, int y, int z)

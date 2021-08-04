@@ -164,7 +164,7 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice)
 			}
 			else if (Slice->macroblock[Slice->CurrMbAddr]->mode == H264_MB_PART_PRED_MODE::Intra_8x8)
 			{
-
+				Slice->transformDecode8x8LuamResidualProcess();
 			}
 			else if (Slice->macroblock[Slice->CurrMbAddr]->mode == H264_MB_PART_PRED_MODE::Intra_16x16)
 			{

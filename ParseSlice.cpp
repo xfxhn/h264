@@ -293,7 +293,7 @@ void ParseSlice::Intra_4x4_prediction(size_t luma4x4BlkIdx, bool isLuam)
 	//9种帧内4x4预测模式
 	getIntra4x4PredMode(luma4x4BlkIdx, isLuam);
 
-	int Intra4x4PredMode = macroblock[CurrMbAddr]->Intra4x4PredMode[luma4x4BlkIdx];
+	const uint8_t Intra4x4PredMode = macroblock[CurrMbAddr]->Intra4x4PredMode[luma4x4BlkIdx];
 
 
 
@@ -752,6 +752,244 @@ void ParseSlice::Intra_8x8_prediction(size_t luma8x8BlkIdx, bool isLuam)
 
 	memcpy(p, p1, sizeof(int32_t) * 9 * 17);
 
+	getIntra8x8PredMode(luma8x8BlkIdx, isLuam);
+
+
+	const uint8_t Intra8x8PredMode = macroblock[CurrMbAddr]->Intra8x8PredMode[luma8x8BlkIdx];
+
+	if (Intra8x8PredMode == 0) //Intra_8x8_Vertical
+	{
+		if (P(0, -1) >= 0 && P(1, -1) >= 0 && P(2, -1) >= 0 && P(3, -1) >= 0 && P(4, -1) >= 0 && P(5, -1) >= 0 && P(6, -1) >= 0 && P(7, -1) >= 0)
+		{
+
+			for (size_t y = 0; y < 8; y++)
+			{
+				for (size_t x = 0; x < 8; x++)
+				{
+					macroblock[CurrMbAddr]->luma8x8PredSamples[luma8x8BlkIdx][x][y] = P(x, -1);
+				}
+			}
+
+		}
+	}
+	else if (Intra8x8PredMode == 1)//Intra_8x8_Horizontal
+	{
+		if (P(-1, 0) >= 0 && P(-1, 1) >= 0 && P(-1, 2) >= 0 && P(-1, 3) >= 0 && P(-1, 4) >= 0 && P(-1, 5) >= 0 && P(-1, 6) >= 0 && P(-1, 7) >= 0)
+		{
+			for (size_t y = 0; y < 8; y++)
+			{
+				for (size_t x = 0; x < 8; x++)
+				{
+					macroblock[CurrMbAddr]->luma8x8PredSamples[luma8x8BlkIdx][x][y] = P(-1, y);
+				}
+			}
+		}
+	}
+	else if (Intra8x8PredMode == 2) //Intra_8x8_DC
+	{
+		int val = 0;
+		if (P(0, -1) >= 0 && P(1, -1) >= 0 && P(2, -1) >= 0 && P(3, -1) >= 0 && P(4, -1) >= 0 && P(5, -1) >= 0 && P(6, -1) >= 0 && P(7, -1) >= 0
+			&& P(-1, 0) >= 0 && P(-1, 1) >= 0 && P(-1, 2) >= 0 && P(-1, 3) >= 0 && P(-1, 4) >= 0 && P(-1, 5) >= 0 && P(-1, 6) >= 0 && P(-1, 7) >= 0
+			)
+		{
+			val = (P(0, -1) + P(1, -1) + P(2, -1) + P(3, -1) + P(4, -1) + P(5, -1) + P(6, -1) + P(7, -1)
+				+ P(-1, 0) + P(-1, 1) + P(-1, 2) + P(-1, 3) + P(-1, 4) + P(-1, 5) + P(-1, 6) + P(-1, 7) + 8) >> 4;
+		}
+		else if ((P(0, -1) < 0 || P(1, -1) < 0 || P(2, -1) < 0 || P(3, -1) < 0 || P(4, -1) < 0 || P(5, -1) < 0 || P(6, -1) < 0 || P(7, -1) < 0)
+			&& (P(-1, 0) >= 0 && P(-1, 1) >= 0 && P(-1, 2) >= 0 && P(-1, 3) >= 0 && P(-1, 4) >= 0 && P(-1, 5) >= 0 && P(-1, 6) >= 0 && P(-1, 7) >= 0)
+			)
+		{
+			val = (P(-1, 0) + P(-1, 1) + P(-1, 2) + P(-1, 3) + P(-1, 4) + P(-1, 5) + P(-1, 6) + P(-1, 7) + 4) >> 3;
+		}
+		else if ((P(0, -1) >= 0 && P(1, -1) >= 0 && P(2, -1) >= 0 && P(3, -1) >= 0 && P(4, -1) >= 0 && P(5, -1) >= 0 && P(6, -1) >= 0 && P(7, -1) >= 0)
+			&& (P(-1, 0) < 0 || P(-1, 1) < 0 || P(-1, 2) < 0 || P(-1, 3) < 0 || P(-1, 4) < 0 || P(-1, 5) < 0 || P(-1, 6) < 0 || P(-1, 7) < 0)
+			)
+		{
+			val = (P(0, -1) + P(1, -1) + P(2, -1) + P(3, -1) + P(4, -1) + P(5, -1) + P(6, -1) + P(7, -1) + 4) >> 3;
+		}
+		else //some samples p[ x, -1 ], with x = 0..7, and some samples p[ -1, y ], with y = 0..7, are marked as "not available for Intra_8x8 prediction")
+		{
+			val = 1 << (sHeader->sps.BitDepthY - 1); //mean_value = 1 << (8 - 1) = 128;
+		}
+
+
+		for (size_t y = 0; y < 8; y++)
+		{
+			for (size_t x = 0; x < 8; x++)
+			{
+				macroblock[CurrMbAddr]->luma8x8PredSamples[luma8x8BlkIdx][x][y] = val;
+			}
+		}
+	}
+	else if (Intra8x8PredMode == 3) //Intra_8x8_Diagonal_Down_Left
+	{
+		if (P(0, -1) >= 0 && P(1, -1) >= 0 && P(2, -1) >= 0 && P(3, -1) >= 0 && P(4, -1) >= 0 && P(5, -1) >= 0 && P(6, -1) >= 0 && P(7, -1) >= 0
+			&& P(8, -1) >= 0 && P(9, -1) >= 0 && P(10, -1) >= 0 && P(11, -1) >= 0 && P(12, -1) >= 0 && P(13, -1) >= 0 && P(14, -1) >= 0 && P(15, -1) >= 0
+			)
+		{
+			for (size_t y = 0; y < 8; y++)
+			{
+				for (size_t x = 0; x < 8; x++)
+				{
+					if (x == 7 && y == 7)
+					{
+						macroblock[CurrMbAddr]->luma8x8PredSamples[luma8x8BlkIdx][x][y] = (P(14, -1) + 3 * P(15, -1) + 2) >> 2; //red8x8L[y * 8 + x]
+					}
+					else //if (x != 7 || y != 7)
+					{
+						macroblock[CurrMbAddr]->luma8x8PredSamples[luma8x8BlkIdx][x][y] = (P(x + y, -1) + 2 * P(x + y + 1, -1) + P(x + y + 2, -1) + 2) >> 2; //red8x8L[y * 8 + x]
+					}
+				}
+			}
+		}
+	}
+	else if (Intra8x8PredMode == 4) //Intra_8x8_Diagonal_Down_Right
+	{
+		if (P(0, -1) >= 0 && P(1, -1) >= 0 && P(2, -1) >= 0 && P(3, -1) >= 0 && P(4, -1) >= 0 && P(5, -1) >= 0 && P(6, -1) >= 0 && P(7, -1) >= 0
+			&& P(-1, -1) >= 0 && P(-1, 0) >= 0 && P(-1, 1) >= 0 && P(-1, 2) >= 0 && P(-1, 3) >= 0 && P(-1, 4) >= 0 && P(-1, 5) >= 0 && P(-1, 6) >= 0 && P(-1, 7) >= 0
+			)
+		{
+			for (size_t y = 0; y < 8; y++)
+			{
+				for (size_t x = 0; x < 8; x++)
+				{
+					if (x > y)
+					{
+						macroblock[CurrMbAddr]->luma8x8PredSamples[luma8x8BlkIdx][x][y] = (P(x - y - 2, -1) + 2 * P(x - y - 1, -1) + P(x - y, -1) + 2) >> 2; //red8x8L[y * 8 + x]
+					}
+					else if (x < y)
+					{
+						macroblock[CurrMbAddr]->luma8x8PredSamples[luma8x8BlkIdx][x][y] = (P(-1, y - x - 2) + 2 * P(-1, y - x - 1) + P(-1, y - x) + 2) >> 2; //red8x8L[y * 8 + x]
+					}
+					else //if (x == y)
+					{
+						macroblock[CurrMbAddr]->luma8x8PredSamples[luma8x8BlkIdx][x][y] = (P(0, -1) + 2 * P(-1, -1) + P(-1, 0) + 2) >> 2; //red8x8L[y * 8 + x]
+					}
+				}
+			}
+		}
+	}
+	else if (Intra8x8PredMode == 5)//Intra_8x8_Vertical_Right
+	{
+		if (P(0, -1) >= 0 && P(1, -1) >= 0 && P(2, -1) >= 0 && P(3, -1) >= 0 && P(4, -1) >= 0 && P(5, -1) >= 0 && P(6, -1) >= 0 && P(7, -1) >= 0
+			&& P(-1, -1) >= 0 && P(-1, 0) >= 0 && P(-1, 1) >= 0 && P(-1, 2) >= 0 && P(-1, 3) >= 0 && P(-1, 4) >= 0 && P(-1, 5) >= 0 && P(-1, 6) >= 0 && P(-1, 7) >= 0
+			)
+		{
+			for (size_t y = 0; y < 8; y++)
+			{
+				for (size_t x = 0; x < 8; x++)
+				{
+					size_t zVR = 2 * x - y;
+
+					if (zVR == 0 || zVR == 2 || zVR == 4 || zVR == 6 || zVR == 8 || zVR == 10 || zVR == 12 || zVR == 14)
+					{
+						macroblock[CurrMbAddr]->luma8x8PredSamples[luma8x8BlkIdx][x][y] = (P(x - (y >> 1) - 1, -1) + P(x - (y >> 1), -1) + 1) >> 1; //red8x8L[y * 8 + x]
+					}
+					else if (zVR == 1 || zVR == 3 || zVR == 5 || zVR == 7 || zVR == 9 || zVR == 11 || zVR == 13)
+					{
+						macroblock[CurrMbAddr]->luma8x8PredSamples[luma8x8BlkIdx][x][y] = (P(x - (y >> 1) - 2, -1) + 2 * P(x - (y >> 1) - 1, -1) + P(x - (y >> 1), -1) + 2) >> 2; //red8x8L[y * 8 + x]
+					}
+					else if (zVR == -1)
+					{
+						macroblock[CurrMbAddr]->luma8x8PredSamples[luma8x8BlkIdx][x][y] = (P(-1, 0) + 2 * P(-1, -1) + P(0, -1) + 2) >> 2; //red8x8L[y * 8 + x]
+					}
+					else //if (zVR == -2 || zVR == -3 || zVR == -4 || zVR == -5 || zVR == -6 || zVR == -7)
+					{
+						macroblock[CurrMbAddr]->luma8x8PredSamples[luma8x8BlkIdx][x][y] = (P(-1, y - 2 * x - 1) + 2 * P(-1, y - 2 * x - 2) + P(-1, y - 2 * x - 3) + 2) >> 2; //red8x8L[y * 8 + x]
+					}
+				}
+			}
+		}
+	}
+	else if (Intra8x8PredMode == 6) //Intra_8x8_Horizontal_Down
+	{
+		if (P(0, -1) >= 0 && P(1, -1) >= 0 && P(2, -1) >= 0 && P(3, -1) >= 0 && P(4, -1) >= 0 && P(5, -1) >= 0 && P(6, -1) >= 0 && P(7, -1) >= 0
+			&& P(-1, -1) >= 0 && P(-1, 0) >= 0 && P(-1, 1) >= 0 && P(-1, 2) >= 0 && P(-1, 3) >= 0 && P(-1, 4) >= 0 && P(-1, 5) >= 0 && P(-1, 6) >= 0 && P(-1, 7) >= 0
+			)
+		{
+			for (size_t y = 0; y < 8; y++)
+			{
+				for (size_t x = 0; x < 8; x++)
+				{
+					size_t zHD = 2 * y - x;
+
+					if (zHD == 0 || zHD == 2 || zHD == 4 || zHD == 6 || zHD == 8 || zHD == 10 || zHD == 12 || zHD == 14)
+					{
+						macroblock[CurrMbAddr]->luma8x8PredSamples[luma8x8BlkIdx][x][y] = (P(-1, y - (x >> 1) - 1) + P(-1, y - (x >> 1)) + 1) >> 1; //red8x8L[y * 8 + x]
+					}
+					else if (zHD == 1 || zHD == 3 || zHD == 5 || zHD == 7 || zHD == 9 || zHD == 11 || zHD == 13)
+					{
+						macroblock[CurrMbAddr]->luma8x8PredSamples[luma8x8BlkIdx][x][y] = (P(-1, y - (x >> 1) - 2) + 2 * P(-1, y - (x >> 1) - 1) + P(-1, y - (x >> 1)) + 2) >> 2; //red8x8L[y * 8 + x]
+					}
+					else if (zHD == -1)
+					{
+						macroblock[CurrMbAddr]->luma8x8PredSamples[luma8x8BlkIdx][x][y] = (P(-1, 0) + 2 * P(-1, -1) + P(0, -1) + 2) >> 2; //red8x8L[y * 8 + x]
+					}
+					else //if (zHD == -2 || zHD == -3 || zHD == -4 || zHD == -5 || zHD == -6 || zHD == -7)
+					{
+						macroblock[CurrMbAddr]->luma8x8PredSamples[luma8x8BlkIdx][x][y] = (P(x - 2 * y - 1, -1) + 2 * P(x - 2 * y - 2, -1) + P(x - 2 * y - 3, -1) + 2) >> 2; //red8x8L[y * 8 + x]
+					}
+				}
+			}
+		}
+	}
+	else if (Intra8x8PredMode == 7)//Intra_8x8_Vertical_Left
+	{
+		if (P(0, -1) >= 0 && P(1, -1) >= 0 && P(2, -1) >= 0 && P(3, -1) >= 0 && P(4, -1) >= 0 && P(5, -1) >= 0 && P(6, -1) >= 0 && P(7, -1) >= 0
+			&& P(8, -1) >= 0 && P(9, -1) >= 0 && P(10, -1) >= 0 && P(11, -1) >= 0 && P(12, -1) >= 0 && P(13, -1) >= 0 && P(14, -1) >= 0 && P(15, -1) >= 0
+			)
+		{
+			for (size_t y = 0; y < 8; y++)
+			{
+				for (size_t x = 0; x < 8; x++)
+				{
+					if (y == 0 || y == 2 || y == 4 || y == 6)
+					{
+						macroblock[CurrMbAddr]->luma8x8PredSamples[luma8x8BlkIdx][x][y] = (P(x + (y >> 1), -1) + P(x + (y >> 1) + 1, -1) + 1) >> 1; //red8x8L[y * 8 + x]
+					}
+					else //if (y == 1 || y == 3 || y == 5 || y == 7)
+					{
+						macroblock[CurrMbAddr]->luma8x8PredSamples[luma8x8BlkIdx][x][y] = (P(x + (y >> 1), -1) + 2 * P(x + (y >> 1) + 1, -1) + P(x + (y >> 1) + 2, -1) + 2) >> 2; //red8x8L[y * 8 + x]
+					}
+				}
+			}
+		}
+	}
+	else if (Intra8x8PredMode == 8)//Intra_8x8_Horizontal_Up
+	{
+		if (P(-1, 0) >= 0 && P(-1, 1) >= 0 && P(-1, 2) >= 0 && P(-1, 3) >= 0 && P(-1, 4) >= 0 && P(-1, 5) >= 0 && P(-1, 6) >= 0 && P(-1, 7) >= 0)
+		{
+			for (size_t y = 0; y < 8; y++)
+			{
+				for (size_t x = 0; x < 8; x++)
+				{
+					size_t zHU = x + 2 * y;
+
+					if (zHU == 0 || zHU == 2 || zHU == 4 || zHU == 6 || zHU == 8 || zHU == 10 || zHU == 12)
+					{
+						macroblock[CurrMbAddr]->luma8x8PredSamples[luma8x8BlkIdx][x][y] = (P(-1, y + (x >> 1)) + P(-1, y + (x >> 1) + 1) + 1) >> 1; //red8x8L[y * 8 + x]
+					}
+					else if (zHU == 1 || zHU == 3 || zHU == 5 || zHU == 7 || zHU == 9 || zHU == 11)
+					{
+						macroblock[CurrMbAddr]->luma8x8PredSamples[luma8x8BlkIdx][x][y] = (P(-1, y + (x >> 1)) + 2 * P(-1, y + (x >> 1) + 1) + P(-1, y + (x >> 1) + 2) + 2) >> 2; //red8x8L[y * 8 + x]
+					}
+					else if (zHU == 13)
+					{
+						macroblock[CurrMbAddr]->luma8x8PredSamples[luma8x8BlkIdx][x][y] = (P(-1, 6) + 3 * P(-1, 7) + 2) >> 2; //red8x8L[y * 8 + x]
+					}
+					else //if (zHU > 13)
+					{
+						macroblock[CurrMbAddr]->luma8x8PredSamples[luma8x8BlkIdx][x][y] = P(-1, 7); //red8x8L[y * 8 + x]
+					}
+				}
+			}
+		}
+	}
+	else
+	{
+		printError("8*8预测模式错误");
+
+	}
 
 
 
@@ -818,7 +1056,7 @@ void ParseSlice::Intra_16x16_prediction(bool isLuam)
 
 
 
-	uint8_t Intra16x16PredMode = macroblock[CurrMbAddr]->Intra16x16PredMode;
+	const uint8_t Intra16x16PredMode = macroblock[CurrMbAddr]->Intra16x16PredMode;
 	if (Intra16x16PredMode == 0)//垂直
 	{
 		if (P(0, -1) >= 0 && P(1, -1) >= 0 && P(2, -1) >= 0 && P(3, -1) >= 0 && P(4, -1) >= 0 && P(5, -1) >= 0 && P(6, -1) >= 0 && P(7, -1) >= 0
@@ -1424,10 +1662,12 @@ void ParseSlice::getIntra8x8PredMode(size_t luma8x8BlkIdx, bool isLuam)
 
 
 	int intraMxMPredModeA = 0;
-	int intraMxMPredModeB = 0;;
-	if (dcPredModePredictedFlag || (macroblock[mbAddrA]->mode != H264_MB_PART_PRED_MODE::Intra_4x4 && macroblock[mbAddrA]->mode != H264_MB_PART_PRED_MODE::Intra_8x8))
+	int intraMxMPredModeB = 0;
+
+	if (dcPredModePredictedFlag ||
+		(macroblock[mbAddrA]->mode != H264_MB_PART_PRED_MODE::Intra_4x4 && macroblock[mbAddrA]->mode != H264_MB_PART_PRED_MODE::Intra_8x8))
 	{
-		intraMxMPredModeA == 2;//Prediction_Mode_Intra_8x8_DC = 2;
+		intraMxMPredModeA = 2;//Prediction_Mode_Intra_8x8_DC = 2;
 	}
 	else
 	{
@@ -1445,7 +1685,7 @@ void ParseSlice::getIntra8x8PredMode(size_t luma8x8BlkIdx, bool isLuam)
 
 	if (dcPredModePredictedFlag || (macroblock[mbAddrB]->mode != H264_MB_PART_PRED_MODE::Intra_4x4 && macroblock[mbAddrB]->mode != H264_MB_PART_PRED_MODE::Intra_8x8))
 	{
-		intraMxMPredModeB == 2;//Prediction_Mode_Intra_8x8_DC = 2;
+		intraMxMPredModeB = 2;//Prediction_Mode_Intra_8x8_DC = 2;
 	}
 	else
 	{
@@ -1574,8 +1814,8 @@ void ParseSlice::transformDecode4x4LuamResidualProcess()
 			scalingTransformProcess(c, r, true, false);
 
 			//计算当前亮度块左上角亮度样点距离当前宏块左上角亮度样点的相对位置
-			int xO = InverseRasterScan(luma4x4BlkIdx / 4, 8, 8, 16, 0) + InverseRasterScan(luma4x4BlkIdx % 4, 4, 4, 8, 0);
-			int yO = InverseRasterScan(luma4x4BlkIdx / 4, 8, 8, 16, 1) + InverseRasterScan(luma4x4BlkIdx % 4, 4, 4, 8, 1);
+			/*int xO = InverseRasterScan(luma4x4BlkIdx / 4, 8, 8, 16, 0) + InverseRasterScan(luma4x4BlkIdx % 4, 4, 4, 8, 0);
+			int yO = InverseRasterScan(luma4x4BlkIdx / 4, 8, 8, 16, 1) + InverseRasterScan(luma4x4BlkIdx % 4, 4, 4, 8, 1);*/
 
 			//对近似均匀分布的语法元素，在编码和解码时选择旁路（bypass）模式，可以免除上下文建模，提高编解码的速度,不经过量化和dct。
 			if (macroblock[CurrMbAddr]->TransformBypassModeFlag
@@ -1647,8 +1887,23 @@ void ParseSlice::transformDecode8x8LuamResidualProcess()
 			exit(0);
 		}
 
-		int xO = InverseRasterScan(luma8x8BlkIdx, 8, 8, 16, 0);
-		int yO = InverseRasterScan(luma8x8BlkIdx, 8, 8, 16, 1);
+		/*int xO = InverseRasterScan(luma8x8BlkIdx, 8, 8, 16, 0);
+		int yO = InverseRasterScan(luma8x8BlkIdx, 8, 8, 16, 1);*/
+
+		Intra_8x8_prediction(luma8x8BlkIdx, true);
+
+		int u[64] = { 0 };
+
+		for (size_t i = 0; i < 8; i++)
+		{
+			for (size_t j = 0; j < 8; j++)
+			{
+				u[i * 8 + j] = Clip3(0, (1 << sHeader->sps.BitDepthY) - 1, macroblock[CurrMbAddr]->luma8x8PredSamples[luma8x8BlkIdx][j][i] + r[i][j]);
+			}
+		}
+
+		Picture_construction_process_prior_to_deblocking_filter_process(u, "8*8", luma8x8BlkIdx, true);
+
 	}
 
 }
@@ -1865,10 +2120,6 @@ void ParseSlice::transformDecodeChromaResidualProcess(bool isChromaCb)
 	}
 
 }
-
-
-
-
 
 
 
@@ -2306,7 +2557,7 @@ void ParseSlice::Picture_construction_process_prior_to_deblocking_filter_process
 			yO = InverseRasterScan(BlkIdx / 4, 8, 8, 16, 1) + InverseRasterScan(BlkIdx % 4, 4, 4, 8, 1);
 			nE = 4;
 		}
-		else
+		else //8*8
 		{
 			//得到在宏块中的索引为luma8x8BlkIdx的8x8亮度块左 上角样点的位置。
 			xO = InverseRasterScan(BlkIdx, 8, 8, 16, 0);
@@ -2469,7 +2720,7 @@ void ParseSlice::scaling(bool isLuam, bool isChromaCb)
 		{
 			for (size_t j = 0; j < 8; j++)
 			{
-				if (i % 4 && j % 4 == 0)
+				if (i % 4 == 0 && j % 4 == 0)
 				{
 					LevelScale8x8[m][i][j] = weightScale8x8[i][j] * v8x8[m][0];
 				}

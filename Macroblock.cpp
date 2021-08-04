@@ -106,17 +106,21 @@ Macroblock::Macroblock()
 	memset(mb_luma_4x4_non_zero_count_coeff, 0, sizeof(uint8_t) * 16);
 	memset(mb_luma_8x8_non_zero_count_coeff, 0, sizeof(uint8_t) * 4);
 
+
+	//预测模式
 	memset(Intra4x4PredMode, 0, sizeof(uint8_t) * 16);
+	memset(Intra8x8PredMode, 0, sizeof(uint8_t) * 4);
+	Intra16x16PredMode = 0;
 
-	/*memset(predL, 0, sizeof(uint8_t) * 16 * 16);*/
 
-
-
+	//样点预测值
 	memset(lumaPredSamples, 0, sizeof(uint8_t) * 16 * 4 * 4);
-
+	memset(luma8x8PredSamples, 0, sizeof(uint8_t) * 4 * 8 * 8);
 	memset(luma16x16PredSamples, 0, sizeof(uint8_t) * 16 * 16);
-
+	//色度样点预测值
 	memset(chromaPredSamples, 0, sizeof(uint8_t) * 8 * 16);
+
+
 
 	intra_chroma_pred_mode = 0;
 	QPY = 0;
