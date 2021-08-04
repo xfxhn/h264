@@ -84,7 +84,7 @@ public:
 
 
 	void getChromaQuantisationParameters(bool isChromaCb);
-	void getIntra4x4PredMode(size_t luma4x4BlkIdx, bool isLuam);
+
 
 	void getMbAddrNAndLuma4x4BlkIdxN(int& mbAddrN, const int xN, const int yN, const int maxW, const int maxH, int& xW, int& yW);
 
@@ -95,6 +95,11 @@ public:
 	void free();
 
 private:
+
+	void getIntra4x4PredMode(size_t luma4x4BlkIdx, bool isLuam);
+
+	void getIntra8x8PredMode(size_t luma8x8BlkIdx, bool isLuam);
+
 	void transformDecodeChromaArrayTypeEqualTo3Process(bool isChromaCb);
 
 	void transformDecodeIntra_16x16DCProcess(int c[4][4], int dcY[4][4], bool isLuam, bool isChromaCb);

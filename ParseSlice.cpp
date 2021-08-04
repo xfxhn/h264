@@ -608,10 +608,13 @@ void ParseSlice::Intra_8x8_prediction(size_t luma8x8BlkIdx, bool isLuam)
 	constexpr int referenceCoordinateX[25] = { -1, -1, -1, -1, -1, -1, -1, -1, -1,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15 };
 	constexpr int referenceCoordinateY[25] = { -1,  0,  1,  2,  3,  4,  5,  6,  7, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 };
 
-	int p[9 * 17] = { 0 }; //x范围[-1,15]，y范围[-1,7]，共9行17列，原点为pp[1][1]
+	int p[9 * 17]; //x范围[-1,15]，y范围[-1,7]，共9行17列，原点为pp[1][1]
+	int32_t p1[9 * 17]; //存储参考滤波样点过程之后的值
 
 	memset(p, -1, sizeof(int) * 9 * 17);
+	memset(p1, -1, sizeof(int) * 9 * 17);
 #define P(x, y)      p[((y) + 1) * 17 + ((x) + 1)]
+#define P1(x, y)     p1[((y) + 1) * 17 + ((x) + 1)]
 
 	const int xO = InverseRasterScan(luma8x8BlkIdx, 8, 8, 16, 0);
 	const int yO = InverseRasterScan(luma8x8BlkIdx, 8, 8, 16, 1);
@@ -619,10 +622,7 @@ void ParseSlice::Intra_8x8_prediction(size_t luma8x8BlkIdx, bool isLuam)
 	for (size_t i = 0; i < 25; i++)
 	{
 
-		const int x = referenceCoordinateX[i];
-		const int y = referenceCoordinateY[i];
-		const int xN = xO + x;
-		const int yN = yO + y;
+
 
 		int maxW = 0;
 		int maxH = 0;
@@ -638,14 +638,125 @@ void ParseSlice::Intra_8x8_prediction(size_t luma8x8BlkIdx, bool isLuam)
 		int mbAddrN = NA;
 		int xW = NA;
 		int yW = NA;
+
+		const int x = referenceCoordinateX[i];
+		const int y = referenceCoordinateY[i];
+
+
+		const int xN = xO + x;
+		const int yN = yO + y;
+
 		getMbAddrNAndLuma4x4BlkIdxN(mbAddrN, xN, yN, maxW, maxH, xW, yW);
 
+		if (mbAddrN == NA || (isInterframe(macroblock[mbAddrN]->mode) && sHeader->pps.constrained_intra_pred_flag == 1))
+		{
+			P(x, y) = -1;//不可用于Intra_8x8预测
+		}
+		else
+		{
+			//xM  yM mbAddrN宏块左上角样点位置到当前图像左上角的距离
+			int xM = InverseRasterScan(mbAddrN, 16, 16, sHeader->sps.PicWidthInSamplesL, 0);
+			int yM = InverseRasterScan(mbAddrN, 16, 16, sHeader->sps.PicWidthInSamplesL, 1);
 
+			P(x, y) = lumaData[xM + xW][yM + yW];
+		}
 
 	}
 
 
+
+	if (P(8, -1) < 0 && P(9, -1) < 0 && P(10, -1) < 0 && P(11, -1) < 0 && P(12, -1) < 0 && P(13, -1) < 0 && P(14, -1) < 0 && P(15, -1) < 0 && P(7, -1) >= 0)
+	{
+		P(8, -1) = P(7, -1);
+		P(9, -1) = P(7, -1);
+		P(10, -1) = P(7, -1);
+		P(11, -1) = P(7, -1);
+		P(12, -1) = P(7, -1);
+		P(13, -1) = P(7, -1);
+		P(14, -1) = P(7, -1);
+		P(15, -1) = P(7, -1);
+	}
+
+
+	//Intra_8x8 样点预测时的滤波参考样点
+
+	if (P(0, -1) >= 0 && P(1, -1) >= 0 && P(2, -1) >= 0 && P(3, -1) >= 0 && P(4, -1) >= 0 && P(5, -1) >= 0 && P(6, -1) >= 0 && P(7, -1) >= 0
+		&& P(8, -1) >= 0 && P(9, -1) >= 0 && P(10, -1) >= 0 && P(11, -1) >= 0 && P(12, -1) >= 0 && P(13, -1) >= 0 && P(14, -1) >= 0 && P(15, -1) >= 0
+		)
+	{
+		//p′[ 0, −1 ]推导
+		if (P(-1, -1) >= 0)
+		{
+			P1(0, -1) = (P(-1, -1) + 2 * P(0, -1) + P(1, -1) + 2) >> 2;
+		}
+		else
+		{
+			P1(0, -1) = (3 * P(0, -1) + P(1, -1) + 2) >> 2;
+		}
+
+		for (size_t x = 0; x < 15; x++)
+		{
+			P1(x, -1) = (P(x - 1, -1) + 2 * P(x, -1) + P(x + 1, -1) + 2) >> 2;
+		}
+
+		P1(15, -1) = (P(14, -1) + 3 * P(15, -1) + 2) >> 2;
+	}
+
+	//p′[ −1, −1 ]
+	if (P(-1, -1) >= 0)
+	{
+		//当样本p[0，−1]和p[−1,0]被标记为“不可用于Intra_8x8预测”时，派生的样本p '[−1，−1]不用于内部预测过程。 
+		if (P(0, -1) < 0 || P(-1, 0) < 0)
+		{
+			if (P(0, -1) >= 0)
+			{
+				P1(-1, -1) = (3 * P(-1, -1) + P(0, -1) + 2) >> 2;
+			}
+			else if (P(0, -1) < 0 && P(-1, 0) >= 0)
+			{
+				P1(-1, -1) = (3 * P(-1, -1) + P(-1, 0) + 2) >> 2;
+			}
+			else //if (P(0, -1) < 0 && P(-1, 0) < 0)
+			{
+				P1(-1, -1) = P(-1, -1);
+			}
+		}
+		else //if (P(0, -1) >= 0 || P(-1, 0) >= 0)
+		{
+			P1(-1, -1) = (P(0, -1) + 2 * P(-1, -1) + P(-1, 0) + 2) >> 2;
+		}
+	}
+
+
+
+	if (P(-1, 0) >= 0 && P(-1, 1) >= 0 && P(-1, 2) >= 0 && P(-1, 3) >= 0 && P(-1, 4) >= 0 && P(-1, 5) >= 0 && P(-1, 6) >= 0 && P(-1, 7) >= 0)
+	{
+		//p′[ −1, 0 ]
+		if (P(-1, -1) >= 0)
+		{
+			P1(-1, 0) = (P(-1, -1) + 2 * P(-1, 0) + P(-1, 1) + 2) >> 2;
+		}
+		else//if (P(-1, -1) < 0)
+		{
+			P1(-1, 0) = (3 * P(-1, 0) + P(-1, 1) + 2) >> 2;
+		}
+
+		for (size_t y = 1; y < 7; y++)
+		{
+			P1(-1, y) = (P(-1, y - 1) + 2 * P(-1, y) + P(-1, y + 1) + 2) >> 2;
+		}
+
+		P1(-1, 7) = (P(-1, 6) + 3 * P(-1, 7) + 2) >> 2;
+	}
+
+
+	memcpy(p, p1, sizeof(int32_t) * 9 * 17);
+
+
+
+
 #undef P
+#undef P1
 
 }
 
@@ -830,6 +941,7 @@ void ParseSlice::Intra_16x16_prediction(bool isLuam)
 
 
 }
+
 void ParseSlice::Intra_chroma_prediction(bool isChromaCb)
 {
 	if (sHeader->sps.ChromaArrayType == 3)
@@ -1243,6 +1355,127 @@ void ParseSlice::getIntra4x4PredMode(size_t luma4x4BlkIdx, bool isLuam)
 		else
 		{
 			macroblock[CurrMbAddr]->Intra4x4PredMode[luma4x4BlkIdx] = macroblock[CurrMbAddr]->rem_intra4x4_pred_mode[luma4x4BlkIdx] + 1;
+		}
+	}
+
+}
+
+
+void ParseSlice::getIntra8x8PredMode(size_t luma8x8BlkIdx, bool isLuam)
+{
+	int maxW = 0;
+	int maxH = 0;
+	if (isLuam)
+	{
+		maxW = maxH = 16;
+	}
+	else
+	{
+		//色度块高度和宽度
+		maxH = sHeader->sps.MbHeightC;
+		maxW = sHeader->sps.MbWidthC;
+	}
+	/*xN = (luma8x8BlkIdx % 2) * 8 + xD
+	yN = (luma8x8BlkIdx / 2) * 8 + yD*/
+	const int x = (luma8x8BlkIdx % 2) * 8;
+	const int y = (luma8x8BlkIdx / 2) * 8;
+
+
+
+	//等于CurrMbAddr或等于包含（xN，yN）的相邻宏块的地址，及其可用性状态
+	int mbAddrA = NA;
+	int mbAddrB = NA;
+
+	//位于4×4块luma4x4BlkIdx左侧和上侧的4×4亮度块的索引及其可用性状态
+	int luma8x8BlkIdxA = NA;
+	int luma8x8BlkIdxB = NA;
+
+	int xW = NA;
+	int yW = NA;
+	getMbAddrNAndLuma4x4BlkIdxN(mbAddrA, x + (-1), y + (0), maxW, maxH, xW, yW);
+	if (mbAddrA != NA)
+	{
+		//左侧宏块子块索引
+		luma8x8BlkIdxA = 2 * (yW / 8) + (xW / 8);
+	}
+
+	getMbAddrNAndLuma4x4BlkIdxN(mbAddrB, x + (0), y + (-1), maxW, maxH, xW, yW);
+
+	if (mbAddrB != NA)
+	{
+		//左侧宏块子块索引
+		luma8x8BlkIdxB = 2 * (yW / 8) + (xW / 8);
+	}
+
+	bool dcPredModePredictedFlag = false;
+
+	if (mbAddrA == NA
+		|| mbAddrB == NA
+		|| (mbAddrA != NA && isInterframe(macroblock[mbAddrA]->mode) && sHeader->pps.constrained_intra_pred_flag)
+		|| (mbAddrB != NA && isInterframe(macroblock[mbAddrB]->mode) && sHeader->pps.constrained_intra_pred_flag)
+		)
+	{
+		dcPredModePredictedFlag = true;
+	}
+	else
+	{
+		dcPredModePredictedFlag = false;
+	}
+
+
+	int intraMxMPredModeA = 0;
+	int intraMxMPredModeB = 0;;
+	if (dcPredModePredictedFlag || (macroblock[mbAddrA]->mode != H264_MB_PART_PRED_MODE::Intra_4x4 && macroblock[mbAddrA]->mode != H264_MB_PART_PRED_MODE::Intra_8x8))
+	{
+		intraMxMPredModeA == 2;//Prediction_Mode_Intra_8x8_DC = 2;
+	}
+	else
+	{
+		if (macroblock[mbAddrA]->mode == H264_MB_PART_PRED_MODE::Intra_8x8)
+		{
+			intraMxMPredModeA = macroblock[mbAddrA]->Intra8x8PredMode[luma8x8BlkIdxA];
+		}
+		else//以Intra_4x4预测方式编码
+		{
+			//变量n是通过帧场自适应来设置不同的值，不支持场编码n=1
+			int n = 1;
+			intraMxMPredModeA = macroblock[mbAddrA]->Intra4x4PredMode[luma8x8BlkIdxA * 4 + n];
+		}
+	}
+
+	if (dcPredModePredictedFlag || (macroblock[mbAddrB]->mode != H264_MB_PART_PRED_MODE::Intra_4x4 && macroblock[mbAddrB]->mode != H264_MB_PART_PRED_MODE::Intra_8x8))
+	{
+		intraMxMPredModeB == 2;//Prediction_Mode_Intra_8x8_DC = 2;
+	}
+	else
+	{
+		if (macroblock[mbAddrB]->mode == H264_MB_PART_PRED_MODE::Intra_8x8)
+		{
+			intraMxMPredModeB = macroblock[mbAddrB]->Intra8x8PredMode[luma8x8BlkIdxB];
+		}
+		else//以Intra_4x4预测方式编码
+		{
+			//N=B的时候 n=2
+			constexpr int n = 2;
+			intraMxMPredModeB = macroblock[mbAddrB]->Intra4x4PredMode[luma8x8BlkIdxB * 4 + n];
+		}
+	}
+	const int predIntra8x8PredMode = std::min(intraMxMPredModeA, intraMxMPredModeB);
+
+
+	if (macroblock[CurrMbAddr]->prev_intra8x8_pred_mode_flag[luma8x8BlkIdx])
+	{
+		macroblock[CurrMbAddr]->Intra8x8PredMode[luma8x8BlkIdx] = predIntra8x8PredMode;
+	}
+	else
+	{
+		if (macroblock[CurrMbAddr]->rem_intra8x8_pred_mode[luma8x8BlkIdx] < predIntra8x8PredMode)
+		{
+			macroblock[CurrMbAddr]->Intra8x8PredMode[luma8x8BlkIdx] = macroblock[CurrMbAddr]->rem_intra8x8_pred_mode[luma8x8BlkIdx];
+		}
+		else
+		{
+			macroblock[CurrMbAddr]->Intra8x8PredMode[luma8x8BlkIdx] = macroblock[CurrMbAddr]->rem_intra8x8_pred_mode[luma8x8BlkIdx] + 1;
 		}
 	}
 

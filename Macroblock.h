@@ -128,6 +128,7 @@ public:
 
 
 	uint8_t Intra4x4PredMode[16];//存储当前宏块的16个4x4子宏块预测模式的值，范围[0,8]
+	uint8_t Intra8x8PredMode[4];//存储当前宏块的4个8x8子宏块预测模式的值，范围[0,8]
 	uint8_t Intra16x16PredMode;//存储当前宏块的1个16x16宏块预测模式的值，范围[0,4]
 
 	uint8_t lumaPredSamples[16][4][4]; //存储字块亮度预测样点值
