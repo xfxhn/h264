@@ -60,7 +60,7 @@ public:
 
 	~ParseSlice();
 
-
+	void Deblocking_filter_process();
 
 
 
@@ -92,7 +92,6 @@ public:
 	void Picture_construction_process_prior_to_deblocking_filter_process(int* u, const char* type, const size_t BlkIdx, const bool isLuam, bool isChromaCb = true);
 
 	void scaling(bool isLuam, bool isChromaCb);
-	void free();
 
 private:
 
@@ -122,5 +121,8 @@ private:
 	void scalingTransformProcess(int c[4][4], int r[4][4], bool isLuam, bool isChromaCb);
 
 	void Scaling_and_transformation_process_for_residual_8x8_blocks(int c[8][8], int r[8][8], bool isLuam, bool isChromaCb);
+
+	void Filtering_process_for_block_edges(int mbAddr, bool chromaEdgeFlag, bool verticalEdgeFlag, bool fieldModeInFrameFilteringFlag, int iCbCr, int xE[16], int yE[16]);
+	void Filtering_process_for_a_set_of_samples_across_a_horizontal_or_vertical_block_edge(int mbAddr, bool chromaEdgeFlag, bool verticalEdgeFlag, bool fieldModeInFrameFilteringFlag, int iCbCr, int p[4], int q[4]);
 };
 

@@ -68,24 +68,6 @@ bool ParseSlice::parse()
 
 	return false;
 }
-void ParseSlice::free()
-{
-
-	if (chromaCbData)
-	{
-		for (size_t i = 0; i < PicWidthInSamplesC; i++)
-		{
-			if (chromaCbData[i])
-			{
-				delete[] chromaCbData[i];
-				chromaCbData[i] = nullptr;
-			}
-		}
-		delete[] chromaCbData;
-		chromaCbData = nullptr;
-	}
-
-}
 void ParseSlice::init()
 {
 
@@ -155,6 +137,196 @@ ParseSlice::~ParseSlice()
 
 }
 
+//去块滤波器
+void ParseSlice::Deblocking_filter_process()
+{
+
+	bool fieldMbInFrameFlag = false;
+	bool filterInternalEdgesFlag = false;
+	bool filterLeftMbEdgeFlag = false;
+	bool filterTopMbEdgeFlag = false;
+	//对每个宏块进行滤波
+	for (size_t currMb = 0; currMb < PicSizeInMbs; currMb++)
+	{
+		int mbAddrA = NA;
+		int mbAddrB = NA;
+
+
+		int xW = NA;
+		int yW = NA;
+		constexpr int maxW = 16;
+		constexpr int maxH = 16;
+		getMbAddrNAndLuma4x4BlkIdxN(mbAddrA, -1, 0, maxW, maxH, xW, yW);
+		getMbAddrNAndLuma4x4BlkIdxN(mbAddrB, 0, -1, maxW, maxH, xW, yW);
+		//如果MbaffFrameFlag = 1且mb_field_decoding_flag = 1，则fieldMbInFrameFlag设置为1  
+
+		if (sHeader->MbaffFrameFlag && sHeader->field_pic_flag)
+		{
+			fieldMbInFrameFlag = true;
+		}
+		else
+		{
+			fieldMbInFrameFlag = false;
+		}
+
+
+
+		if (sHeader->disable_deblocking_filter_idc == 1)
+		{
+			filterInternalEdgesFlag = false;
+		}
+		else
+		{
+			filterInternalEdgesFlag = true;
+		}
+
+
+
+		if ((!sHeader->MbaffFrameFlag && (currMb % sHeader->sps.PicWidthInMbs == 0))
+			|| (sHeader->MbaffFrameFlag && ((currMb >> 1) % sHeader->sps.PicWidthInMbs == 0))
+			|| (sHeader->disable_deblocking_filter_idc == 1)
+			|| (sHeader->disable_deblocking_filter_idc == 2 && mbAddrA == NA)
+			)
+		{
+			filterLeftMbEdgeFlag = false;
+		}
+		else
+		{
+			filterLeftMbEdgeFlag = true;
+		}
+
+
+		if ((!sHeader->MbaffFrameFlag && currMb < sHeader->sps.PicWidthInMbs)
+			|| (sHeader->MbaffFrameFlag && (currMb >> 1) < sHeader->sps.PicWidthInMbs && sHeader->field_pic_flag)
+			|| (sHeader->MbaffFrameFlag && (currMb >> 1) < sHeader->sps.PicWidthInMbs && !sHeader->field_pic_flag && (currMb % 2) == 0)
+			|| (sHeader->disable_deblocking_filter_idc == 1)
+			|| (sHeader->disable_deblocking_filter_idc == 2 && mbAddrB == NA)
+			)
+		{
+			filterTopMbEdgeFlag = false;
+		}
+		else
+		{
+			filterTopMbEdgeFlag = true;
+		}
+
+
+
+
+		//filterLeftMbEdgeFlag=1 左侧垂直亮度边缘的滤波
+		if (filterLeftMbEdgeFlag)
+		{
+			bool chromaEdgeFlag = false;
+			bool verticalEdgeFlag = true;
+			bool fieldModeInFrameFilteringFlag = fieldMbInFrameFlag;
+
+			int xE[16] = { 0 };
+			int yE[16] = { 0 };
+
+			for (size_t k = 0; k < 16; k++)
+			{
+				xE[k] = 0;
+				yE[k] = k;
+			}
+			const int iCbCr = 0;
+
+			Filtering_process_for_block_edges(currMb, chromaEdgeFlag, verticalEdgeFlag, fieldModeInFrameFilteringFlag, iCbCr, xE, yE);
+
+
+		}
+
+
+
+
+	}
+
+}
+void ParseSlice::Filtering_process_for_block_edges(int mbAddr, bool chromaEdgeFlag, bool verticalEdgeFlag, bool fieldModeInFrameFilteringFlag, int iCbCr, int xE[16], int yE[16])
+{
+	int nE = 0;
+	if (chromaEdgeFlag)
+	{
+		nE = verticalEdgeFlag ? sHeader->sps.MbHeightC : sHeader->sps.MbWidthC;
+	}
+	else
+	{
+		nE = 16;
+	}
+
+	uint8_t** buff = nullptr;
+
+	if (chromaEdgeFlag == false)
+	{
+		buff = lumaData;
+		//PicWidthInSamples = PicWidthInSamplesL;
+	}
+	else if (chromaEdgeFlag == true && iCbCr == 0)
+	{
+		buff = chromaCbData;
+		//PicWidthInSamples = PicWidthInSamplesC;
+	}
+	else if (chromaEdgeFlag == true && iCbCr == 1)
+	{
+		buff = chromaCrData;
+		//PicWidthInSamples = PicWidthInSamplesC;
+	}
+
+
+	const int dy = 1 + fieldModeInFrameFilteringFlag;
+
+	//mbAddr宏块左上角样点位置到当前图像左上角的距离
+	const int xI = InverseRasterScan(mbAddr, 16, 16, PicWidthInSamplesL, 0);
+	const int yI = InverseRasterScan(mbAddr, 16, 16, PicWidthInSamplesL, 1);
+
+	int xP = 0;
+	int yP = 0;
+
+
+	if (chromaEdgeFlag)
+	{
+		xP = xI / sHeader->sps.SubWidthC;
+		yP = (yI + sHeader->sps.SubHeightC - 1) / sHeader->sps.SubHeightC
+	}
+	else
+	{
+		xP = xI;
+		yP = yI;
+	}
+
+
+	// p3 p2 p1 p0 | q0 q1 q2 q3
+
+	for (size_t k = 0; k < nE; k++)
+	{
+		uint8_t p[4] = { 0 };
+		uint8_t q[4] = { 0 };
+		for (size_t i = 0; i < 4; i++)
+		{
+			if (verticalEdgeFlag)
+			{
+				q[i] = buff[xP + xE[k] + i][yP + dy * yE[k]];
+				p[i] = buff[xP + xE[k] - i - 1][yP + dy * yE[k]];
+			}
+			else
+			{
+				q[i] = buff[xP + xE[k]][yP + dy * (yE[k] + i) - (yE[k] % 2)];
+				p[i] = buff[xP + xE[k]][yP + dy * (yE[k] - i - 1) - (yE[k] % 2)];
+			}
+		}
+
+	}
+
+}
+void ParseSlice::Filtering_process_for_a_set_of_samples_across_a_horizontal_or_vertical_block_edge(int mbAddr, bool chromaEdgeFlag, bool verticalEdgeFlag, bool fieldModeInFrameFilteringFlag, int iCbCr, int p[4], int q[4])
+{
+
+	if (chromaEdgeFlag)
+	{
+
+	}
+
+
+}
 //色度DC哈达玛变换 
 void ParseSlice::transformDecodeChromaDCProcess(int c[4][2], int dcC[4][2], int MbWidthC, int MbHeightC, bool isChromaCb)
 {
@@ -1499,12 +1671,12 @@ void ParseSlice::getIntra4x4PredMode(size_t luma4x4BlkIdx, bool isLuam)
 	   |
 	*/
 
-
+	//当前子块距离mbAddrN左上角样点距离（ xW, yW)
 	int xW = NA;
 	int yW = NA;
 
 	//亮度位置的差分值 表6-2（ xD, yD ）
-	//当前子块距离mbAddrN左上角样点距离（ xW, yW)
+
 	getMbAddrNAndLuma4x4BlkIdxN(mbAddrA, x + (-1), y + 0, maxW, maxH, xW, yW);
 
 	if (mbAddrA != NA)
@@ -2469,15 +2641,16 @@ void ParseSlice::Scaling_and_transformation_process_for_residual_8x8_blocks(int 
 		}
 
 		//------------------------------------
-		for (int i = 0; i <= 7; i++)
+		for (int i = 0; i < 8; i++)
 		{
-			for (int j = 0; j <= 7; j++)
+			for (int j = 0; j < 8; j++)
 			{
 				r[i][j] = (m[i][j] + 32) >> 6;
 			}
 		}
 	}
 }
+
 //色度量化参数和缩放功能的推导过程
 void ParseSlice::getChromaQuantisationParameters(bool isChromaCb)
 {
@@ -2564,6 +2737,7 @@ void ParseSlice::Picture_construction_process_prior_to_deblocking_filter_process
 			yO = InverseRasterScan(BlkIdx, 8, 8, 16, 1);
 			nE = 8;
 		}
+
 
 		//S′L[ xP + xO + j, yP + yO + i ] = uij    with i, j = 0..nE -  1
 		for (size_t i = 0; i < nE; i++)

@@ -155,7 +155,6 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice)
 			bool isChromaCb = true;
 			if (Slice->macroblock[Slice->CurrMbAddr]->mode == H264_MB_PART_PRED_MODE::Intra_4x4)
 			{
-
 				Slice->transformDecode4x4LuamResidualProcess();
 				isChromaCb = true;
 				Slice->transformDecodeChromaResidualProcess(isChromaCb);
@@ -165,6 +164,10 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice)
 			else if (Slice->macroblock[Slice->CurrMbAddr]->mode == H264_MB_PART_PRED_MODE::Intra_8x8)
 			{
 				Slice->transformDecode8x8LuamResidualProcess();
+				isChromaCb = true;
+				Slice->transformDecodeChromaResidualProcess(isChromaCb);
+				isChromaCb = false;
+				Slice->transformDecodeChromaResidualProcess(isChromaCb);
 			}
 			else if (Slice->macroblock[Slice->CurrMbAddr]->mode == H264_MB_PART_PRED_MODE::Intra_16x16)
 			{
@@ -210,7 +213,6 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice)
 		}
 		CurrMbAddr = NextMbAddress(sHeader, CurrMbAddr);
 	} while (moreDataFlag);
-
 
 	return false;
 }
