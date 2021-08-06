@@ -169,7 +169,10 @@ void ParseSlice::Deblocking_filter_process()
 			fieldMbInFrameFlag = false;
 		}
 
-
+		/*	disable_deblocking_filter_idc
+			0：开启去块滤波功能，去块滤波能穿越slice边界。
+			1：关闭去块滤波功能。
+			2：开启去块滤波功能，仅限slice内部*/
 
 		if (sHeader->disable_deblocking_filter_idc == 1)
 		{
@@ -181,7 +184,7 @@ void ParseSlice::Deblocking_filter_process()
 		}
 
 
-
+		//currMb宏块是否在这帧图像最左侧边缘，是=false，否则=true
 		if ((!sHeader->MbaffFrameFlag && (currMb % sHeader->sps.PicWidthInMbs == 0))
 			|| (sHeader->MbaffFrameFlag && ((currMb >> 1) % sHeader->sps.PicWidthInMbs == 0))
 			|| (sHeader->disable_deblocking_filter_idc == 1)
@@ -211,39 +214,68 @@ void ParseSlice::Deblocking_filter_process()
 		}
 
 
+		bool chromaEdgeFlag = false;
+		bool verticalEdgeFlag = false;
+		bool fieldModeInFrameFilteringFlag = false;
+		int iCbCr = 0;
 
+		int xE[16] = { 0 };
+		int yE[16] = { 0 };
 
-		//filterLeftMbEdgeFlag=1 左侧垂直亮度边缘的滤波
+		bool mbEdgeFlag = false;
+
+		//filterLeftMbEdgeFlag=1 宏块最左侧垂直亮度边缘的滤波(不包含在图像最左侧的宏块)
 		if (filterLeftMbEdgeFlag)
 		{
-			bool chromaEdgeFlag = false;
-			bool verticalEdgeFlag = true;
-			bool fieldModeInFrameFilteringFlag = fieldMbInFrameFlag;
+			chromaEdgeFlag = false;
+			verticalEdgeFlag = true;
+			fieldModeInFrameFilteringFlag = fieldMbInFrameFlag;
+			iCbCr = 0;
 
-			int xE[16] = { 0 };
-			int yE[16] = { 0 };
 
+			mbEdgeFlag = true;
 			for (size_t k = 0; k < 16; k++)
 			{
 				xE[k] = 0;
 				yE[k] = k;
 			}
-			const int iCbCr = 0;
 
-			Filtering_process_for_block_edges(currMb, chromaEdgeFlag, verticalEdgeFlag, fieldModeInFrameFilteringFlag, iCbCr, xE, yE);
+			Filtering_process_for_block_edges(currMb, mbAddrA, chromaEdgeFlag, verticalEdgeFlag, fieldModeInFrameFilteringFlag, iCbCr, mbEdgeFlag, xE, yE);
 
 
 		}
 
+		//宏块内部垂直边缘亮度滤波
+		if (filterInternalEdgesFlag)
+		{
+			chromaEdgeFlag = false;
+			verticalEdgeFlag = true;
+			fieldModeInFrameFilteringFlag = fieldMbInFrameFlag;
+			iCbCr = 0;
+			mbEdgeFlag = false;
+			if (macroblock[currMb]->transform_size_8x8_flag == false)
+			{
+				for (size_t k = 0; k < 16; k++)
+				{
+					xE[k] = 4; //(xEk, yEk) = (4, k)
+					yE[k] = k;
+				}
+
+				Filtering_process_for_block_edges(currMb, mbAddrA, chromaEdgeFlag, verticalEdgeFlag, fieldModeInFrameFilteringFlag, iCbCr, mbEdgeFlag, xE, yE);
+
+			}
 
 
+
+		}
 
 	}
 
 }
-void ParseSlice::Filtering_process_for_block_edges(int mbAddr, bool chromaEdgeFlag, bool verticalEdgeFlag, bool fieldModeInFrameFilteringFlag, int iCbCr, int xE[16], int yE[16])
+void ParseSlice::Filtering_process_for_block_edges(int mbAddr, int mbAddrN, bool chromaEdgeFlag, bool verticalEdgeFlag, bool fieldModeInFrameFilteringFlag, int iCbCr, bool mbEdgeFlag, int xE[16], int yE[16])
 {
 	int nE = 0;
+	//一个边沿包含的像素数量，亮度为16，色度420为8；
 	if (chromaEdgeFlag)
 	{
 		nE = verticalEdgeFlag ? sHeader->sps.MbHeightC : sHeader->sps.MbWidthC;
@@ -274,10 +306,11 @@ void ParseSlice::Filtering_process_for_block_edges(int mbAddr, bool chromaEdgeFl
 
 	const int dy = 1 + fieldModeInFrameFilteringFlag;
 
-	//mbAddr宏块左上角样点位置到当前图像左上角的距离
+
 	const int xI = InverseRasterScan(mbAddr, 16, 16, PicWidthInSamplesL, 0);
 	const int yI = InverseRasterScan(mbAddr, 16, 16, PicWidthInSamplesL, 1);
 
+	//mbAddr宏块左上角样点位置到当前图像左上角的距离
 	int xP = 0;
 	int yP = 0;
 
@@ -300,6 +333,7 @@ void ParseSlice::Filtering_process_for_block_edges(int mbAddr, bool chromaEdgeFl
 	{
 		uint8_t p[4] = { 0 };
 		uint8_t q[4] = { 0 };
+		//获取每个参考样点的值
 		for (size_t i = 0; i < 4; i++)
 		{
 			if (verticalEdgeFlag)
@@ -314,16 +348,138 @@ void ParseSlice::Filtering_process_for_block_edges(int mbAddr, bool chromaEdgeFl
 			}
 		}
 
+
+		//计算p0到宏块左上角的样点坐标 (用于后面计算4*4,8*8非0系数幅值)
+		int xW = 0;
+		int yW = 0;
+
+		if (verticalEdgeFlag)
+		{
+			xW = xE[k] - 1;
+			yW = yE[k];
+
+			//表示左侧4个样点在另一个宏块里
+			if (xW < 0)
+			{
+				if (chromaEdgeFlag)
+				{
+					xW += sHeader->sps.MbWidthC;
+				}
+				else
+				{
+					xW += 16;
+				}
+			}
+		}
+		else
+		{
+			/*
+			  (xEk, yEk) = (k, 4)
+			  p3
+			  p2
+			  p1
+			  p0
+			  --
+			  q0
+			  q1
+			  q2
+			  q3
+			  --
+			*/
+			xW = xE[k];
+			yW = yE[k] - 1;
+
+			if (yW < 0)
+			{
+				if (chromaEdgeFlag)
+				{
+					yW += sHeader->sps.MbHeightC;
+				}
+				else
+				{
+					yW += 16;
+				}
+			}
+
+		}
+
+
+
+
+
+
 	}
 
 }
-void ParseSlice::Filtering_process_for_a_set_of_samples_across_a_horizontal_or_vertical_block_edge(int mbAddr, bool chromaEdgeFlag, bool verticalEdgeFlag, bool fieldModeInFrameFilteringFlag, int iCbCr, int p[4], int q[4])
+void ParseSlice::Filtering_process_for_a_set_of_samples_across_a_horizontal_or_vertical_block_edge(int mbAddr, int mbAddrN, bool chromaEdgeFlag, bool verticalEdgeFlag, bool fieldModeInFrameFilteringFlag, int iCbCr, bool mbEdgeFlag, int p[4], int q[4])
 {
 
 	if (chromaEdgeFlag)
 	{
 
 	}
+	else
+	{
+
+	}
+
+
+}
+//滤波强度推导
+void ParseSlice::Derivation_process_for_the_luma_content_dependent_boundary_filtering_strength(bool MbaffFrameFlag, int mbAddrN, bool mbEdgeFlag, int p0, int q0, bool verticalEdgeFlag)
+{
+
+	//如果MbaffFrameFlag等于1，样点p0和q0位于不同的宏块对中，其中一个是域宏块对，另外一个是帧宏块对，将mixedModeEdgeFlag置为1.否则，将mixedModeEdgeFlag置0。
+
+	constexpr bool mixedModeEdgeFlag = false;
+
+	const int mbAddr_p0 = mbAddr;
+	const int mbAddr_q0 = mbEdgeFlag ? mbAddrN : mbAddr;
+
+
+	int bS = 0;
+	if (mbEdgeFlag)
+	{
+		//样点p0和q0都在帧宏块内，而且两个样点p0和q0之中的两个或者一个在采用帧内宏块预测模式编码的宏块内
+
+		if (sHeader->sps.frame_mbs_only_flag && (isInterMode(macroblock[mbAddr_p0]->mode) || isInterMode(macroblock[mbAddr_q0]->mode))
+			|| (sHeader->sps.frame_mbs_only_flag && (
+				(macroblock[mbAddr_p0]->sliceNumber == macroblock[mbAddr_q0]->sliceNumber)
+				&& ((SLIECETYPE)sHeader->slice_type == SLIECETYPE::H264_SLIECE_TYPE_SP || (SLIECETYPE)sHeader->slice_type == SLIECETYPE::H264_SLIECE_TYPE_SI))
+				)
+			|| ((MbaffFrameFlag || sHeader->field_pic_flag)
+				&& verticalEdgeFlag
+				&& (isInterMode(macroblock[mbAddr_p0]->mode) || isInterMode(macroblock[mbAddr_q0]->mode))
+				)
+			|| ((MbaffFrameFlag || sHeader->field_pic_flag)
+				&& verticalEdgeFlag
+				&& ((SLIECETYPE)sHeader->slice_type == SLIECETYPE::H264_SLIECE_TYPE_SP || (SLIECETYPE)sHeader->slice_type == SLIECETYPE::H264_SLIECE_TYPE_SI)
+				)
+			)
+		{
+			bS = 4;
+		}
+
+	}
+	else if (
+		(!mixedModeEdgeFlag
+			&& (isInterMode(macroblock[mbAddr_p0]->mode) || isInterMode(macroblock[mbAddr_q0]->mode))
+			)
+		|| (!mixedModeEdgeFlag
+			&& ((macroblock[mbAddr_p0]->sliceNumber == macroblock[mbAddr_q0]->sliceNumber)
+				&& ((SLIECETYPE)sHeader->slice_type == SLIECETYPE::H264_SLIECE_TYPE_SP || (SLIECETYPE)sHeader->slice_type == SLIECETYPE::H264_SLIECE_TYPE_SI))
+			)
+		//mixedModeEdgeFlag==1
+		)
+	{
+		bS = 3;
+	}
+	else if (true)
+	{
+
+	}
+
+
 
 
 }

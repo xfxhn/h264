@@ -196,7 +196,7 @@ bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* s
 
 
 
-	uint32_t	 slice_type = sHeader->slice_type;
+	uint8_t	 slice_type = sHeader->slice_type;
 
 	//修正过后的
 	uint32_t	 fix_mb_type = mb_type;
@@ -210,7 +210,7 @@ bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* s
 	//获取当前宏块的预测模式
 	mode = MbPartPredMode(fix_mb_type, fix_slice_type, 0);
 
-	uint32_t  numMbPart = NumMbPart(fix_mb_type, fix_slice_type);
+	uint8_t  numMbPart = NumMbPart(fix_mb_type, fix_slice_type);
 	//fix_slice_type == SLIECETYPE::H264_SLIECE_TYPE_I && fix_mb_type == 25
 
 

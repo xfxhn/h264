@@ -393,7 +393,7 @@ bool ParseSPS::seq_parameter_set_data(BitStream& bs)
 	PicHeightInSamplesC = PicHeightInMapUnits * MbHeightC;
 
 
-	getWidthAndHeight();
+	//getWidthAndHeight();
 
 
 
