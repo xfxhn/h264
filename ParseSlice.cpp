@@ -437,12 +437,80 @@ void ParseSlice::Filtering_process_for_a_set_of_samples_across_a_horizontal_or_v
 
 	const int mbAddr_p0 = mbEdgeFlag ? mbAddrN : mbAddr;
 	const int mbAddr_q0 = mbAddr;
-
+	//FilterOffsetA以及FilterOffsetB则为偏移量，偏移量用于调整滤波强度
 	const int8_t filterOffsetA = macroblock[mbAddr_q0]->FilterOffsetA;
 	const int8_t filterOffsetB = macroblock[mbAddr_q0]->FilterOffsetB;
 
 	int qPp = 0;
 	int qPq = 0;
+	// p3 p2 p1 p0 | q0 q1 q2 q3
+	if (!chromaEdgeFlag)
+	{
+		if (macroblock[mbAddr_p0]->mbType == H264_MB_TYPE::I_PCM)
+		{
+			qPp = 0;
+		}
+		else
+		{
+			qPp = macroblock[mbAddr_p0]->QPY;
+		}
+		if (macroblock[mbAddr_q0]->mbType == H264_MB_TYPE::I_PCM)
+		{
+			qPq = 0;
+		}
+		else
+		{
+			qPq = macroblock[mbAddr_q0]->QPY;
+		}
+	}
+	else
+	{
+		int QPY = 0;
+		const bool isChromaCb = iCbCr == 0;
+		if (macroblock[mbAddr_p0]->mbType == H264_MB_TYPE::I_PCM)
+		{
+			QPY = 0;
+			qPp = getQPC(QPY, isChromaCb);
+		}
+		else
+		{
+			QPY = macroblock[mbAddr_p0]->QPY;
+			qPp = getQPC(QPY, isChromaCb);
+		}
+
+		if (macroblock[mbAddr_q0]->mbType == H264_MB_TYPE::I_PCM)
+		{
+			QPY = 0;
+			qPq = getQPC(QPY, isChromaCb);
+		}
+		else
+		{
+			QPY = macroblock[mbAddr_q0]->QPY;
+			qPq = getQPC(QPY, isChromaCb);
+		}
+	}
+	//α表示块与块之间的边界阈值，β表示块内部边界的阈值
+	int alpha = 0;
+	int beta = 0;
+	//filterSamplesFlag它是指是否滤波了输入样点
+	bool filterSamplesFlag = false;
+	Derivation_process_for_the_thresholds_for_each_block_edge(p[0], q[0], p[1], q[1], chromaEdgeFlag, bS, filterOffsetA, filterOffsetB, qPp, qPq, alpha, beta, filterSamplesFlag);
+
+	if (filterSamplesFlag)
+	{
+		if (bS < 4)
+		{
+
+		}
+		else//(bS == 4)
+		{
+
+		}
+	}
+	else
+	{
+
+	}
 
 }
 //滤波强度推导
@@ -520,6 +588,53 @@ int ParseSlice::Derivation_process_for_the_luma_content_dependent_boundary_filte
 
 }
 
+//判断真假边界，参考文档
+//https://blog.csdn.net/weixin_30577801/article/details/96313356?utm_medium=distribute.pc_relevant.none-task-blog-2%7Edefault%7EBlogCommendFromMachineLearnPai2%7Edefault-6.pc_relevant_baidujshouduan&depth_1-utm_source=distribute.pc_relevant.none-task-blog-2%7Edefault%7EBlogCommendFromMachineLearnPai2%7Edefault-6.pc_relevant_baidujshouduan
+//每个块边缘的阈值推导过程
+void ParseSlice::Derivation_process_for_the_thresholds_for_each_block_edge(int p0, int q0, int p1, int q1, bool chromaEdgeFlag, int bS, int filterOffsetA, int filterOffsetB, int qPp, int qPq, int alpha, int beta, bool filterSamplesFlag)
+{
+	//指定平均量化参数的变量
+	const int qPav = (qPp + qPq + 1) >> 1;
+	const int indexA = Clip3(0, 51, qPav + filterOffsetA);
+	const int indexB = Clip3(0, 51, qPav + filterOffsetB);
+
+	//表8-16 indexA和indexB对应的阈值
+	constexpr int alphas[52] =
+	{
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 4, 4, 5, 6,
+		7, 8, 9, 10, 12, 13, 15, 17, 20, 22,
+		25, 28, 32, 36, 40, 45, 50, 56, 63, 71,
+		80, 90, 101, 113, 127, 144, 162, 182, 203, 226,
+		255, 255
+	};
+
+	constexpr int betas[52] =
+	{
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 2, 2, 2, 3,
+		3, 3, 3, 4, 4, 4, 6, 6, 7, 7,
+		8, 8, 9, 9, 10, 10, 11, 11, 12, 12,
+		13, 13, 14, 14, 15, 15, 16, 16, 17, 17,
+		18, 18
+	};
+
+	if (!chromaEdgeFlag)
+	{
+		alpha = alphas[indexA] * (1 << (sHeader->sps.BitDepthY - 8));
+		beta = betas[indexB] * (1 << (sHeader->sps.BitDepthY - 8));
+	}
+	else
+	{
+		alpha = alphas[indexA] * (1 << (sHeader->sps.BitDepthC - 8));
+		beta = betas[indexB] * (1 << (sHeader->sps.BitDepthC - 8));
+	}
+
+	filterSamplesFlag = (bS != 0 && std::abs(p0 - q0) < alpha && std::abs(p1 - p0) < beta && std::abs(q1 - q0) < beta);
+
+
+}
+
 int ParseSlice::Derivation_process_for_4x4_luma_block_indices(int x, int y)
 {
 	return 8 * (y / 8) + 4 * (x / 8) + 2 * ((y % 8) / 4) + ((x % 8) / 4);
@@ -528,6 +643,7 @@ int ParseSlice::Derivation_process_for_8x8_luma_block_indices(int x, int y)
 {
 	return 2 * (y / 8) + (x / 8);
 }
+
 //色度DC哈达玛变换 
 void ParseSlice::transformDecodeChromaDCProcess(int c[4][2], int dcC[4][2], int MbWidthC, int MbHeightC, bool isChromaCb)
 {
@@ -2853,10 +2969,10 @@ void ParseSlice::Scaling_and_transformation_process_for_residual_8x8_blocks(int 
 	}
 }
 
-//色度量化参数和缩放功能的推导过程
-void ParseSlice::getChromaQuantisationParameters(bool isChromaCb)
+
+
+int ParseSlice::getQPC(int QPY, bool isChromaCb)
 {
-	//CbCr
 	int qPOffset = 0;
 
 
@@ -2870,7 +2986,7 @@ void ParseSlice::getChromaQuantisationParameters(bool isChromaCb)
 		qPOffset = sHeader->pps.second_chroma_qp_index_offset;
 	}
 	//每个色度分量的qPI 值通过下述方式获得  //QpBdOffsetC 色度偏移
-	int qPI = Clip3(-(int)sHeader->sps.QpBdOffsetC, 51, macroblock[CurrMbAddr]->QPY + qPOffset);
+	const int qPI = Clip3(-(int)sHeader->sps.QpBdOffsetC, 51, QPY + qPOffset);
 
 
 	int QPC = 0;
@@ -2880,14 +2996,48 @@ void ParseSlice::getChromaQuantisationParameters(bool isChromaCb)
 	}
 	else
 	{
-		//int qPIs[] = { 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51 };
+		//int qPIs[] = { 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51 }; QPC索引对应下面的QPC的值
 		int QPCs[] = { 29, 30, 31, 32, 32, 33, 34, 34, 35, 35, 36, 36, 37, 37, 37, 38, 38, 38, 39, 39, 39, 39 };
 
 		QPC = QPCs[qPI - 30];
 	}
+	return QPC;
+}
+//色度量化参数的推导过程  
+void ParseSlice::getChromaQuantisationParameters(bool isChromaCb)
+{
+	//CbCr
+	//int qPOffset = 0;
 
 
-	int QP1C = QPC + sHeader->sps.QpBdOffsetC;
+	//if (isChromaCb)
+	//{
+	//	//计算色度量化参数的偏移量值
+	//	qPOffset = sHeader->pps.chroma_qp_index_offset;
+	//}
+	//else
+	//{
+	//	qPOffset = sHeader->pps.second_chroma_qp_index_offset;
+	//}
+	////每个色度分量的qPI 值通过下述方式获得  //QpBdOffsetC 色度偏移
+	//int qPI = Clip3(-(int)sHeader->sps.QpBdOffsetC, 51, macroblock[CurrMbAddr]->QPY + qPOffset);
+
+
+	//int QPC = 0;
+	//if (qPI < 30)
+	//{
+	//	QPC = qPI;
+	//}
+	//else
+	//{
+	//	//int qPIs[] = { 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51 }; QPC索引对应下面的QPC的值
+	//	int QPCs[] = { 29, 30, 31, 32, 32, 33, 34, 34, 35, 35, 36, 36, 37, 37, 37, 38, 38, 38, 39, 39, 39, 39 };
+
+	//	QPC = QPCs[qPI - 30];
+	//}
+	const int QPC = getQPC(macroblock[CurrMbAddr]->QPY, isChromaCb);
+
+	const int QP1C = QPC + sHeader->sps.QpBdOffsetC;
 
 	//QPC:各色度分量Cb和Cr的色度量化参数，
 	macroblock[CurrMbAddr]->QPC = QPC;
