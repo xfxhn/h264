@@ -350,24 +350,30 @@ void ParseSlice::Filtering_process_for_block_edges(int mbAddr, int mbAddrN, bool
 
 
 		//计算p0到宏块左上角的样点坐标 (用于后面计算4*4,8*8非0系数幅值)
-		int xW = 0;
-		int yW = 0;
+		int mb_p0_x = 0;
+		int mb_p0_y = 0;
+
+		int mb_q0_x = 0;
+		int mb_q0_y = 0;
 
 		if (verticalEdgeFlag)
 		{
-			xW = xE[k] - 1;
-			yW = yE[k];
+			mb_p0_x = xE[k] - 1;
+			mb_p0_y = yE[k];
+
+			mb_q0_x = xE[k];
+			mb_q0_y = yE[k];
 
 			//表示左侧4个样点在另一个宏块里
-			if (xW < 0)
+			if (mb_p0_x < 0)
 			{
 				if (chromaEdgeFlag)
 				{
-					xW += sHeader->sps.MbWidthC;
+					mb_p0_x += sHeader->sps.MbWidthC;
 				}
 				else
 				{
-					xW += 16;
+					mb_p0_x += 16;
 				}
 			}
 		}
@@ -386,18 +392,21 @@ void ParseSlice::Filtering_process_for_block_edges(int mbAddr, int mbAddrN, bool
 			  q3
 			  --
 			*/
-			xW = xE[k];
-			yW = yE[k] - 1;
+			mb_p0_x = xE[k];
+			mb_p0_y = yE[k] - 1;
 
-			if (yW < 0)
+			mb_q0_x = xE[k];
+			mb_q0_y = yE[k];
+
+			if (mb_p0_y < 0)
 			{
 				if (chromaEdgeFlag)
 				{
-					yW += sHeader->sps.MbHeightC;
+					mb_p0_y += sHeader->sps.MbHeightC;
 				}
 				else
 				{
-					yW += 16;
+					mb_p0_y += 16;
 				}
 			}
 
@@ -411,32 +420,48 @@ void ParseSlice::Filtering_process_for_block_edges(int mbAddr, int mbAddrN, bool
 	}
 
 }
-void ParseSlice::Filtering_process_for_a_set_of_samples_across_a_horizontal_or_vertical_block_edge(int mbAddr, int mbAddrN, bool chromaEdgeFlag, bool verticalEdgeFlag, bool fieldModeInFrameFilteringFlag, int iCbCr, bool mbEdgeFlag, int p[4], int q[4])
+void ParseSlice::Filtering_process_for_a_set_of_samples_across_a_horizontal_or_vertical_block_edge(int mbAddr, int mbAddrN, bool chromaEdgeFlag, bool verticalEdgeFlag, bool fieldModeInFrameFilteringFlag,
+	int iCbCr, bool mbEdgeFlag, int p[4], int q[4], const int mb_p0_x, const int mb_p0_y, const int mb_q0_x, const int mb_q0_y)
 {
-
+	int bS = 0;
 	if (chromaEdgeFlag)
 	{
 
 	}
 	else
 	{
-
+		bS = Derivation_process_for_the_luma_content_dependent_boundary_filtering_strength(mbAddr, false, mbAddrN, mbEdgeFlag, p[0], q[0], verticalEdgeFlag, mb_p0_x, mb_p0_y, mb_q0_x, mb_q0_y);
 	}
 
+	//sHeader->FilterOffsetA
+
+	const int mbAddr_p0 = mbEdgeFlag ? mbAddrN : mbAddr;
+	const int mbAddr_q0 = mbAddr;
+
+	const int8_t filterOffsetA = macroblock[mbAddr_q0]->FilterOffsetA;
+	const int8_t filterOffsetB = macroblock[mbAddr_q0]->FilterOffsetB;
+
+	int qPp = 0;
+	int qPq = 0;
 
 }
 //滤波强度推导
-void ParseSlice::Derivation_process_for_the_luma_content_dependent_boundary_filtering_strength(bool MbaffFrameFlag, int mbAddrN, bool mbEdgeFlag, int p0, int q0, bool verticalEdgeFlag)
+int ParseSlice::Derivation_process_for_the_luma_content_dependent_boundary_filtering_strength(const int mbAddr, bool MbaffFrameFlag, int mbAddrN, bool mbEdgeFlag, int p0, int q0, bool verticalEdgeFlag,
+	const int mb_p0_x, const int mb_p0_y, const int mb_q0_x, const int mb_q0_y)
 {
 
 	//如果MbaffFrameFlag等于1，样点p0和q0位于不同的宏块对中，其中一个是域宏块对，另外一个是帧宏块对，将mixedModeEdgeFlag置为1.否则，将mixedModeEdgeFlag置0。
 
 	constexpr bool mixedModeEdgeFlag = false;
 
-	const int mbAddr_p0 = mbAddr;
-	const int mbAddr_q0 = mbEdgeFlag ? mbAddrN : mbAddr;
+	const int mbAddr_p0 = mbEdgeFlag ? mbAddrN : mbAddr;
+	const int mbAddr_q0 = mbAddr;
 
+	const int luma4x4BlkIdx_p0 = ParseSlice::Derivation_process_for_4x4_luma_block_indices(mb_p0_x, mb_p0_y);
+	const int luma8x8BlkIdx_p0 = ParseSlice::Derivation_process_for_8x8_luma_block_indices(mb_p0_x, mb_p0_y);
 
+	const int luma4x4BlkIdx_q0 = ParseSlice::Derivation_process_for_4x4_luma_block_indices(mb_q0_x, mb_q0_y);
+	const int luma8x8BlkIdx_q0 = ParseSlice::Derivation_process_for_8x8_luma_block_indices(mb_q0_x, mb_q0_y);
 	int bS = 0;
 	if (mbEdgeFlag)
 	{
@@ -474,14 +499,34 @@ void ParseSlice::Derivation_process_for_the_luma_content_dependent_boundary_filt
 	{
 		bS = 3;
 	}
-	else if (true)
+	else if ((macroblock[mbAddr_p0]->transform_size_8x8_flag && macroblock[mbAddr_p0]->mb_luma_8x8_non_zero_count_coeff[luma8x8BlkIdx_p0] > 0)
+		|| (!macroblock[mbAddr_p0]->transform_size_8x8_flag && macroblock[mbAddr_p0]->mb_luma_4x4_non_zero_count_coeff[luma4x4BlkIdx_p0] > 0)
+		|| (macroblock[mbAddr_q0]->transform_size_8x8_flag && macroblock[mbAddr_q0]->mb_luma_8x8_non_zero_count_coeff[luma8x8BlkIdx_q0] > 0)
+		|| (!macroblock[mbAddr_q0]->transform_size_8x8_flag && macroblock[mbAddr_q0]->mb_luma_4x4_non_zero_count_coeff[luma4x4BlkIdx_q0] > 0)
+		)
 	{
-
+		bS = 2;
+	}
+	else if (mixedModeEdgeFlag || (false)) //帧间相关
+	{
+		bS = 1;
+	}
+	else
+	{
+		bS = 0;
 	}
 
+	return bS;
 
+}
 
-
+int ParseSlice::Derivation_process_for_4x4_luma_block_indices(int x, int y)
+{
+	return 8 * (y / 8) + 4 * (x / 8) + 2 * ((y % 8) / 4) + ((x % 8) / 4);
+}
+int ParseSlice::Derivation_process_for_8x8_luma_block_indices(int x, int y)
+{
+	return 2 * (y / 8) + (x / 8);
 }
 //色度DC哈达玛变换 
 void ParseSlice::transformDecodeChromaDCProcess(int c[4][2], int dcC[4][2], int MbWidthC, int MbHeightC, bool isChromaCb)
@@ -1784,6 +1829,7 @@ void ParseSlice::Intra_chroma_prediction(bool isChromaCb)
 
 
 }
+
 //Intra4x4PredMode的推导过程
 void ParseSlice::getIntra4x4PredMode(size_t luma4x4BlkIdx, bool isLuam)
 {

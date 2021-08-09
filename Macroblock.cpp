@@ -140,12 +140,13 @@ Macroblock::Macroblock()
 	mb_skip_flag = 0;
 
 
+	FilterOffsetA = 0;
+	FilterOffsetB = 0;
 
-
-	coded_block_flag_DC_pattern = 0x07;
-	coded_block_flag_AC_pattern[0] = 0xFFFF; //cabac: coded_block_flag-luma
-	coded_block_flag_AC_pattern[1] = 0xFFFF; //cabac: coded_block_flag-cb
-	coded_block_flag_AC_pattern[2] = 0xFFFF; //cabac: coded_block_flag-cr
+	//coded_block_flag_DC_pattern = 0x07;
+	//coded_block_flag_AC_pattern[0] = 0xFFFF; //cabac: coded_block_flag-luma
+	//coded_block_flag_AC_pattern[1] = 0xFFFF; //cabac: coded_block_flag-cb
+	//coded_block_flag_AC_pattern[2] = 0xFFFF; //cabac: coded_block_flag-cr
 
 	coded_block_flag_DC_pattern = 0;
 	coded_block_flag_AC_pattern[0] = 0; //cabac: coded_block_flag-luma
@@ -178,6 +179,9 @@ bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* s
 	SliceHeader* sHeader = sliceBase->sHeader;
 
 	sliceNumber = sliceBase->sliceNumber;
+
+	FilterOffsetA = sHeader->FilterOffsetA;
+	FilterOffsetB = sHeader->FilterOffsetB;
 	mb_skip_flag = sliceData->mb_skip_flag;
 
 	isAe = sHeader->pps.entropy_coding_mode_flag;  //ae(v)表示CABAC编码
@@ -839,6 +843,8 @@ int Macroblock::residual_luma(BitStream& bs, int i16x16DClevel[16], int i16x16AC
 		{
 			// 8*8 cabac
 			cabac.residual_block_cabac(bs, sliceBase, level8x8[i8x8], 4 * startIdx, 4 * endIdx + 3, 64, RESIDUAL_LEVEL::LumaLevel8x8, TotalCoeff, i8x8);
+
+			mb_luma_8x8_non_zero_count_coeff[i8x8] = TotalCoeff;
 		}
 		else
 		{

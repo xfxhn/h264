@@ -178,11 +178,17 @@ void AnnexBReader::getNaluHeader(uint8_t* buffer, int size)
 		{
 			//环路滤波器
 
+
+
+
+
 			if (this->slice)
 			{
 				delete this->slice;
 				this->slice = nullptr;
 			}
+
+
 			this->slice = new ParseSlice(nalu, sHeader);
 			this->slice->parse();
 			cout << "解码完这一帧" << endl;
@@ -204,7 +210,11 @@ void AnnexBReader::getNaluHeader(uint8_t* buffer, int size)
 
 
 		}
-		this->slice->sliceNumber = sHeader->first_mb_in_slice;
+		if (this->slice)
+		{
+			this->slice->sliceNumber = sHeader->first_mb_in_slice;
+		}
+
 
 		SliceData sData;
 		sData.slice_data(bs, slice);

@@ -142,6 +142,9 @@ public:
 
 	uint32_t sliceNumber;
 
+	int8_t     FilterOffsetA;
+	int8_t     FilterOffsetB;
+
 
 	int  mb_skip_flag;
 

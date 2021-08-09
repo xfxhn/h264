@@ -34,9 +34,9 @@ public:
 	int32_t     slice_qp_delta; // 2 se(v)
 	uint32_t     sp_for_switch_flag; // 2 u(1)
 	int32_t     slice_qs_delta; // 2 se(v)
-	uint32_t     disable_deblocking_filter_idc; // 2 ue(v) 0：开启环路滤波，滤波可跨越slice边界。1：关闭环路滤波。2：开启环路滤波，只针对同一个slice滤波。
-	int32_t     slice_alpha_c0_offset_div2; // 2 se(v)
-	int32_t     slice_beta_offset_div2; // 2 se(v)
+	bool     disable_deblocking_filter_idc; // 2 ue(v) 0：开启环路滤波，滤波可跨越slice边界。1：关闭环路滤波。2：开启环路滤波，只针对同一个slice滤波。
+	int8_t     slice_alpha_c0_offset_div2; // 2 se(v)
+	int8_t     slice_beta_offset_div2; // 2 se(v)
 	uint32_t     slice_group_change_cycle; // 2 u(v)
 
 
@@ -82,11 +82,12 @@ public:
 	int32_t     chroma_offset_l1[32][2]; // 2 se(v)
 
 	//表示帧场自适应
-	bool			MbaffFrameFlag;   //MbaffFrameFlag = ( mb_adaptive_frame_field_flag && !field_pic_flag );
-	int32_t			SliceGroupChangeRate;
-	int				SliceQPY; //SliceQPY = 26 + pic_init_qp_minus26 + slice_qp_delta;
-	int32_t         QPY_prev; //QPY,PREV 是当前 slice 中前一宏块的量化参数 QPY 的值，在每个 slice 的开始处，对于 slice 中的第一个宏块，QPY,PREV 应该被初始化成等式 7-16 中的 SliceQPY 值。
-
+	bool		MbaffFrameFlag;   //MbaffFrameFlag = ( mb_adaptive_frame_field_flag && !field_pic_flag );
+	int			SliceGroupChangeRate;
+	int			SliceQPY; //SliceQPY = 26 + pic_init_qp_minus26 + slice_qp_delta;
+	int         QPY_prev; //QPY,PREV 是当前 slice 中前一宏块的量化参数 QPY 的值，在每个 slice 的开始处，对于 slice 中的第一个宏块，QPY,PREV 应该被初始化成等式 7-16 中的 SliceQPY 值。
+	int8_t      FilterOffsetA;
+	int8_t      FilterOffsetB;
 
 	uint32_t  PicHeightInMbs;
 	uint32_t  PicSizeInMbs;

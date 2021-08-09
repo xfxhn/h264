@@ -23,9 +23,11 @@ SliceHeader::SliceHeader(ParseNalu& nalu) :nalu(nalu)
 	slice_qp_delta = 0;
 	sp_for_switch_flag = 0;
 	slice_qs_delta = 0;
-	disable_deblocking_filter_idc = 0;
-	slice_group_change_cycle = 0;
+	disable_deblocking_filter_idc = false;
+
+	slice_alpha_c0_offset_div2 = 0;
 	slice_beta_offset_div2 = 0;
+
 	slice_group_change_cycle = 0;
 
 	ref_pic_list_modification_flag_l0 = 0;
@@ -93,12 +95,11 @@ SliceHeader::SliceHeader(ParseNalu& nalu) :nalu(nalu)
 	MbToSliceGroupMap = NULL;
 	PrevRefFrameNum = 0;
 	UnusedShortTermFrameNum = 0;
-	FilterOffsetA = 0;
-	FilterOffsetB = 0;
 
 	m_picture_coded_type = H264_PICTURE_CODED_TYPE_UNKNOWN;
 	m_is_malloc_mem_self = 0;*/
-
+	FilterOffsetA = 0;
+	FilterOffsetB = 0;
 	memset(ScalingList4x4, 0, sizeof(int) * 6 * 16);
 	memset(ScalingList8x8, 0, sizeof(int) * 6 * 64);
 }
@@ -290,15 +291,20 @@ bool SliceHeader::slice_header(BitStream& bs, const ParsePPS ppsCache[256], cons
 	//是否存在去块滤波器控制相关信息 =1存在响应去块滤波器 =0没有相应信息
 	if (pps.deblocking_filter_control_present_flag)
 	{
+		//表示去块效应滤波器的操作在经过条带的一些块边缘时是否会被废弃，并指定 该滤波器针对哪个边缘被废弃
 		disable_deblocking_filter_idc = bs.readUE(); //2 ue(v)
 
 		if (disable_deblocking_filter_idc != 1)
 		{
-			slice_group_change_cycle = bs.readSE(); //2 se(v)
+			//表示访问 α 和 tC0 去块效应滤波器表格来滤波条带中的宏块所控制的操作使用的偏移( -6 到 +6)
+			slice_alpha_c0_offset_div2 = bs.readSE(); //2 se(v)
+			//表示访问 β 去块效应滤波器表格来滤波带中的宏块所控制的操作使用的偏移( -6 到 +6)
 			slice_beta_offset_div2 = bs.readSE(); //2 se(v)
 		}
 	}
-
+	FilterOffsetA = slice_alpha_c0_offset_div2 << 1;
+	//当在β表格中寻址时应使用该偏移
+	FilterOffsetB = slice_beta_offset_div2 << 1;
 
 
 
@@ -330,10 +336,7 @@ bool SliceHeader::slice_header(BitStream& bs, const ParsePPS ppsCache[256], cons
 	MaxPicNum = (field_pic_flag == 0) ? m_sps.MaxFrameNum : (2 * m_sps.MaxFrameNum);
 	CurrPicNum = (field_pic_flag == 0) ? frame_num : (2 * frame_num + 1);
 	MapUnitsInSliceGroup0 = MIN(slice_group_change_cycle * SliceGroupChangeRate, m_sps.PicSizeInMapUnits);
-
-
-	FilterOffsetA = slice_alpha_c0_offset_div2 << 1;
-	FilterOffsetB = slice_beta_offset_div2 << 1;*/
+*/
 
 
 	if (mapUnitToSliceGroupMap == nullptr)
