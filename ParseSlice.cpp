@@ -35,6 +35,7 @@ bool ParseSlice::parse()
 {
 
 
+
 	chromaCbData = new uint8_t * [PicWidthInSamplesC];
 	chromaCrData = new uint8_t * [PicWidthInSamplesC];
 
@@ -46,17 +47,11 @@ bool ParseSlice::parse()
 
 
 
-
-
 	lumaData = new uint8_t * [PicWidthInSamplesL];
 	for (size_t i = 0; i < PicWidthInSamplesL; i++)
 	{
 		lumaData[i] = new uint8_t[PicHeightInSamplesL]();
 	}
-
-
-
-
 
 
 	this->macroblock = new Macroblock * [PicSizeInMbs];
@@ -77,6 +72,11 @@ void ParseSlice::init()
 
 ParseSlice::~ParseSlice()
 {
+	if (sHeader)
+	{
+		delete sHeader;
+		sHeader = nullptr;
+	}
 
 	if (macroblock)
 	{
@@ -134,6 +134,12 @@ ParseSlice::~ParseSlice()
 		delete[] chromaCrData;
 		chromaCrData = nullptr;
 	}
+
+}
+
+void ParseSlice::saveBmpFile(const std::string filename)
+{
+
 
 }
 
@@ -941,11 +947,11 @@ void ParseSlice::Filtering_process_for_edges_with_bS_less_than_4(const int p[4],
 	int tC0 = 0;
 	if (chromaEdgeFlag)
 	{
-		tC0 = tC0Table[bS][indexA] * (1 << (sHeader->sps.BitDepthC - 8));
+		tC0 = tC0Table[bS - 1][indexA] * (1 << (sHeader->sps.BitDepthC - 8));
 	}
 	else
 	{
-		tC0 = tC0Table[bS][indexA] * (1 << (sHeader->sps.BitDepthY - 8));
+		tC0 = tC0Table[bS - 1][indexA] * (1 << (sHeader->sps.BitDepthY - 8));
 	}
 
 	// p3 p2 p1 p0 | q0 q1 q2 q3

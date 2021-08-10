@@ -177,7 +177,7 @@ void AnnexBReader::getNaluHeader(uint8_t* buffer, int size)
 		if (this->slice && this->slice->CurrMbAddr >= (sHeader->PicSizeInMbs - 1))
 		{
 			//»·Â·ÂË²¨Æ÷
-
+			//slice->sHeader
 
 			slice->Deblocking_filter_process();
 
@@ -187,6 +187,7 @@ void AnnexBReader::getNaluHeader(uint8_t* buffer, int size)
 				delete this->slice;
 				this->slice = nullptr;
 			}
+
 
 
 			this->slice = new ParseSlice(nalu, sHeader);
@@ -219,8 +220,8 @@ void AnnexBReader::getNaluHeader(uint8_t* buffer, int size)
 		SliceData sData;
 		sData.slice_data(bs, slice);
 
-		delete sHeader;
-		sHeader = nullptr;
+		/*delete sHeader;
+		sHeader = nullptr;*/
 		break;
 	}
 	case NaluType::H264_NAL_DPA: //2
@@ -275,8 +276,8 @@ void AnnexBReader::getNaluHeader(uint8_t* buffer, int size)
 		SliceData sData;
 		sData.slice_data(bs, slice);
 
-		delete sHeader;
-		sHeader = nullptr;
+		/*delete sHeader;
+		sHeader = nullptr;*/
 
 		break;
 	}

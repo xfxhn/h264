@@ -60,10 +60,9 @@ public:
 
 	~ParseSlice();
 
+	void saveBmpFile(const std::string filename);
+
 	void Deblocking_filter_process();
-
-
-
 
 	void transformDecode4x4LuamResidualProcess();
 
@@ -94,7 +93,7 @@ public:
 	void scaling(bool isLuam, bool isChromaCb);
 
 private:
-
+	void createImage();
 
 	static int Derivation_process_for_4x4_luma_block_indices(int x, int y);
 	static int Derivation_process_for_8x8_luma_block_indices(int x, int y);
