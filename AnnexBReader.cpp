@@ -179,7 +179,7 @@ void AnnexBReader::getNaluHeader(uint8_t* buffer, int size)
 			//»·Â·ÂË²¨Æ÷
 
 
-
+			slice->Deblocking_filter_process();
 
 
 			if (this->slice)
