@@ -7,7 +7,7 @@
 #include "ParseSlice.h"
 #include "ParseNalu.h"
 #include "ParseSEI.h"
-#pragma warning(disable:4996)
+
 
 
 class AnnexBReader

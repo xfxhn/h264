@@ -137,12 +137,63 @@ ParseSlice::~ParseSlice()
 
 }
 
-void ParseSlice::saveBmpFile(const std::string filename)
+void ParseSlice::saveBmpFile(const char* filename)
 {
 
+	int width = PicWidthInSamplesL;
+	int height = PicHeightInSamplesL;
+	uint8_t* Bit = new uint8_t[width * height]();
+
+	convertYuv420(width, height, Bit);
+
+	FILE* fp = fopen("./output/xf.y", "wb");
+	if (!fp)
+	{
+		return;
+	}
+
+	fwrite(Bit, width * height, 1, fp);
+	fclose(fp);
+
+	int a = 1;
+}
+void ParseSlice::convertYuv420(int width, int height, uint8_t* bit)
+{
+	//width=386 ,height= 384
+	//for (size_t y = 0; y < height; y++)
+	//{
+	//	for (size_t x = 0; x < width; x++)
+	//	{
+	//		uint8_t* Y = lumaData[y * width + x];
+	//		/*int U = Y / 4;
+	//		int V = Y / 4;*/
+
+
+	//	}
+	//}
+	//width=386 ,height= 384
+	for (size_t y = 0; y < height; y++)
+	{
+		for (size_t x = 0; x < width; x++)
+		{
+
+
+			uint8_t Y = lumaData[x][y];
+
+			bit[y * width + x] = Y;
+			/*uint8_t U = chromaCbData[x][y];
+			uint8_t V = chromaCrData[x][y];
+			printf("%d\n", U);*/
+
+			/*int U = Y / 4;
+			int V = Y / 4;*/
+
+
+		}
+	}
+	int a = 1;
 
 }
-
 //去块滤波器
 void ParseSlice::Deblocking_filter_process()
 {
@@ -3683,6 +3734,8 @@ void ParseSlice::scaling(bool isLuam, bool isChromaCb)
 		}
 	}
 }
+
+
 
 //transformDecodeChromaArrayTypeEqualTo3Process
 void ParseSlice::transformDecodeChromaArrayTypeEqualTo3Process(bool isChromaCb)

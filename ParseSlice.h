@@ -8,6 +8,30 @@
 #include "Macroblock.h"
 
 
+struct  MyBITMAPFILEHEADER                     /**** BMP file header structure ****/
+{
+	uint32_t   bfSize;           /* Size of file */
+	uint16_t   bfReserved1;      /* Reserved */
+	uint16_t   bfReserved2;      /* ... */
+	uint32_t   bfOffBits;        /* Offset to bitmap data */
+};
+
+struct MyBITMAPINFOHEADER		/**** BMP file info structure ****/
+{
+	uint32_t biSize;           /* Size of info header */
+	int32_t  biWidth;          /* Width of image */
+	int32_t  biHeight;         /* Height of image */
+	uint16_t biPlanes;         /* Number of color planes */
+	uint16_t biBitCount;       /* Number of bits per pixel */
+	uint32_t biCompression;    /* Type of compression to use */
+	uint32_t biSizeImage;      /* Size of image data */
+	int32_t  biXPelsPerMeter;  /* X pixels per meter */
+	int32_t  biYPelsPerMeter;  /* Y pixels per meter */
+	uint32_t biClrUsed;        /* Number of colors used */
+	uint32_t biClrImportant;   /* Number of important colors */
+};
+
+
 
 class ParseSlice
 {
@@ -60,7 +84,7 @@ public:
 
 	~ParseSlice();
 
-	void saveBmpFile(const std::string filename);
+	void saveBmpFile(const char* filename);
 
 	void Deblocking_filter_process();
 
@@ -93,6 +117,9 @@ public:
 	void scaling(bool isLuam, bool isChromaCb);
 
 private:
+
+	void convertYuv420(int width, int height, uint8_t* bit);
+
 	void createImage();
 
 	static int Derivation_process_for_4x4_luma_block_indices(int x, int y);
