@@ -118,9 +118,8 @@ public:
 
 private:
 
-	void convertYuv420(int width, int height, uint8_t* bit);
+	void convertYuv420(int width, int height, uint8_t* buffer);
 
-	void createImage();
 
 	static int Derivation_process_for_4x4_luma_block_indices(int x, int y);
 	static int Derivation_process_for_8x8_luma_block_indices(int x, int y);

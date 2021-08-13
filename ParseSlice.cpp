@@ -142,56 +142,175 @@ void ParseSlice::saveBmpFile(const char* filename)
 
 	int width = PicWidthInSamplesL;
 	int height = PicHeightInSamplesL;
-	uint8_t* Bit = new uint8_t[width * height]();
 
-	convertYuv420(width, height, Bit);
 
-	FILE* fp = fopen("./output/xf.y", "wb");
+	const size_t size = PicWidthInSamplesL * PicHeightInSamplesL * 3;
+	uint8_t* buffer = new uint8_t[size]();
+
+
+
+
+	/*int sizeY = PicWidthInSamplesL * PicHeightInSamplesL;
+	int sizeU = PicWidthInSamplesC * PicHeightInSamplesC;
+	int sizeV = PicWidthInSamplesC * PicHeightInSamplesC;
+
+	int totalSzie = sizeY + sizeU + sizeV;
+
+	uint8_t* bufferTotal = new uint8_t[totalSzie]();
+	uint8_t* buffer1 = new uint8_t[sizeY];
+	uint8_t* buffer2 = new uint8_t[sizeU];
+	uint8_t* buffer3 = new uint8_t[sizeV];*/
+
+	convertYuv420(width, height, buffer);
+
+	//memcpy(bufferTotal, buffer1, sizeY);
+	//memcpy(bufferTotal + sizeY, buffer2, sizeU);
+	//memcpy(bufferTotal + sizeY + sizeU, buffer3, sizeV);
+
+
+
+
+
+
+
+	FILE* fp = fopen("./output/xf.bmp", "wb");
 	if (!fp)
 	{
 		return;
 	}
+	/*fwrite(bufferTotal, totalSzie, 1, fp);
+	fclose(fp);*/
 
-	fwrite(Bit, width * height, 1, fp);
+
+	MyBITMAPFILEHEADER bfh;
+	MyBITMAPINFOHEADER bih;
+	/* 文件的魔术数字。 由于对齐要求，它不适合头部结构，所以把它放在外面  高8位为字母’B’，低8位为字母’M’ */
+	uint16_t bfType = 0x4d42;
+
+	bfh.bfReserved1 = 0;//保留
+	bfh.bfReserved2 = 0;//保留
+	//文件大小
+	bfh.bfSize = 2 + sizeof(MyBITMAPFILEHEADER) + sizeof(MyBITMAPINFOHEADER) + size;
+	//偏移量 54个字节
+	bfh.bfOffBits = 0x36;
+
+
+
+
+
+	//MyBITMAPINFOHEADER结构体需要的字节
+	bih.biSize = sizeof(MyBITMAPINFOHEADER);
+	//图像宽
+	bih.biWidth = width;
+	//图像搞(如果是正的说明是倒向，如果是负的说明正向的)大多时候倒向的
+	bih.biHeight = -height;
+	//颜色平面数
+	bih.biPlanes = 1;
+	/*位图 数据记录了位图的每一个像素值，记录顺序是在扫描行内是从左到右，扫描行之间是从下到上。位图的一个像素值所占的字节数：
+当biBitCount=1时，8个像素占1个字节；
+当biBitCount=4时，2个像素占1个字节；
+当biBitCount=8时，1个像素占1个字节；
+当biBitCount=24时，1个像素占3个字节,按顺序分别为B,G,R；*/
+	bih.biBitCount = 24;
+	//压缩类型 0是不压缩
+	bih.biCompression = 0;
+	//图像大小用BI_RGB可设置为0
+	bih.biSizeImage = size;
+	//水平分辨率
+	bih.biXPelsPerMeter = 5000;
+	//垂直分辨率
+	bih.biYPelsPerMeter = 5000;
+	//说明位图实际使用的彩色表中索引数（=0的话说明使用所有调色板）
+	bih.biClrUsed = 0;
+	//说明对图像显示有重要影响的颜色索引数目，=0表示都重要
+	bih.biClrImportant = 0;
+
+	fwrite(&bfType, sizeof(uint16_t), 1, fp);
+
+	fwrite(&bfh, sizeof(MyBITMAPFILEHEADER), 1, fp);
+	fwrite(&bih, sizeof(MyBITMAPINFOHEADER), 1, fp);
+
+
+	fwrite(buffer, size, 1, fp);
 	fclose(fp);
 
 	int a = 1;
+
+
+
+
 }
-void ParseSlice::convertYuv420(int width, int height, uint8_t* bit)
+void ParseSlice::convertYuv420(int width, int height, uint8_t* buffer)
 {
-	//width=386 ,height= 384
-	//for (size_t y = 0; y < height; y++)
-	//{
-	//	for (size_t x = 0; x < width; x++)
-	//	{
-	//		uint8_t* Y = lumaData[y * width + x];
-	//		/*int U = Y / 4;
-	//		int V = Y / 4;*/
 
-
-	//	}
-	//}
-	//width=386 ,height= 384
+	//width=386 ,height= 384   色度184
 	for (size_t y = 0; y < height; y++)
 	{
 		for (size_t x = 0; x < width; x++)
 		{
 
+			const size_t  index = y * width + x;
+
+
+			const size_t idx = index / 4;
 
 			uint8_t Y = lumaData[x][y];
 
-			bit[y * width + x] = Y;
-			/*uint8_t U = chromaCbData[x][y];
-			uint8_t V = chromaCrData[x][y];
-			printf("%d\n", U);*/
+			/*buffer1[index] = Y;*/
 
-			/*int U = Y / 4;
-			int V = Y / 4;*/
+			uint8_t U = chromaCbData[idx % PicWidthInSamplesC][idx / PicWidthInSamplesC];
+			uint8_t V = chromaCrData[idx % PicWidthInSamplesC][idx / PicWidthInSamplesC];
 
+			int b = (1164 * (Y - 16) + 2018 * (U - 128)) / 1000;
+			int g = (1164 * (Y - 16) - 813 * (V - 128) - 391 * (U - 128)) / 1000;
+			int r = (1164 * (Y - 16) + 1596 * (V - 128)) / 1000;
+			buffer[index] = b;
+			buffer[index + 1] = g;
+			buffer[index + 2] = r;
+
+			if (index % 4 == 0)
+			{
+				/*buffer[index] = 1.164 * (Y - 16) + 2.018 * (U - 128);
+				buffer[index + 1] = 1.164 * (Y - 16) - 0.380 * (U - 128) - 0.813 * (V - 128);
+				buffer[index + 2] = 1.164 * (Y - 16) + 1.159 * (V - 128);*/
+				//printf("U分量%d,V分量%d\n", U, V);
+			}
+			/*printf("U分量%d,V分量%d\n", U, V);
+			if (index > 100)
+			{
+				printf("U分量%d,V分量%d\n", U, V);
+			}*/
+
+
+
+			//printf("U分量%d,V分量%d\n", U, V);
+
+
+			//Y + 1.402 * (V-128);
 
 		}
 	}
-	int a = 1;
+
+
+	//for (size_t y = 0; y < PicHeightInSamplesC; y++)
+	//{
+	//	for (size_t x = 0; x < PicWidthInSamplesC; x++)
+	//	{
+	//		uint8_t U = chromaCbData[x][y];
+	//		uint8_t V = chromaCrData[x][y];
+	//		const size_t  index = y * PicWidthInSamplesC + x;
+
+	//		/*printf("U分量%d,V分量%d\n", U, V);
+
+	//		if (index > 100)
+	//		{
+	//			int a = 1;
+	//		}*/
+	//		//bit[y * PicWidthInSamplesC + x] = V;
+
+
+	//	}
+	//}
 
 }
 //去块滤波器

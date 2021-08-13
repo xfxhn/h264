@@ -387,9 +387,9 @@ bool ParseSPS::seq_parameter_set_data(BitStream& bs)
 	PicHeightInSamplesL = PicHeightInMapUnits * 16;
 
 
-	//色度分类的图像宽度
+	//色度分量的图像宽度
 	PicWidthInSamplesC = PicWidthInMbs * MbWidthC;
-	//色度分类的图像高度
+	//色度分量的图像高度
 	PicHeightInSamplesC = PicHeightInMapUnits * MbHeightC;
 
 
