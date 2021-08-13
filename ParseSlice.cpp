@@ -144,12 +144,6 @@ void ParseSlice::saveBmpFile(const char* filename)
 	int height = PicHeightInSamplesL;
 
 
-	const size_t size = PicWidthInSamplesL * PicHeightInSamplesL * 3;
-	uint8_t* buffer = new uint8_t[size]();
-
-
-
-
 	/*int sizeY = PicWidthInSamplesL * PicHeightInSamplesL;
 	int sizeU = PicWidthInSamplesC * PicHeightInSamplesC;
 	int sizeV = PicWidthInSamplesC * PicHeightInSamplesC;
@@ -160,9 +154,20 @@ void ParseSlice::saveBmpFile(const char* filename)
 	uint8_t* buffer1 = new uint8_t[sizeY];
 	uint8_t* buffer2 = new uint8_t[sizeU];
 	uint8_t* buffer3 = new uint8_t[sizeV];*/
+	const size_t widthBytes = (width * 24 / 8 + 3) / 4 * 4;
 
-	convertYuv420(width, height, buffer);
 
+	uint8_t* buffer = new uint8_t[height * widthBytes](); //在堆上申请
+	//memset(buffer1, 0, sizeof(uint8_t) * height * widthBytes);
+
+
+	uint8_t* Y = new uint8_t[PicWidthInSamplesL * PicHeightInSamplesL];
+	convertYuv420(buffer, widthBytes, Y);
+	FILE* fp = fopen("./output/xf1.bmp", "wb");
+	if (!fp)
+	{
+		return;
+	}
 	//memcpy(bufferTotal, buffer1, sizeY);
 	//memcpy(bufferTotal + sizeY, buffer2, sizeU);
 	//memcpy(bufferTotal + sizeY + sizeU, buffer3, sizeV);
@@ -171,29 +176,21 @@ void ParseSlice::saveBmpFile(const char* filename)
 
 
 
-
-
-	FILE* fp = fopen("./output/xf.bmp", "wb");
-	if (!fp)
-	{
-		return;
-	}
-	/*fwrite(bufferTotal, totalSzie, 1, fp);
-	fclose(fp);*/
-
-
-	MyBITMAPFILEHEADER bfh;
 	MyBITMAPINFOHEADER bih;
 	/* 文件的魔术数字。 由于对齐要求，它不适合头部结构，所以把它放在外面  高8位为字母’B’，低8位为字母’M’ */
 	uint16_t bfType = 0x4d42;
 
+	fwrite(&bfType, sizeof(uint16_t), 1, fp);
+
+	MyBITMAPFILEHEADER bfh;
+	//文件大小
+	bfh.bfSize = 2 + sizeof(MyBITMAPFILEHEADER) + sizeof(MyBITMAPINFOHEADER) + (height * widthBytes);
 	bfh.bfReserved1 = 0;//保留
 	bfh.bfReserved2 = 0;//保留
-	//文件大小
-	bfh.bfSize = 2 + sizeof(MyBITMAPFILEHEADER) + sizeof(MyBITMAPINFOHEADER) + size;
 	//偏移量 54个字节
 	bfh.bfOffBits = 0x36;
 
+	fwrite(&bfh, sizeof(MyBITMAPFILEHEADER), 1, fp);
 
 
 
@@ -215,78 +212,63 @@ void ParseSlice::saveBmpFile(const char* filename)
 	//压缩类型 0是不压缩
 	bih.biCompression = 0;
 	//图像大小用BI_RGB可设置为0
-	bih.biSizeImage = size;
+	bih.biSizeImage = (height * widthBytes);
 	//水平分辨率
-	bih.biXPelsPerMeter = 5000;
+	bih.biXPelsPerMeter = 0;
 	//垂直分辨率
-	bih.biYPelsPerMeter = 5000;
+	bih.biYPelsPerMeter = 0;
 	//说明位图实际使用的彩色表中索引数（=0的话说明使用所有调色板）
 	bih.biClrUsed = 0;
 	//说明对图像显示有重要影响的颜色索引数目，=0表示都重要
 	bih.biClrImportant = 0;
 
-	fwrite(&bfType, sizeof(uint16_t), 1, fp);
-
-	fwrite(&bfh, sizeof(MyBITMAPFILEHEADER), 1, fp);
 	fwrite(&bih, sizeof(MyBITMAPINFOHEADER), 1, fp);
 
+	fwrite(buffer, height * widthBytes, 1, fp);
 
-	fwrite(buffer, size, 1, fp);
 	fclose(fp);
 
 	int a = 1;
 
-
-
-
 }
-void ParseSlice::convertYuv420(int width, int height, uint8_t* buffer)
+
+
+void ParseSlice::convertYuv420(uint8_t* buffer, size_t widthBytes, uint8_t* components)
 {
 
 	//width=386 ,height= 384   色度184
-	for (size_t y = 0; y < height; y++)
+	for (size_t y = 0; y < PicHeightInSamplesL; y++)
 	{
-		for (size_t x = 0; x < width; x++)
+		for (size_t x = 0; x < PicWidthInSamplesL; x++)
 		{
 
-			const size_t  index = y * width + x;
+			const size_t  index = y * PicWidthInSamplesL + x;
 
 
 			const size_t idx = index / 4;
 
 			uint8_t Y = lumaData[x][y];
-
-			/*buffer1[index] = Y;*/
-
 			uint8_t U = chromaCbData[idx % PicWidthInSamplesC][idx / PicWidthInSamplesC];
 			uint8_t V = chromaCrData[idx % PicWidthInSamplesC][idx / PicWidthInSamplesC];
+
+			components[index] = Y;
 
 			int b = (1164 * (Y - 16) + 2018 * (U - 128)) / 1000;
 			int g = (1164 * (Y - 16) - 813 * (V - 128) - 391 * (U - 128)) / 1000;
 			int r = (1164 * (Y - 16) + 1596 * (V - 128)) / 1000;
-			buffer[index] = b;
-			buffer[index + 1] = g;
-			buffer[index + 2] = r;
 
-			if (index % 4 == 0)
-			{
-				/*buffer[index] = 1.164 * (Y - 16) + 2.018 * (U - 128);
+			buffer[y * widthBytes + x * 3 + 0] = Clip3(0, 255, b);
+			buffer[y * widthBytes + x * 3 + 1] = Clip3(0, 255, g);// Clip3(0, 255, g);
+			buffer[y * widthBytes + x * 3 + 2] = Clip3(0, 255, r);
+			/*buffer[index] = 1.164 * (Y - 16) + 2.018 * (U - 128);
 				buffer[index + 1] = 1.164 * (Y - 16) - 0.380 * (U - 128) - 0.813 * (V - 128);
 				buffer[index + 2] = 1.164 * (Y - 16) + 1.159 * (V - 128);*/
 				//printf("U分量%d,V分量%d\n", U, V);
-			}
-			/*printf("U分量%d,V分量%d\n", U, V);
-			if (index > 100)
+		/*	if (index % 4 == 0)
 			{
-				printf("U分量%d,V分量%d\n", U, V);
+
 			}*/
 
-
-
-			//printf("U分量%d,V分量%d\n", U, V);
-
-
-			//Y + 1.402 * (V-128);
 
 		}
 	}
@@ -1358,12 +1340,6 @@ void ParseSlice::transformDecodeChromaDCProcess(int c[4][2], int dcC[4][2], int 
 
 void ParseSlice::Intra_4x4_prediction(size_t luma4x4BlkIdx, bool isLuam)
 {
-	//9种帧内4x4预测模式
-	getIntra4x4PredMode(luma4x4BlkIdx, isLuam);
-
-	const uint8_t Intra4x4PredMode = macroblock[CurrMbAddr]->Intra4x4PredMode[luma4x4BlkIdx];
-
-
 
 	//相对4*4块左上角像素块的位置，13个参考像素x和y的坐标
 	//参考文档https://blog.csdn.net/shaqoneal/article/details/78820128
@@ -1445,7 +1421,10 @@ void ParseSlice::Intra_4x4_prediction(size_t luma4x4BlkIdx, bool isLuam)
 	}
 
 
+	//9种帧内4x4预测模式
+	getIntra4x4PredMode(luma4x4BlkIdx, isLuam);
 
+	const uint8_t Intra4x4PredMode = macroblock[CurrMbAddr]->Intra4x4PredMode[luma4x4BlkIdx];
 
 	if (Intra4x4PredMode == Intra_4x4_Vertical)//垂直
 	{
@@ -2529,6 +2508,7 @@ void ParseSlice::Intra_chroma_prediction(bool isChromaCb)
 void ParseSlice::getIntra4x4PredMode(size_t luma4x4BlkIdx, bool isLuam)
 {
 
+
 	//计算当前亮度块左上角亮度样点距离当前宏块左上角亮度样点的相对位置
 	int x = InverseRasterScan(luma4x4BlkIdx / 4, 8, 8, 16, 0) + InverseRasterScan(luma4x4BlkIdx % 4, 4, 4, 8, 0);
 	int y = InverseRasterScan(luma4x4BlkIdx / 4, 8, 8, 16, 1) + InverseRasterScan(luma4x4BlkIdx % 4, 4, 4, 8, 1);
@@ -2621,7 +2601,7 @@ void ParseSlice::getIntra4x4PredMode(size_t luma4x4BlkIdx, bool isLuam)
 		}
 		else  //8*8
 		{
-			intraMxMPredModeA = macroblock[mbAddrA]->Intra4x4PredMode[luma4x4BlkIdxA >> 2];
+			intraMxMPredModeA = macroblock[mbAddrA]->Intra8x8PredMode[luma4x4BlkIdxA >> 2];
 		}
 	}
 
@@ -2640,7 +2620,7 @@ void ParseSlice::getIntra4x4PredMode(size_t luma4x4BlkIdx, bool isLuam)
 		}
 		else //8*8
 		{
-			intraMxMPredModeB = macroblock[mbAddrB]->Intra4x4PredMode[luma4x4BlkIdxB >> 2];
+			intraMxMPredModeB = macroblock[mbAddrB]->Intra8x8PredMode[luma4x4BlkIdxB >> 2];
 		}
 	}
 
@@ -2877,6 +2857,7 @@ void ParseSlice::transformDecode4x4LuamResidualProcess()
 			int c[4][4] = { 0 };
 			int r[4][4] = { 0 };
 
+
 			//逆扫描过程  在解码器端则需要将这个一维数据转换成二维数组或矩阵进行运算
 			inverseScanner4x4Process(macroblock[CurrMbAddr]->level4x4[luma4x4BlkIdx], c);
 			//调用4*4残差缩放以及变换过程，c 为输入，r 为输出。输出是残差样点值
@@ -2922,6 +2903,7 @@ void ParseSlice::transformDecode4x4LuamResidualProcess()
 				}
 			}
 
+
 			////环路滤波器之前的图像生成
 			Picture_construction_process_prior_to_deblocking_filter_process(u, "4*4", luma4x4BlkIdx, true);
 		}
@@ -2940,6 +2922,7 @@ void ParseSlice::transformDecode8x8LuamResidualProcess()
 	for (size_t luma8x8BlkIdx = 0; luma8x8BlkIdx < 4; luma8x8BlkIdx++)
 	{
 		int c[8][8] = { 0 };
+
 		//逆zigzag扫描
 		inverseScanner8x8Process(macroblock[CurrMbAddr]->level8x8[luma8x8BlkIdx], c);
 		int r[8][8] = { 0 };

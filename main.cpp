@@ -43,7 +43,7 @@ int main()
 {
 
 	AnnexBReader reader;
-	bool isOpen = reader.open("./data/baseline.264");
+	bool isOpen = reader.open("./data/cabac.h264");
 
 	return EXIT_SUCCESS;
 }

@@ -117,8 +117,7 @@ public:
 	void scaling(bool isLuam, bool isChromaCb);
 
 private:
-
-	void convertYuv420(int width, int height, uint8_t* buffer);
+	void convertYuv420(uint8_t* buffer, size_t widthBytes, uint8_t* Y);
 
 
 	static int Derivation_process_for_4x4_luma_block_indices(int x, int y);
