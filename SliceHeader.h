@@ -28,8 +28,8 @@ public:
 	uint32_t     redundant_pic_cnt; // 2 ue(v)
 	bool		direct_spatial_mv_pred_flag; // 2 u(1)
 	bool		num_ref_idx_active_override_flag; // 2 u(1)
-	uint32_t     num_ref_idx_l0_active_minus1; // 2 ue(v) [0,31]
-	uint32_t     num_ref_idx_l1_active_minus1; // 2 ue(v) [0,31]
+	uint8_t     num_ref_idx_l0_active_minus1; // 2 ue(v) [0,31]
+	uint8_t     num_ref_idx_l1_active_minus1; // 2 ue(v) [0,31]
 	uint32_t     cabac_init_idc; // 2 ue(v)
 	int32_t     slice_qp_delta; // 2 se(v)
 	uint32_t     sp_for_switch_flag; // 2 u(1)

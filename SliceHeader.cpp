@@ -207,6 +207,7 @@ bool SliceHeader::slice_header(BitStream& bs, const ParsePPS ppsCache[256], cons
 	{
 		num_ref_idx_active_override_flag = bs.readBit(); //2 u(1)
 
+		//num_ref_idx_l0_active_minus1 和num_ref_idx_l1_active_minus1指定当前参考帧队列中实际可用的参考帧的数目(帧编码0到15的范围内（包括0和15）)
 		num_ref_idx_l0_active_minus1 = pps.num_ref_idx_l0_default_active_minus1;
 		num_ref_idx_l1_active_minus1 = pps.num_ref_idx_l1_default_active_minus1;
 

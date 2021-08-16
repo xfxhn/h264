@@ -94,6 +94,9 @@ Macroblock::Macroblock()
 
 	isAe = false;
 
+	fix_mb_type = 0;
+	fix_slice_type = SLIECETYPE::H264_SLIECE_TYPE_I;
+	mbType = H264_MB_TYPE::NA;
 
 	memset(prev_intra4x4_pred_mode_flag, 0, sizeof(uint8_t) * 16);
 	memset(rem_intra4x4_pred_mode, 0, sizeof(uint8_t) * 16);
@@ -152,6 +155,15 @@ Macroblock::Macroblock()
 	coded_block_flag_AC_pattern[0] = 0; //cabac: coded_block_flag-luma
 	coded_block_flag_AC_pattern[1] = 0; //cabac: coded_block_flag-cb
 	coded_block_flag_AC_pattern[2] = 0; //cabac: coded_block_flag-cr
+
+
+	memset(ref_idx_l0, 0, sizeof(uint8_t) * 4);
+	memset(ref_idx_l1, 0, sizeof(uint8_t) * 4);
+	memset(mvd_l0, 0, sizeof(uint8_t) * 4 * 4 * 2);
+	memset(mvd_l1, 0, sizeof(uint8_t) * 4 * 4 * 2);
+
+
+	memset(sub_mb_type, 0, sizeof(H264_MB_TYPE) * 4);
 }
 //slice type 五种类型
 //I slice中的宏块类型只能是I宏块类型
@@ -203,7 +215,7 @@ bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* s
 	uint8_t	 slice_type = sHeader->slice_type;
 
 	//修正过后的
-	uint32_t	 fix_mb_type = mb_type;
+	fix_mb_type = mb_type;
 
 	//当前宏块是什么类型   //修正过后的
 	fix_slice_type = (SLIECETYPE)(slice_type);
@@ -212,11 +224,9 @@ bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* s
 
 
 	//获取当前宏块的预测模式
-	mode = MbPartPredMode(fix_mb_type, fix_slice_type, 0);
+	mode = MbPartPredMode(0);
 
 	uint8_t  numMbPart = NumMbPart(fix_mb_type, fix_slice_type);
-	//fix_slice_type == SLIECETYPE::H264_SLIECE_TYPE_I && fix_mb_type == 25
-
 
 	if (mbType == H264_MB_TYPE::I_PCM)  //I_PCM 不经过预测，变换，量化
 	{
@@ -293,7 +303,7 @@ bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* s
 					transform_size_8x8_flag = bs.readBit();
 				}
 
-				mode = MbPartPredMode(fix_mb_type, fix_slice_type, 0);
+				mode = MbPartPredMode(0);
 
 				//........
 			}
@@ -343,7 +353,7 @@ bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* s
 				{
 					transform_size_8x8_flag = bs.readBit();
 				}
-				mode = MbPartPredMode(fix_mb_type, fix_slice_type, 0);
+				mode = MbPartPredMode(0);
 
 			}
 		}
@@ -396,7 +406,7 @@ bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* s
 bool Macroblock::mb_pred(BitStream& bs, uint32_t numMbPart, ParseSlice* Slice, Cabac& cabac)
 {
 	SliceHeader* sHeader = sliceBase->sHeader;
-
+	//Direct 直接预测：一种不用解码运动矢量的块的帧间预测模式。针对空域预测和时域预测又两种直接预测模式。
 	if (mode == H264_MB_PART_PRED_MODE::Intra_4x4 || mode == H264_MB_PART_PRED_MODE::Intra_8x8 || mode == H264_MB_PART_PRED_MODE::Intra_16x16)
 	{
 
@@ -490,6 +500,24 @@ bool Macroblock::mb_pred(BitStream& bs, uint32_t numMbPart, ParseSlice* Slice, C
 	{
 		for (size_t mbPartIdx = 0; mbPartIdx < numMbPart; mbPartIdx++)
 		{
+
+			//不支持帧场自适应变量mb_field_decoding_flag=false
+			bool mb_field_decoding_flag = false;
+			if ((sHeader->num_ref_idx_l0_active_minus1 > 0 || false)//(mb_field_decoding_flag)
+				&& MbPartPredMode(mbPartIdx) != H264_MB_PART_PRED_MODE::Pred_L1
+				)
+			{
+				if (isAe)
+				{
+					bool is_ref_idx_l0 = true;
+					cabac.decode_ref_idx_lX(bs, mbPartIdx, is_ref_idx_l0, ref_idx_l0);
+				}
+				else
+				{
+
+				}
+			}
+
 			//当ref_idx_l0[mbPartIdx] 存在时, 它表示参考图像列表序号为0 的参考图像被用于预测
 
 			/*if ((sHeader.num_ref_idx_l0_active_minus1 > 0  ||
@@ -502,82 +530,67 @@ bool Macroblock::mb_pred(BitStream& bs, uint32_t numMbPart, ParseSlice* Slice, C
 	return false;
 }
 //获得当前宏块类型所采用的Intra预测方式
-H264_MB_PART_PRED_MODE Macroblock::MbPartPredMode(uint32_t mb_type, SLIECETYPE slice_type, uint32_t mbPartIdx)
+H264_MB_PART_PRED_MODE Macroblock::MbPartPredMode(uint8_t mbPartIdx)
 {
 	H264_MB_PART_PRED_MODE mode = H264_MB_PART_PRED_MODE::NA;
 
-	if (slice_type == SLIECETYPE::H264_SLIECE_TYPE_I)
+	if (fix_slice_type == SLIECETYPE::H264_SLIECE_TYPE_I)
 	{
-		if (mbPartIdx == 0)
-		{
-			//mb_type == I_NxN
-			if (mb_type == 0) {
-				if (transform_size_8x8_flag) {
-					mode = mb_type_slices_I[1].MbPartPredMode;
-					mbType = mb_type_slices_I[1].name;
-				}
-				else {
-					mode = mb_type_slices_I[0].MbPartPredMode;
-					mbType = mb_type_slices_I[1].name;
-				}
-			}
-			else if (mb_type == 25)
-			{
-				mode = mb_type_slices_I[mb_type].MbPartPredMode;  //na 
-				mbType = mb_type_slices_I[mb_type].name;
+		//mb_type == I_NxN
+		if (fix_mb_type == 0) {
+			if (transform_size_8x8_flag) {
+				mode = mb_type_slices_I[1].MbPartPredMode;
+				mbType = mb_type_slices_I[1].name;
 			}
 			else {
-				mode = mb_type_slices_I[mb_type + 1].MbPartPredMode;
-				CodedBlockPatternLuma = mb_type_slices_I[mb_type + 1].CodedBlockPatternLuma;
-				CodedBlockPatternChroma = mb_type_slices_I[mb_type + 1].CodedBlockPatternChroma;
-				Intra16x16PredMode = mb_type_slices_I[mb_type + 1].Intra16x16PredMode;
-				mbType = mb_type_slices_I[mb_type + 1].name;
+				mode = mb_type_slices_I[0].MbPartPredMode;
+				mbType = mb_type_slices_I[1].name;
 			}
 		}
-		else
+		else if (fix_mb_type == 25)
 		{
-			printError("i宏块mbPartIdx必须是0");
-			exit(1);
+			mode = mb_type_slices_I[fix_mb_type].MbPartPredMode;  //na 
+			mbType = mb_type_slices_I[fix_mb_type].name;
+		}
+		else {
+			mode = mb_type_slices_I[fix_mb_type + 1].MbPartPredMode;
+			CodedBlockPatternLuma = mb_type_slices_I[fix_mb_type + 1].CodedBlockPatternLuma;
+			CodedBlockPatternChroma = mb_type_slices_I[fix_mb_type + 1].CodedBlockPatternChroma;
+			Intra16x16PredMode = mb_type_slices_I[fix_mb_type + 1].Intra16x16PredMode;
+			mbType = mb_type_slices_I[fix_mb_type + 1].name;
 		}
 
+
 	}
-	else if (slice_type == SLIECETYPE::H264_SLIECE_TYPE_P || slice_type == SLIECETYPE::H264_SLIECE_TYPE_SP)
+	else if (fix_slice_type == SLIECETYPE::H264_SLIECE_TYPE_P || fix_slice_type == SLIECETYPE::H264_SLIECE_TYPE_SP)
 	{
 
 		if (mbPartIdx == 1)
 		{
-			mode = mb_type_sleces_sp_p[mb_type].MbPartPredMode1;
+			mode = mb_type_sleces_sp_p[fix_mb_type].MbPartPredMode1;
 		}
 		else {
-			mode = mb_type_sleces_sp_p[mb_type].MbPartPredMode0;
+			mode = mb_type_sleces_sp_p[fix_mb_type].MbPartPredMode0;
 		}
-		mbType = mb_type_sleces_sp_p[mb_type].name;
+		mbType = mb_type_sleces_sp_p[fix_mb_type].name;
 	}
-	else if (slice_type == SLIECETYPE::H264_SLIECE_TYPE_B)
+	else if (fix_slice_type == SLIECETYPE::H264_SLIECE_TYPE_B)
 	{
-		if (mbPartIdx)
+		if (mbPartIdx == 1)
 		{
-			mode = mb_type_sleces_b[mb_type].MbPartPredMode1;
+			mode = mb_type_sleces_b[fix_mb_type].MbPartPredMode1;
 		}
 		else {
-			mode = mb_type_sleces_b[mb_type].MbPartPredMode0;
+			mode = mb_type_sleces_b[fix_mb_type].MbPartPredMode0;
 		}
-		mbType = mb_type_sleces_b[mb_type].name;
+		mbType = mb_type_sleces_b[fix_mb_type].name;
 	}
-	else if (slice_type == SLIECETYPE::H264_SLIECE_TYPE_SI)
+	else if (fix_slice_type == SLIECETYPE::H264_SLIECE_TYPE_SI)
 	{
-		mode = mb_type_sleces_si[mb_type].MbPartPredMode;
-		mbType = mb_type_sleces_si[mb_type].name;
-
+		mode = mb_type_sleces_si[fix_mb_type].MbPartPredMode;
+		mbType = mb_type_sleces_si[fix_mb_type].name;
 	}
 	return mode;
-}
-
-H264_MB_PART_PRED_MODE Macroblock::MbPartPredMode2(uint32_t mb_type, SLIECETYPE slice_type, uint32_t mbPartIdx)
-{
-
-	H264_MB_PART_PRED_MODE mode = H264_MB_PART_PRED_MODE::NA;
-	return H264_MB_PART_PRED_MODE();
 }
 
 //宏块被分割成多少部分
@@ -598,7 +611,7 @@ uint32_t Macroblock::NumMbPart(uint32_t mb_type, SLIECETYPE slice_type)
 
 
 //修正slice_type和mb_type
-int Macroblock::fixed_mb_type(uint32_t slice_type, uint32_t& fix_mb_type, SLIECETYPE& fix_slice_type)
+int Macroblock::fixed_mb_type(uint32_t slice_type, uint8_t& fix_mb_type, SLIECETYPE& fix_slice_type)
 {
 
 	if ((SLIECETYPE)(slice_type % 5) == SLIECETYPE::H264_SLIECE_TYPE_SI)

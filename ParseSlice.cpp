@@ -153,30 +153,18 @@ void ParseSlice::saveBmpFile(const char* filename)
 	const size_t widthBytes = (width * 24 / 8 + 3) / 4 * 4;
 
 
-	uint8_t* buffer = new uint8_t[height * widthBytes](); //在堆上申请
+	uint8_t* buffer = new uint8_t[height * widthBytes]();
 
 
 
 
 
-	int totalSzie = sizeY + sizeU + sizeV;
-
-	uint8_t* bufferTotal = new uint8_t[totalSzie]();
-	uint8_t* buffer1 = new uint8_t[sizeY];
-	uint8_t* buffer2 = new uint8_t[sizeU];
-	uint8_t* buffer3 = new uint8_t[sizeV];
-	convertYuv420(buffer, widthBytes, buffer1, buffer2, buffer3);
+	convertYuv420(buffer, widthBytes);
 	FILE* fp = fopen("./output/xf1.bmp", "wb");
 	if (!fp)
 	{
 		return;
 	}
-	memcpy(bufferTotal, buffer1, sizeY);
-	memcpy(bufferTotal + sizeY, buffer2, sizeU);
-	memcpy(bufferTotal + sizeY + sizeU, buffer3, sizeV);
-
-	/*fwrite(bufferTotal, totalSzie, 1, fp);
-	fclose(fp);*/
 
 
 	MyBITMAPINFOHEADER bih;
@@ -231,12 +219,10 @@ void ParseSlice::saveBmpFile(const char* filename)
 
 	fclose(fp);
 
-	int a = 1;
-
 }
 
 
-void ParseSlice::convertYuv420(uint8_t* buffer, size_t widthBytes, uint8_t* bu1, uint8_t* bu2, uint8_t* bu3)
+void ParseSlice::convertYuv420(uint8_t* buffer, size_t widthBytes)
 {
 
 	//width=386 ,height= 384   色度184
@@ -245,23 +231,17 @@ void ParseSlice::convertYuv420(uint8_t* buffer, size_t widthBytes, uint8_t* bu1,
 		for (size_t x = 0; x < PicWidthInSamplesL; x++)
 		{
 
-			const size_t  index = y * PicWidthInSamplesL + x;
-
-
-			const size_t idx = index / 4;
-
 			uint8_t Y = lumaData[x][y];
 			uint8_t U = chromaCbData[x / 2][y / 2];
 			uint8_t V = chromaCrData[x / 2][y / 2];
 
-			bu1[index] = Y;
 
-			/*int b = (1164 * (Y - 16) + 2018 * (U - 128)) / 1000;
+			int b = (1164 * (Y - 16) + 2018 * (U - 128)) / 1000;
 			int g = (1164 * (Y - 16) - 813 * (V - 128) - 391 * (U - 128)) / 1000;
-			int r = (1164 * (Y - 16) + 1596 * (V - 128)) / 1000;*/
-			int b = 1.164 * (Y - 16) + 2.018 * (U - 128);
+			int r = (1164 * (Y - 16) + 1596 * (V - 128)) / 1000;
+			/*int b = 1.164 * (Y - 16) + 2.018 * (U - 128);
 			int g = 1.164 * (Y - 16) - 0.380 * (U - 128) - 0.813 * (V - 128);
-			int r = 1.164 * (Y - 16) + 1.159 * (V - 128);
+			int r = 1.164 * (Y - 16) + 1.159 * (V - 128);*/
 			buffer[y * widthBytes + x * 3 + 0] = Clip3(0, 255, b);
 			buffer[y * widthBytes + x * 3 + 1] = Clip3(0, 255, g);// Clip3(0, 255, g);
 			buffer[y * widthBytes + x * 3 + 2] = Clip3(0, 255, r);
@@ -277,7 +257,7 @@ void ParseSlice::convertYuv420(uint8_t* buffer, size_t widthBytes, uint8_t* bu1,
 	}
 
 
-	for (size_t y = 0; y < PicHeightInSamplesC; y++)
+	/*for (size_t y = 0; y < PicHeightInSamplesC; y++)
 	{
 		for (size_t x = 0; x < PicWidthInSamplesC; x++)
 		{
@@ -290,7 +270,7 @@ void ParseSlice::convertYuv420(uint8_t* buffer, size_t widthBytes, uint8_t* bu1,
 
 
 		}
-	}
+	}*/
 
 }
 //去块滤波器

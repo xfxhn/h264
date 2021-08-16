@@ -61,12 +61,19 @@ class Macroblock
 public:
 
 	H264_MB_TYPE    mbType;
+
+	H264_MB_TYPE    sub_mb_type[4];
 	uint32_t		pcm_alignment_zero_bit; // 3 f(1)
 	uint32_t		pcm_sample_luma[256]; //3 u(v)
 	uint32_t* pcm_sample_chroma;
 	bool			transform_size_8x8_flag;
-	uint32_t		mb_type;
+	uint8_t			mb_type;
 
+
+	uint8_t     ref_idx_l0[4];
+	uint8_t     ref_idx_l1[4];
+	uint8_t     mvd_l0[4][4][2];
+	uint8_t     mvd_l1[4][4][2];
 
 
 
@@ -122,7 +129,7 @@ public:
 
 	H264_MB_PART_PRED_MODE mode;//当前宏块的预测模式
 	SLIECETYPE   fix_slice_type;
-
+	uint8_t		 fix_mb_type;
 
 	bool TransformBypassModeFlag;
 
@@ -161,9 +168,10 @@ public:
 
 	~Macroblock();
 private:
-	H264_MB_PART_PRED_MODE MbPartPredMode(uint32_t mb_type, SLIECETYPE slice_type, uint32_t mbPartIdx);
-	H264_MB_PART_PRED_MODE MbPartPredMode2(uint32_t mb_type, SLIECETYPE slice_type, uint32_t mbPartIdx);
-	int fixed_mb_type(uint32_t slice_type, uint32_t& fix_mb_type, SLIECETYPE& fix_slice_type);
+
+
+	H264_MB_PART_PRED_MODE MbPartPredMode(uint8_t mbPartIdx);
+	int fixed_mb_type(uint32_t slice_type, uint8_t& fix_mb_type, SLIECETYPE& fix_slice_type);
 
 	bool mb_pred(BitStream& bs, uint32_t numMbPart, ParseSlice* Slice, Cabac& cabac);
 

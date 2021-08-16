@@ -1564,6 +1564,14 @@ int Cabac::decode_coeff_sign_flag(ParseSlice* Slice, BitStream& bs)
 	return DecodeBypass(bs);
 }
 
+void Cabac::decode_ref_idx_lX(BitStream& bs, int mbPartIdx, bool is_ref_idx_l0, uint8_t ref_idx_lx[4])
+{
+	constexpr int ctxIdxOffset = 54;
+
+
+
+}
+
 int Cabac::residual_block_cabac(
 	BitStream& bs, ParseSlice* Slice, int* coeffLevel, int startIdx, int endIdx,
 	uint32_t maxNumCoeff, RESIDUAL_LEVEL residualLevel, int& TotalCoeff, int BlkIdx, int iCbCr
@@ -2646,6 +2654,13 @@ int Cabac::Derivation_process_of_ctxIdxInc_for_the_syntax_element_coded_block_fl
 	return condTermFlagA + 2 * condTermFlagB;
 }
 
+int Cabac::Derivation_process_of_ctxIdxInc_for_the_syntax_elements_ref_idx_l0_and_ref_idx_l1(ParseSlice* Slice, int mbPartIdx, bool is_ref_idx_l0)
+{
+
+	H264_MB_TYPE currSubMbType = Slice->macroblock[Slice->CurrMbAddr]->sub_mb_type[mbPartIdx];
+	return 0;
+}
+
 int Cabac::decode_mb_type_in_I_slices(ParseSlice* Slice, BitStream& bs, int ctxIdxOffset)
 {
 
@@ -3294,8 +3309,6 @@ int Cabac::decode_mb_type_in_B_slices(ParseSlice* Slice, BitStream& bs, int ctxI
 	return synElVal;
 }
 
-
-
 //这个过程的输出是已解码的值binVal，以及更新的变量codIRange和codIOffset
 int Cabac::DecodeBin(BitStream& bs, int bypassFlag, int ctxIdx)
 {
@@ -3456,6 +3469,7 @@ int Cabac::DecodeBypass(BitStream& bs)
 	}
 	return binVal;
 }
+
 //解析终止符
 int Cabac::DecodeTerminate(BitStream& bs)
 {

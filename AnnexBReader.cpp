@@ -167,27 +167,24 @@ void AnnexBReader::getNaluHeader(uint8_t* buffer, int size)
 	{
 	case NaluType::H264_NAL_SLICE: //1
 	{
-		// std::cout << NaluType::PPS << std::endl;
-
 
 		SliceHeader* sHeader = new SliceHeader(nalu);
 		sHeader->slice_header(bs, ppsCache, spsCache);
 
 
-		if (this->slice && this->slice->CurrMbAddr >= (sHeader->PicSizeInMbs - 1))
+		if (this->slice && this->slice->CurrMbAddr >= (this->slice->sHeader->PicSizeInMbs - 1))
 		{
 			//环路滤波器
-			//slice->sHeader
+			slice->Deblocking_filter_process();
 
-			//slice->Deblocking_filter_process();
 			slice->saveBmpFile("xf");
 
 			if (this->slice)
 			{
+				//释放掉上个sHeader
 				delete this->slice;
 				this->slice = nullptr;
 			}
-
 
 
 			this->slice = new ParseSlice(nalu, sHeader);
@@ -208,9 +205,16 @@ void AnnexBReader::getNaluHeader(uint8_t* buffer, int size)
 				this->slice = new ParseSlice(nalu, sHeader);
 				this->slice->parse();
 			}
-
-
+			else
+			{
+				if (this->slice)
+				{
+					delete this->slice->sHeader;
+					this->slice->sHeader = sHeader;
+				}
+			}
 		}
+
 		if (this->slice)
 		{
 			this->slice->sliceNumber = sHeader->first_mb_in_slice;
@@ -269,10 +273,23 @@ void AnnexBReader::getNaluHeader(uint8_t* buffer, int size)
 				this->slice = new ParseSlice(nalu, sHeader);
 				this->slice->parse();
 			}
-
+			else
+			{
+				if (this->slice)
+				{
+					delete this->slice->sHeader;
+					this->slice->sHeader = sHeader;
+				}
+			}
 
 		}
-		this->slice->sliceNumber = sHeader->first_mb_in_slice;
+
+		if (this->slice)
+		{
+			this->slice->sliceNumber = sHeader->first_mb_in_slice;
+		}
+
+
 		SliceData sData;
 		sData.slice_data(bs, slice);
 

@@ -83,6 +83,7 @@ enum class SLIECETYPE :int
 
 enum class H264_MB_TYPE :int
 {
+	NA = -1,
 	//表7 - 11－I 条带的宏块类型
 	I_NxN,         //    0
 	I_16x16_0_0_0, //    1

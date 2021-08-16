@@ -62,7 +62,10 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice)
 	//当前解码的宏块在图片中的坐标位置
 	CurrMbAddr = sHeader->first_mb_in_slice;
 	Slice->CurrMbAddr = CurrMbAddr;
-
+	if (!sHeader->MbaffFrameFlag)
+	{
+		mb_field_decoding_flag = sHeader->field_pic_flag;
+	}
 
 
 	bool moreDataFlag = true;
@@ -149,7 +152,6 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice)
 			Slice->CurrMbAddr = CurrMbAddr;
 			Slice->mbCount++;
 
-			sHeader->PicSizeInMbs;
 			Slice->macroblock[Slice->CurrMbAddr]->macroblock_layer(bs, Slice, this, cabac);
 
 			bool isChromaCb = true;
