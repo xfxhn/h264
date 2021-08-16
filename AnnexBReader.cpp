@@ -179,7 +179,7 @@ void AnnexBReader::getNaluHeader(uint8_t* buffer, int size)
 			//»·Â·ÂË²¨Æ÷
 			//slice->sHeader
 
-			slice->Deblocking_filter_process();
+			//slice->Deblocking_filter_process();
 			slice->saveBmpFile("xf");
 
 			if (this->slice)
