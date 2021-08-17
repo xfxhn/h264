@@ -1564,11 +1564,37 @@ int Cabac::decode_coeff_sign_flag(ParseSlice* Slice, BitStream& bs)
 	return DecodeBypass(bs);
 }
 
-void Cabac::decode_ref_idx_lX(BitStream& bs, int mbPartIdx, bool is_ref_idx_l0, uint8_t ref_idx_lx[4])
+void Cabac::decode_ref_idx_lX(ParseSlice* Slice, BitStream& bs, int mbPartIdx, bool is_ref_idx_l0, uint8_t& ref_idx_lx)
 {
 	constexpr int ctxIdxOffset = 54;
+	int ctxIdx = 0;
+	int binVal = 0;
+	int ctxIdxInc = Derivation_process_of_ctxIdxInc_for_the_syntax_elements_ref_idx_l0_and_ref_idx_l1(Slice, mbPartIdx, is_ref_idx_l0);
 
+	ctxIdx = ctxIdxOffset + ctxIdxInc;
+	//一元二值化
+	binVal = DecodeBin(bs, false, ctxIdx);
 
+	int synElVal = 0;
+	if (binVal == 0)
+	{
+		synElVal = binVal;
+	}
+	else
+	{
+		ctxIdx = ctxIdxOffset + 4;
+		binVal = DecodeBin(bs, false, ctxIdx);
+
+		synElVal = 1;
+
+		ctxIdx = ctxIdxOffset + 5;
+		while (binVal == 1)
+		{
+			binVal = DecodeBin(bs, false, ctxIdx);
+			++synElVal;
+		}
+	}
+	ref_idx_lx = synElVal;
 
 }
 
@@ -2657,7 +2683,244 @@ int Cabac::Derivation_process_of_ctxIdxInc_for_the_syntax_element_coded_block_fl
 int Cabac::Derivation_process_of_ctxIdxInc_for_the_syntax_elements_ref_idx_l0_and_ref_idx_l1(ParseSlice* Slice, int mbPartIdx, bool is_ref_idx_l0)
 {
 
-	H264_MB_TYPE currSubMbType = Slice->macroblock[Slice->CurrMbAddr]->sub_mb_type[mbPartIdx];
+	Macroblock* mb = Slice->macroblock[Slice->CurrMbAddr];
+	H264_MB_TYPE currSubMbType = mb->subMbType[mbPartIdx];
+	int MbPartWidth = mb->MbPartWidth;
+	int MbPartHeight = mb->MbPartHeight;
+
+	//宏块分割  mbPartIdx 的左上角亮度样点与所处宏块左上角样点的相对位置
+	int x = InverseRasterScan(mbPartIdx, MbPartWidth, MbPartHeight, 16, 0);
+	int y = InverseRasterScan(mbPartIdx, MbPartWidth, MbPartHeight, 16, 1);
+
+	//宏块分割中左上角的亮度样点位置
+	int xS = 0;
+	int yS = 0;
+	if (mb->mbType == H264_MB_TYPE::P_8x8 || mb->mbType == H264_MB_TYPE::P_8x8ref0 || mb->mbType == H264_MB_TYPE::B_8x8)
+	{
+		//走不到这里，这里是子宏块预测
+		int subMbPartIdx = 0;
+		int SubMbPartWidth = mb->SubMbPartWidth[mbPartIdx];
+		int SubMbPartHeight = mb->SubMbPartHeight[mbPartIdx];
+		xS = InverseRasterScan(subMbPartIdx, SubMbPartWidth, SubMbPartHeight, 8, 0);
+		yS = InverseRasterScan(subMbPartIdx, SubMbPartWidth, SubMbPartHeight, 8, 1);
+	}
+	else
+	{
+		xS = 0;
+		yS = 0;
+	}
+	int refIdxZeroFlagA = 0;
+	int refIdxZeroFlagB = 0;
+
+	int predModeEqualFlagA = 0;
+	int predModeEqualFlagB = 0;
+
+	int mbAddrA = NA;
+	int mbAddrB = NA;
+	int xW = 0;
+	int yW = 0;
+
+	int mbPartIdxA = 0;
+	int subMbPartIdxA = 0;
+
+	//P_8x8ref0表示虽然宏块是按照8×8划分，但码流中不传输ref_idx等信息。对于每一个子块，其ref_idx信息默认为0
+	Slice->getMbAddrNAndLuma4x4BlkIdxN(mbAddrA, x + xS + (-1), y + yS + (0), 16, 16, xW, yW);
+	if (mbAddrA != NA)
+	{
+		Derivation_process_for_macroblock_and_sub_macroblock_partition_indices(Slice->macroblock[mbAddrA]->mbType, Slice->macroblock[mbAddrA]->subMbType, xW, yW, mbPartIdxA, subMbPartIdxA);
+
+		if (is_ref_idx_l0)
+		{
+			refIdxZeroFlagA = (Slice->macroblock[mbAddrA]->ref_idx_l0[mbPartIdxA] > 0) ? 0 : 1;
+		}
+		else
+		{
+			refIdxZeroFlagA = (Slice->macroblock[mbAddrA]->ref_idx_l1[mbPartIdxA] > 0) ? 0 : 1;
+		}
+
+		if (Slice->macroblock[mbAddrA]->mbType == H264_MB_TYPE::B_Direct_16x16 || Slice->macroblock[mbAddrA]->mbType == H264_MB_TYPE::B_Skip)
+		{
+			predModeEqualFlagA = 0;
+		}
+		else if (Slice->macroblock[mbAddrA]->mbType == H264_MB_TYPE::P_8x8 || Slice->macroblock[mbAddrA]->mbType == H264_MB_TYPE::B_8x8)
+		{
+			H264_MB_PART_PRED_MODE SubMbPredMode = Macroblock::getSubMbPredMode(Slice->macroblock[mbAddrA]->subMbType[mbPartIdxA]);
+			if (((is_ref_idx_l0 && SubMbPredMode != H264_MB_PART_PRED_MODE::Pred_L0) || (!is_ref_idx_l0 && SubMbPredMode != H264_MB_PART_PRED_MODE::Pred_L1)) && SubMbPredMode != H264_MB_PART_PRED_MODE::BiPred)
+			{
+				predModeEqualFlagA = 0;
+			}
+			else
+			{
+				predModeEqualFlagA = 1;
+			}
+
+		}
+		else
+		{
+
+			H264_MB_PART_PRED_MODE mbPredMode = Macroblock::getMbPartPredMode(Slice->macroblock[mbAddrA]->fix_slice_type, Slice->macroblock[mbAddrA]->fix_mb_type, Slice->macroblock[mbAddrA]->transform_size_8x8_flag, mbPartIdxA);
+
+			if (((is_ref_idx_l0 && mbPredMode != H264_MB_PART_PRED_MODE::Pred_L0) || (!is_ref_idx_l0 && mbPredMode != H264_MB_PART_PRED_MODE::Pred_L1)) && mbPredMode != H264_MB_PART_PRED_MODE::BiPred)
+			{
+				predModeEqualFlagA = 0;
+			}
+			else
+			{
+				predModeEqualFlagA = 1;
+			}
+		}
+	}
+	else
+	{
+		predModeEqualFlagA = 0;
+	}
+
+	int mbPartIdxB = 0;
+	int subMbPartIdxB = 0;
+	Slice->getMbAddrNAndLuma4x4BlkIdxN(mbAddrB, x + xS + (0), y + yS + (-1), 16, 16, xW, yW);
+
+	if (mbAddrB != NA)
+	{
+		Derivation_process_for_macroblock_and_sub_macroblock_partition_indices(Slice->macroblock[mbAddrB]->mbType, Slice->macroblock[mbAddrB]->subMbType, xW, yW, mbPartIdxB, subMbPartIdxB);
+
+		if (is_ref_idx_l0)
+		{
+			refIdxZeroFlagB = (Slice->macroblock[mbAddrB]->ref_idx_l0[mbAddrB] > 0) ? 0 : 1;
+		}
+		else
+		{
+			refIdxZeroFlagB = (Slice->macroblock[mbAddrB]->ref_idx_l1[mbAddrB] > 0) ? 0 : 1;
+		}
+
+
+
+		if (Slice->macroblock[mbAddrB]->mbType == H264_MB_TYPE::B_Direct_16x16 || Slice->macroblock[mbAddrB]->mbType == H264_MB_TYPE::B_Skip)
+		{
+			predModeEqualFlagB = 0;
+		}
+		else if (Slice->macroblock[mbAddrB]->mbType == H264_MB_TYPE::P_8x8 || Slice->macroblock[mbAddrB]->mbType == H264_MB_TYPE::B_8x8)
+		{
+			H264_MB_PART_PRED_MODE SubMbPredMode = Macroblock::getSubMbPredMode(Slice->macroblock[mbAddrB]->subMbType[mbPartIdxB]);
+			if (((is_ref_idx_l0 && SubMbPredMode != H264_MB_PART_PRED_MODE::Pred_L0) || (!is_ref_idx_l0 && SubMbPredMode != H264_MB_PART_PRED_MODE::Pred_L1)) && SubMbPredMode != H264_MB_PART_PRED_MODE::BiPred)
+			{
+				predModeEqualFlagB = 0;
+			}
+			else
+			{
+				predModeEqualFlagB = 1;
+			}
+
+		}
+		else
+		{
+
+			H264_MB_PART_PRED_MODE mbPredMode = Macroblock::getMbPartPredMode(Slice->macroblock[mbAddrB]->fix_slice_type, Slice->macroblock[mbAddrB]->fix_mb_type, Slice->macroblock[mbAddrB]->transform_size_8x8_flag, mbPartIdxB);
+
+			if (((is_ref_idx_l0 && mbPredMode != H264_MB_PART_PRED_MODE::Pred_L0) || (!is_ref_idx_l0 && mbPredMode != H264_MB_PART_PRED_MODE::Pred_L1)) && mbPredMode != H264_MB_PART_PRED_MODE::BiPred)
+			{
+				predModeEqualFlagB = 0;
+			}
+			else
+			{
+				predModeEqualFlagB = 1;
+			}
+		}
+	}
+	else
+	{
+		predModeEqualFlagB = 0;
+	}
+	int condTermFlagA = 0;
+	int condTermFlagB = 0;
+
+	if (mbAddrA == NA
+		|| (Slice->macroblock[mbAddrA]->mbType == H264_MB_TYPE::P_Skip || Slice->macroblock[mbAddrA]->mbType == H264_MB_TYPE::B_Skip)
+		|| isInterMode(Slice->macroblock[mbAddrA]->mode)
+		|| predModeEqualFlagA == 0
+		|| refIdxZeroFlagA == 1
+		)
+	{
+		condTermFlagA = 0;
+	}
+	else
+	{
+		condTermFlagA = 1;
+	}
+
+	if (mbAddrB == NA
+		|| (Slice->macroblock[mbAddrB]->mbType == H264_MB_TYPE::P_Skip || Slice->macroblock[mbAddrB]->mbType == H264_MB_TYPE::B_Skip)
+		|| isInterMode(Slice->macroblock[mbAddrB]->mode)
+		|| predModeEqualFlagB == 0
+		|| refIdxZeroFlagB == 1
+		)
+	{
+		condTermFlagB = 0;
+	}
+	else
+	{
+		condTermFlagB = 1;
+	}
+
+	return condTermFlagA + 2 * condTermFlagB;
+}
+
+int Cabac::Derivation_process_for_macroblock_and_sub_macroblock_partition_indices(H264_MB_TYPE mbType, H264_MB_TYPE subMbType[4], int xP, int yP, int& mbPartIdxN, int& subMbPartIdxN)
+{
+
+	if (mbType == H264_MB_TYPE::I_NxN
+		|| mbType == H264_MB_TYPE::I_16x16_0_0_0
+		|| mbType == H264_MB_TYPE::I_16x16_1_0_0
+		|| mbType == H264_MB_TYPE::I_16x16_2_0_0
+		|| mbType == H264_MB_TYPE::I_16x16_3_0_0
+		|| mbType == H264_MB_TYPE::I_16x16_0_1_0
+		|| mbType == H264_MB_TYPE::I_16x16_1_1_0
+		|| mbType == H264_MB_TYPE::I_16x16_2_1_0
+		|| mbType == H264_MB_TYPE::I_16x16_3_1_0
+		|| mbType == H264_MB_TYPE::I_16x16_0_2_0
+		|| mbType == H264_MB_TYPE::I_16x16_1_2_0
+		|| mbType == H264_MB_TYPE::I_16x16_2_2_0
+		|| mbType == H264_MB_TYPE::I_16x16_3_2_0
+		|| mbType == H264_MB_TYPE::I_16x16_0_0_1
+		|| mbType == H264_MB_TYPE::I_16x16_1_0_1
+		|| mbType == H264_MB_TYPE::I_16x16_2_0_1
+		|| mbType == H264_MB_TYPE::I_16x16_3_0_1
+		|| mbType == H264_MB_TYPE::I_16x16_0_1_1
+		|| mbType == H264_MB_TYPE::I_16x16_1_1_1
+		|| mbType == H264_MB_TYPE::I_16x16_2_1_1
+		|| mbType == H264_MB_TYPE::I_16x16_3_1_1
+		|| mbType == H264_MB_TYPE::I_16x16_0_2_1
+		|| mbType == H264_MB_TYPE::I_16x16_1_2_1
+		|| mbType == H264_MB_TYPE::I_16x16_2_2_1
+		|| mbType == H264_MB_TYPE::I_16x16_3_2_1
+		|| mbType == H264_MB_TYPE::I_PCM
+		)
+	{
+		mbPartIdxN = 0;
+	}
+	else
+	{
+		std::pair<int, int> info = Macroblock::getMbPartWidthAndHeight(mbType);
+		mbPartIdxN = (16 / info.first) * (yP / info.second) + (xP / info.first);
+	}
+
+	if (mbType != H264_MB_TYPE::P_8x8
+		&& mbType != H264_MB_TYPE::P_8x8ref0
+		&& mbType != H264_MB_TYPE::B_8x8
+		&& mbType != H264_MB_TYPE::B_Skip
+		&& mbType != H264_MB_TYPE::B_Direct_16x16
+		)
+	{
+		subMbPartIdxN = 0;
+	}
+	else if (mbType == H264_MB_TYPE::B_Skip || mbType == H264_MB_TYPE::B_Direct_16x16)
+	{
+		subMbPartIdxN = 2 * ((yP % 8) / 4) + ((xP % 8) / 4);
+	}
+	else//mbType is equal to P_8x8, P_8x8ref0, or B_8x8
+	{
+		std::pair<int, int> info = Macroblock::getMbPartWidthAndHeight(subMbType[mbPartIdxN]);
+		subMbPartIdxN = (8 / info.first) * ((yP % 8) / info.second) + ((xP % 8) / info.first);
+	}
 	return 0;
 }
 

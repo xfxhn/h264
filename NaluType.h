@@ -148,6 +148,27 @@ enum class H264_MB_TYPE :int
 	B_Bi_Bi_8x16, //    21
 	B_8x8, //           22
 	B_Skip, //          -1  P_Skip表示该宏块在码流中没有更多的数据了
+
+	//Sub-macroblock types in P macroblocks
+	P_L0_8x8, //    0
+	P_L0_8x4, //    1
+	P_L0_4x8, //    2
+	P_L0_4x4, //    3
+
+	//Sub-macroblock types in B macroblocks
+	B_Direct_8x8, //    0
+	B_L0_8x8, //    1
+	B_L1_8x8, //    2
+	B_Bi_8x8, //    3
+	B_L0_8x4, //    4
+	B_L0_4x8, //    5
+	B_L1_8x4, //    6
+	B_L1_4x8, //    7
+	B_Bi_8x4, //    8
+	B_Bi_4x8, //    9
+	B_L0_4x4, //    10
+	B_L1_4x4, //    11
+	B_Bi_4x4, //    12
 };
 
 

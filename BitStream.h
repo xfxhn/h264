@@ -37,6 +37,7 @@ public:
 	int readUE();
 	int readSE();
 	int readME(int ChromaArrayType, H264_MB_PART_PRED_MODE mode);
+	int readTE(int range);
 
 
 

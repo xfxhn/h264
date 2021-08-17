@@ -48,8 +48,26 @@ struct MB_TYPE_SLICES_SI
 	uint8_t                 CodedBlockPatternLuma;
 };
 
+struct SUB_MB_TYPE_MBS_P
+{
+	uint8_t					sub_mb_type;
+	H264_MB_TYPE			name;
+	uint8_t					NumSubMbPart;
+	H264_MB_PART_PRED_MODE  SubMbPredMode;
+	uint8_t                 SubMbPartWidth;
+	uint8_t                 SubMbPartHeight;
+};
 
 
+struct SUB_MB_TYPE_MBS_B
+{
+	uint8_t					sub_mb_type;
+	H264_MB_TYPE			name;
+	uint8_t					NumSubMbPart;
+	H264_MB_PART_PRED_MODE  SubMbPredMode;
+	uint8_t                 SubMbPartWidth;
+	uint8_t                 SubMbPartHeight;
+};
 
 //宏块类型mb_type
 //宏块类型表示的是宏块不同的分割和编码方式，在h.264的语法结构中，
@@ -61,8 +79,16 @@ class Macroblock
 public:
 
 	H264_MB_TYPE    mbType;
+	H264_MB_TYPE    subMbType[4];
 
-	H264_MB_TYPE    sub_mb_type[4];
+
+
+
+	uint8_t			MbPartWidth;
+	uint8_t			MbPartHeight;
+	uint8_t			SubMbPartWidth[4];
+	uint8_t			SubMbPartHeight[4];
+
 	uint32_t		pcm_alignment_zero_bit; // 3 f(1)
 	uint32_t		pcm_sample_luma[256]; //3 u(v)
 	uint32_t* pcm_sample_chroma;
@@ -164,20 +190,21 @@ public:
 
 
 
-
-
+	static std::pair<int, int> getMbPartWidthAndHeight(H264_MB_TYPE mbType);
+	static H264_MB_PART_PRED_MODE getSubMbPredMode(H264_MB_TYPE subMbType);
+	static H264_MB_PART_PRED_MODE getMbPartPredMode(SLIECETYPE fix_slice_type, uint8_t fix_mb_type, bool transform_size_8x8_flag, uint8_t mbPartIdx);
 	~Macroblock();
 private:
 
-
 	H264_MB_PART_PRED_MODE MbPartPredMode(uint8_t mbPartIdx);
+
 	int fixed_mb_type(uint32_t slice_type, uint8_t& fix_mb_type, SLIECETYPE& fix_slice_type);
 
 	bool mb_pred(BitStream& bs, uint32_t numMbPart, ParseSlice* Slice, Cabac& cabac);
 
 	bool residual(BitStream& bs, int startIdx, int endIdx, Cabac& cabac);
 	bool sub_mb_pred(uint32_t mb_type);
-	uint32_t NumMbPart(uint32_t mb_type, SLIECETYPE slice_type);
+	uint8_t NumMbPart(uint32_t mb_type, SLIECETYPE slice_type);
 
 
 	int residual_luma(BitStream& bs, int i16x16DClevel[16], int i16x16AClevel[16][16], int level4x4[16][16],

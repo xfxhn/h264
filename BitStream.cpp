@@ -181,6 +181,22 @@ int BitStream::readME(int ChromaArrayType, H264_MB_PART_PRED_MODE mode)
 
 }
 
+int BitStream::readTE(int range)
+{
+	if (range <= 0)
+	{
+		return 0;
+	}
+	else if (range == 1)
+	{
+		return !readBit();
+	}
+	else
+	{
+		return readUE();
+	}
+}
+
 //是否还有数据，有返回true，否则返回false
 bool BitStream::more_rbsp_data()
 {
