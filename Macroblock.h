@@ -98,8 +98,8 @@ public:
 
 	uint8_t     ref_idx_l0[4];
 	uint8_t     ref_idx_l1[4];
-	uint8_t     mvd_l0[4][4][2];
-	uint8_t     mvd_l1[4][4][2];
+	int     mvd_l0[4][4][2];
+	int     mvd_l1[4][4][2];
 
 
 

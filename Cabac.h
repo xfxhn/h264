@@ -41,7 +41,7 @@ public:
 	int decode_rem_intra4x4_pred_mode_or_rem_intra8x8_pred_mode(BitStream& bs);
 	int decode_intra_chroma_pred_mode(BitStream& bs, ParseSlice* Slice);
 	void decode_ref_idx_lX(ParseSlice* Slice, BitStream& bs, int mbPartIdx, bool is_ref_idx_l0, uint8_t& ref_idx_lx);
-
+	void decode_mvd_lX(ParseSlice* Slice, BitStream& bs, int mbPartIdx, int mvd_flag, int& synElVal);
 
 	int residual_block_cabac(BitStream& bs, ParseSlice* Slice, int* coeffLevel, int startIdx, int endIdx, uint32_t maxNumCoeff, RESIDUAL_LEVEL residualLevel, int& TotalCoeff, int BlkIdx, int iCbCr = -1);
 
@@ -57,6 +57,8 @@ private:
 	int Derivation_process_of_ctxIdxInc_for_the_syntax_element_coded_block_flag(ParseSlice* Slice, int ctxBlockCat, int BlkIdx, int iCbCr);
 	int Derivation_process_of_ctxIdxInc_for_the_syntax_elements_ref_idx_l0_and_ref_idx_l1(ParseSlice* Slice, int mbPartIdx, bool is_ref_idx_l0);
 	int Derivation_process_for_macroblock_and_sub_macroblock_partition_indices(H264_MB_TYPE mbType, H264_MB_TYPE subMbType[4], int xP, int yP, int& mbPartIdxN, int& subMbPartIdxN);
+
+	int Derivation_process_of_ctxIdxInc_for_the_syntax_elements_mvd_l0_and_mvd_l1(ParseSlice* Slice, int  mbPartIdx, int subMbPartIdx, int ctxIdxOffset, bool is_mvd_10);
 
 	int decode_mb_type_in_I_slices(ParseSlice* Slice, BitStream& bs, int ctxIdxOffset);
 	int decode_mb_type_in_SI_slices(ParseSlice* Slice, BitStream& bs, int ctxIdxOffset);

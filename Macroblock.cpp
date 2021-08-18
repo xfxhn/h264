@@ -183,8 +183,8 @@ Macroblock::Macroblock()
 
 	memset(ref_idx_l0, 0, sizeof(uint8_t) * 4);
 	memset(ref_idx_l1, 0, sizeof(uint8_t) * 4);
-	memset(mvd_l0, 0, sizeof(uint8_t) * 4 * 4 * 2);
-	memset(mvd_l1, 0, sizeof(uint8_t) * 4 * 4 * 2);
+	memset(mvd_l0, 0, sizeof(int) * 4 * 4 * 2);
+	memset(mvd_l1, 0, sizeof(int) * 4 * 4 * 2);
 
 
 	memset(subMbType, 0, sizeof(H264_MB_TYPE) * 4);
@@ -616,7 +616,7 @@ bool Macroblock::mb_pred(BitStream& bs, uint32_t numMbPart, ParseSlice* Slice, C
 	{
 		for (size_t mbPartIdx = 0; mbPartIdx < numMbPart; mbPartIdx++)
 		{
-
+			//ref_idx_l0[ mbPartIdx ]   用参考帧队列 L0 进行预测，即前向预测时
 			//不支持帧场自适应变量mb_field_decoding_flag=false
 			bool mb_field_decoding_flag = false;
 			if ((sHeader->num_ref_idx_l0_active_minus1 > 0 || false)//(mb_field_decoding_flag)
@@ -633,17 +633,66 @@ bool Macroblock::mb_pred(BitStream& bs, uint32_t numMbPart, ParseSlice* Slice, C
 
 					//sHeader->num_ref_idx_l1_active_minus1 - 1;
 					//ref_idx_l0[ mbPartIdx ]的取值范围将是0到num_ref_idx_l0_active_minus
-					ref_idx_l0[mbPartIdx] = bs.readTE(sHeader->num_ref_idx_l1_active_minus1);
+					ref_idx_l0[mbPartIdx] = bs.readTE(sHeader->num_ref_idx_l0_active_minus1);
 				}
 			}
-
-			//当ref_idx_l0[mbPartIdx] 存在时, 它表示参考图像列表序号为0 的参考图像被用于预测
-
-			/*if ((sHeader.num_ref_idx_l0_active_minus1 > 0  ||
-				slice_data.mb_field_decoding_flag != field_pic_flag) && MbPartPredMode(mb_type, mbPartIdx) != Pred_L1)
+		}
+		//这个句法元素用于参考帧队列 L1，即后向预测
+		for (size_t mbPartIdx = 0; mbPartIdx < numMbPart; mbPartIdx++)
+		{
+			if ((sHeader->num_ref_idx_l1_active_minus1 > 0 || false) && MbPartPredMode(mbPartIdx) != H264_MB_PART_PRED_MODE::Pred_L0)
 			{
+				if (isAe)
+				{
+					bool is_ref_idx_l0 = false;
+					cabac.decode_ref_idx_lX(sliceBase, bs, mbPartIdx, is_ref_idx_l0, ref_idx_l1[mbPartIdx]);
+				}
+				else
+				{
+					ref_idx_l1[mbPartIdx] = bs.readTE(sHeader->num_ref_idx_l1_active_minus1);
+				}
 
-			}*/
+			}
+		}
+
+		for (size_t mbPartIdx = 0; mbPartIdx < numMbPart; mbPartIdx++)
+		{
+			if (MbPartPredMode(mbPartIdx) != H264_MB_PART_PRED_MODE::Pred_L1)
+			{
+				for (size_t compIdx = 0; compIdx < 2; compIdx++)
+				{
+					if (isAe)
+					{
+						int mvd_flag = compIdx;
+						cabac.decode_mvd_lX(Slice, bs, mbPartIdx, mvd_flag, mvd_l0[mbPartIdx][0][compIdx]);
+					}
+					else
+					{
+						mvd_l0[mbPartIdx][0][compIdx] = bs.readSE();
+					}
+				}
+			}
+		}
+
+
+
+		for (size_t mbPartIdx = 0; mbPartIdx < numMbPart; mbPartIdx++)
+		{
+			if (MbPartPredMode(mbPartIdx) != H264_MB_PART_PRED_MODE::Pred_L0)
+			{
+				for (size_t compIdx = 0; compIdx < 2; compIdx++)
+				{
+					if (isAe)
+					{
+						int mvd_flag = 2 + compIdx;
+						cabac.decode_mvd_lX(Slice, bs, mbPartIdx, mvd_flag, mvd_l1[mbPartIdx][0][compIdx]);
+					}
+					else
+					{
+						mvd_l1[mbPartIdx][0][compIdx] = bs.readSE();
+					}
+				}
+			}
 		}
 	}
 	return false;

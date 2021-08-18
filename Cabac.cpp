@@ -1541,6 +1541,7 @@ int Cabac::decode_coeff_abs_level_minus1(ParseSlice* Slice, BitStream& bs, RESID
 		if (synElVal >= uCoff)
 		{
 			binVal = DecodeBypass(bs);
+			//计算该读多少位
 			while (binVal == 1)
 			{
 				synElVal += 1 << k;
@@ -1595,6 +1596,98 @@ void Cabac::decode_ref_idx_lX(ParseSlice* Slice, BitStream& bs, int mbPartIdx, b
 		}
 	}
 	ref_idx_lx = synElVal;
+
+}
+
+void Cabac::decode_mvd_lX(ParseSlice* Slice, BitStream& bs, int mbPartIdx, int mvd_flag, int& synElVal)
+{
+	int ctxIdxOffset = 0;
+	int ctxIdxInc = 0;
+	int ctxIdx = 0;
+	if (mvd_flag == 0 || mvd_flag == 2)
+	{
+		ctxIdxOffset = 40;
+	}
+	else  //mvd_flag = 1,3
+	{
+		ctxIdxOffset = 47;
+	}
+
+
+	const bool is_mvd_10 = (mvd_flag == 0 || mvd_flag == 1);
+
+	ctxIdxInc = Derivation_process_of_ctxIdxInc_for_the_syntax_elements_mvd_l0_and_mvd_l1(Slice, mbPartIdx, 0, ctxIdxOffset, is_mvd_10);
+
+	//UEG3
+	//-----1. 先解码前缀(TU)--------
+	ctxIdx = ctxIdxOffset + ctxIdxInc;
+	int binVal = 0;
+	binVal = DecodeBin(bs, false, ctxIdx);
+
+	//cMax = uCoff
+	constexpr int uCoff = 9;
+
+	//signedValFlag等于1，前缀位串等于由值为0的单个位组成的位串。  
+	if (binVal == 0) //signedValFlag=1
+	{
+		synElVal = 0;
+	}
+	else
+	{
+		synElVal = 1;
+
+		ctxIdx = ctxIdxOffset + 3;
+
+		////Min( uCoff, Abs( synElVal ) )
+		while (binVal == 1 && synElVal < uCoff)
+		{
+			binVal = DecodeBin(bs, false, ctxIdx);
+			if (binVal == 0)
+			{
+				break;
+			}
+
+			synElVal++;
+
+			if (synElVal <= 4)
+			{
+				ctxIdx++;
+			}
+		}
+
+		int k = 3;//3阶指数哥伦布编码
+
+		if (synElVal >= uCoff) //if ( Abs( synElVal ) >= uCoff ) //uCoff=9
+		{
+			binVal = DecodeBypass(bs);
+
+			while (binVal == 1)
+			{
+				synElVal += 1 << k;
+				++k;
+				binVal = DecodeBypass(bs);
+			}
+
+			while (k--)
+			{
+				binVal = DecodeBypass(bs);
+
+				synElVal += binVal << k;
+			}
+		}
+
+
+		if (synElVal != 0) //if ( signedValFlag && synElVal ! = 0) //signedValFlag=1代表结果是有符号整数
+		{
+			binVal = DecodeBypass(bs);
+
+			if (binVal == 1)
+			{
+				synElVal = -synElVal; //结果为负数
+			}
+		}
+
+	}
 
 }
 
@@ -2922,6 +3015,205 @@ int Cabac::Derivation_process_for_macroblock_and_sub_macroblock_partition_indice
 		subMbPartIdxN = (8 / info.first) * ((yP % 8) / info.second) + ((xP % 8) / info.first);
 	}
 	return 0;
+}
+
+int Cabac::Derivation_process_of_ctxIdxInc_for_the_syntax_elements_mvd_l0_and_mvd_l1(ParseSlice* Slice, int mbPartIdx, int subMbPartIdx, int ctxIdxOffset, bool is_mvd_10)
+{
+
+	Macroblock* mb = Slice->macroblock[Slice->CurrMbAddr];
+	H264_MB_TYPE currSubMbType = mb->subMbType[mbPartIdx];
+
+	int MbPartWidth = mb->MbPartWidth;
+	int MbPartHeight = mb->MbPartHeight;
+
+	//宏块分割  mbPartIdx 的左上角亮度样点与所处宏块左上角样点的相对位置
+	int x = InverseRasterScan(mbPartIdx, MbPartWidth, MbPartHeight, 16, 0);
+	int y = InverseRasterScan(mbPartIdx, MbPartWidth, MbPartHeight, 16, 1);
+
+	//宏块分割中左上角的亮度样点位置
+	int xS = 0;
+	int yS = 0;
+	if (mb->mbType == H264_MB_TYPE::P_8x8 || mb->mbType == H264_MB_TYPE::P_8x8ref0 || mb->mbType == H264_MB_TYPE::B_8x8)
+	{
+		//走不到这里，这里是子宏块预测
+		int subMbPartIdx = 0;
+		int SubMbPartWidth = mb->SubMbPartWidth[mbPartIdx];
+		int SubMbPartHeight = mb->SubMbPartHeight[mbPartIdx];
+		xS = InverseRasterScan(subMbPartIdx, SubMbPartWidth, SubMbPartHeight, 8, 0);
+		yS = InverseRasterScan(subMbPartIdx, SubMbPartWidth, SubMbPartHeight, 8, 1);
+	}
+	else
+	{
+		xS = 0;
+		yS = 0;
+	}
+
+	int predModeEqualFlagA = 0;
+	int predModeEqualFlagB = 0;
+
+	int mbAddrA = NA;
+	int mbAddrB = NA;
+	int xW = 0;
+	int yW = 0;
+
+
+	int mbPartIdxA = 0;
+	int subMbPartIdxA = 0;
+	Slice->getMbAddrNAndLuma4x4BlkIdxN(mbAddrA, x + xS + (-1), y + yS + (0), 16, 16, xW, yW);
+
+	if (mbAddrA != NA)
+	{
+		Derivation_process_for_macroblock_and_sub_macroblock_partition_indices(Slice->macroblock[mbAddrA]->mbType, Slice->macroblock[mbAddrA]->subMbType, xW, yW, mbPartIdxA, subMbPartIdxA);
+
+		if (Slice->macroblock[mbAddrA]->mbType == H264_MB_TYPE::B_Direct_16x16 || Slice->macroblock[mbAddrA]->mbType == H264_MB_TYPE::B_Skip)
+		{
+			predModeEqualFlagA = 0;
+		}
+		else if (Slice->macroblock[mbAddrA]->mbType == H264_MB_TYPE::P_8x8 || Slice->macroblock[mbAddrA]->mbType == H264_MB_TYPE::B_8x8)
+		{
+			H264_MB_PART_PRED_MODE SubMbPredMode = Macroblock::getSubMbPredMode(Slice->macroblock[mbAddrA]->subMbType[subMbPartIdxA]);
+			if (((is_mvd_10 && SubMbPredMode != H264_MB_PART_PRED_MODE::Pred_L0) || (!is_mvd_10 && SubMbPredMode != H264_MB_PART_PRED_MODE::Pred_L1)) && SubMbPredMode != H264_MB_PART_PRED_MODE::BiPred)
+			{
+				predModeEqualFlagA = 0;
+			}
+			else
+			{
+				predModeEqualFlagA = 1;
+			}
+		}
+		else
+		{
+			H264_MB_PART_PRED_MODE mbPredMode = Macroblock::getMbPartPredMode(Slice->macroblock[mbAddrA]->fix_slice_type, Slice->macroblock[mbAddrA]->fix_mb_type, Slice->macroblock[mbAddrA]->transform_size_8x8_flag, mbPartIdxA);
+			if (((is_mvd_10 && mbPredMode != H264_MB_PART_PRED_MODE::Pred_L0) || (!is_mvd_10 && mbPredMode != H264_MB_PART_PRED_MODE::Pred_L1)) && mbPredMode != H264_MB_PART_PRED_MODE::BiPred)
+			{
+				predModeEqualFlagA = 0;
+			}
+			else
+			{
+				predModeEqualFlagA = 1;
+			}
+		}
+	}
+	else //if (mbAddrN_A < 0)
+	{
+		predModeEqualFlagA = 0; //FIXME:
+	}
+
+	int mbPartIdxB = 0;
+	int subMbPartIdxB = 0;
+	Slice->getMbAddrNAndLuma4x4BlkIdxN(mbAddrB, x + xS + (0), y + yS + (-1), 16, 16, xW, yW);
+	if (mbAddrB != NA)
+	{
+		Derivation_process_for_macroblock_and_sub_macroblock_partition_indices(Slice->macroblock[mbAddrB]->mbType, Slice->macroblock[mbAddrB]->subMbType, xW, yW, mbPartIdxB, subMbPartIdxB);
+		if (Slice->macroblock[mbAddrB]->mbType == H264_MB_TYPE::B_Direct_16x16 || Slice->macroblock[mbAddrB]->mbType == H264_MB_TYPE::B_Skip)
+		{
+			predModeEqualFlagB = 0;
+		}
+		else if (Slice->macroblock[mbAddrB]->mbType == H264_MB_TYPE::P_8x8 || Slice->macroblock[mbAddrB]->mbType == H264_MB_TYPE::B_8x8)
+		{
+			H264_MB_PART_PRED_MODE SubMbPredMode = Macroblock::getSubMbPredMode(Slice->macroblock[mbAddrB]->subMbType[subMbPartIdxB]);
+			if (((is_mvd_10 && SubMbPredMode != H264_MB_PART_PRED_MODE::Pred_L0) || (!is_mvd_10 && SubMbPredMode != H264_MB_PART_PRED_MODE::Pred_L1)) && SubMbPredMode != H264_MB_PART_PRED_MODE::BiPred)
+			{
+				predModeEqualFlagB = 0;
+			}
+			else
+			{
+				predModeEqualFlagB = 1;
+			}
+		}
+		else
+		{
+			H264_MB_PART_PRED_MODE mbPredMode = Macroblock::getMbPartPredMode(Slice->macroblock[mbAddrB]->fix_slice_type, Slice->macroblock[mbAddrB]->fix_mb_type, Slice->macroblock[mbAddrB]->transform_size_8x8_flag, mbPartIdxB);
+			if (((is_mvd_10 && mbPredMode != H264_MB_PART_PRED_MODE::Pred_L0) || (!is_mvd_10 && mbPredMode != H264_MB_PART_PRED_MODE::Pred_L1)) && mbPredMode != H264_MB_PART_PRED_MODE::BiPred)
+			{
+				predModeEqualFlagB = 0;
+			}
+			else
+			{
+				predModeEqualFlagB = 1;
+			}
+		}
+	}
+	else //if (mbAddrN_A < 0)
+	{
+		predModeEqualFlagB = 0; //FIXME:
+	}
+
+
+	int compIdx = 0;
+
+	if (ctxIdxOffset == 40)
+	{
+		compIdx = 0;
+	}
+	else
+	{
+		compIdx = 1;
+	}
+
+	int absMvdCompA = 0;
+	int absMvdCompB = 0;
+
+	if (mbAddrA == NA || (Slice->macroblock[mbAddrA]->mbType == H264_MB_TYPE::P_Skip
+		|| Slice->macroblock[mbAddrA]->mbType == H264_MB_TYPE::B_Skip)
+		|| isInterMode(Slice->macroblock[mbAddrA]->mode)
+		|| predModeEqualFlagA == 0
+		)
+	{
+		absMvdCompA = 0;
+	}
+	else
+	{
+		//不支持帧场自适应
+		//If compIdx is equal to 1, MbaffFrameFlag is equal to 1,
+		//the current macroblock is a frame macroblock, and the macroblock mbAddrN is a field macroblock,
+		if (is_mvd_10)
+		{
+			absMvdCompA = std::abs(Slice->macroblock[mbAddrA]->mvd_l0[mbPartIdxA][subMbPartIdxA][compIdx]);
+		}
+		else //if (is_mvd_10 == 0)
+		{
+			absMvdCompA = std::abs(Slice->macroblock[mbAddrA]->mvd_l1[mbPartIdxA][subMbPartIdxA][compIdx]);
+		}
+	}
+
+	if (mbAddrB == NA || (Slice->macroblock[mbAddrB]->mbType == H264_MB_TYPE::P_Skip
+		|| Slice->macroblock[mbAddrB]->mbType == H264_MB_TYPE::B_Skip)
+		|| isInterMode(Slice->macroblock[mbAddrB]->mode)
+		|| predModeEqualFlagB == 0
+		)
+	{
+		absMvdCompB = 0;
+	}
+	else
+	{
+		//不支持帧场自适应
+		//If compIdx is equal to 1, MbaffFrameFlag is equal to 1,
+		//the current macroblock is a frame macroblock, and the macroblock mbAddrN is a field macroblock,
+		if (is_mvd_10)
+		{
+			absMvdCompB = std::abs(Slice->macroblock[mbAddrB]->mvd_l0[mbPartIdxB][subMbPartIdxB][compIdx]);
+		}
+		else //if (is_mvd_10 == 0)
+		{
+			absMvdCompB = std::abs(Slice->macroblock[mbAddrB]->mvd_l1[mbPartIdxB][subMbPartIdxB][compIdx]);
+		}
+	}
+	int ctxIdxInc = 0;
+	if ((absMvdCompA + absMvdCompB) < 3)
+	{
+		ctxIdxInc = 0;
+	}
+	else if ((absMvdCompA + absMvdCompB) > 32)
+	{
+		ctxIdxInc = 2;
+	}
+	else //if ( (absMvdCompA + absMvdCompB ) >= 3 && (absMvdCompA + absMvdCompB ) <= 32)
+	{
+		ctxIdxInc = 1;
+	}
+
+	return ctxIdxInc;
 }
 
 int Cabac::decode_mb_type_in_I_slices(ParseSlice* Slice, BitStream& bs, int ctxIdxOffset)
