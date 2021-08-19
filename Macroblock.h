@@ -77,13 +77,15 @@ class ParseSlice;
 class Macroblock
 {
 public:
-
+	uint8_t			mb_type;
+	uint8_t			sub_mb_type[4];
 	H264_MB_TYPE    mbType;
 	H264_MB_TYPE    subMbType[4];
+	H264_MB_PART_PRED_MODE mode;//当前宏块的预测模式
+	H264_MB_PART_PRED_MODE subMode[4];//子宏块的预测模式
 
 
-
-
+	uint8_t         NumSubMbPart[4];
 	uint8_t			MbPartWidth;
 	uint8_t			MbPartHeight;
 	uint8_t			SubMbPartWidth[4];
@@ -93,7 +95,7 @@ public:
 	uint32_t		pcm_sample_luma[256]; //3 u(v)
 	uint32_t* pcm_sample_chroma;
 	bool			transform_size_8x8_flag;
-	uint8_t			mb_type;
+
 
 
 	uint8_t     ref_idx_l0[4];
@@ -153,7 +155,7 @@ public:
 	uint8_t     mb_chroma_4x4_non_zero_count_coeff[2][16];//存储色度宏块非0系数
 
 
-	H264_MB_PART_PRED_MODE mode;//当前宏块的预测模式
+
 	SLIECETYPE   fix_slice_type;
 	uint8_t		 fix_mb_type;
 
@@ -191,7 +193,7 @@ public:
 
 
 	static std::pair<int, int> getMbPartWidthAndHeight(H264_MB_TYPE mbType);
-	static H264_MB_PART_PRED_MODE getSubMbPredMode(H264_MB_TYPE subMbType);
+	static H264_MB_PART_PRED_MODE getSubMbPredMode(H264_MB_TYPE subMbType, int& NumSubMbPart);
 	static H264_MB_PART_PRED_MODE getMbPartPredMode(SLIECETYPE fix_slice_type, uint8_t fix_mb_type, bool transform_size_8x8_flag, uint8_t mbPartIdx);
 	~Macroblock();
 private:
@@ -200,10 +202,10 @@ private:
 
 	int fixed_mb_type(uint32_t slice_type, uint8_t& fix_mb_type, SLIECETYPE& fix_slice_type);
 
-	bool mb_pred(BitStream& bs, uint32_t numMbPart, ParseSlice* Slice, Cabac& cabac);
+	bool mb_pred(BitStream& bs, uint32_t numMbPart, Cabac& cabac);
 
 	bool residual(BitStream& bs, int startIdx, int endIdx, Cabac& cabac);
-	bool sub_mb_pred(uint32_t mb_type);
+	bool sub_mb_pred(BitStream& bs, Cabac& cabac);
 	uint8_t NumMbPart(uint32_t mb_type, SLIECETYPE slice_type);
 
 
