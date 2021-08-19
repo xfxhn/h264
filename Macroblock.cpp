@@ -38,7 +38,7 @@ MB_TYPE_SLICES_SP_P mb_type_sleces_sp_p[6] =
 {
 	{0,		H264_MB_TYPE::P_L0_16x16,		1,	H264_MB_PART_PRED_MODE::Pred_L0,	H264_MB_PART_PRED_MODE::NA,		  16,  16},
 	{1,		H264_MB_TYPE::P_L0_L0_16x8,		2,	H264_MB_PART_PRED_MODE::Pred_L0,	H264_MB_PART_PRED_MODE::Pred_L0,  16,  8},
-	{2,		H264_MB_TYPE::P_L0_L0_8x16,		3,	H264_MB_PART_PRED_MODE::Pred_L0,	H264_MB_PART_PRED_MODE::Pred_L0,  8,   16},
+	{2,		H264_MB_TYPE::P_L0_L0_8x16,		2,	H264_MB_PART_PRED_MODE::Pred_L0,	H264_MB_PART_PRED_MODE::Pred_L0,  8,   16},
 	{3,		H264_MB_TYPE::P_8x8,			4,	H264_MB_PART_PRED_MODE::NA,			H264_MB_PART_PRED_MODE::NA,		  8,   8},
 	{4,		H264_MB_TYPE::P_8x8ref0,		4,	H264_MB_PART_PRED_MODE::NA,			H264_MB_PART_PRED_MODE::NA,		  8,   8},
 	{5,		H264_MB_TYPE::P_Skip,			1,	H264_MB_PART_PRED_MODE::Pred_L0,	H264_MB_PART_PRED_MODE::NA,		  16,   16}
@@ -337,7 +337,6 @@ bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* s
 
 
 
-
 	uint8_t	 slice_type = sHeader->slice_type;
 
 	//修正过后的
@@ -345,13 +344,21 @@ bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* s
 
 	//当前宏块是什么类型   //修正过后的
 	fix_slice_type = (SLIECETYPE)(slice_type);
+
+
+
 	//修正mb_type，因为p,SI里可能包含了i宏块
 	fixed_mb_type(slice_type, fix_mb_type, fix_slice_type);
 
 
 	//获取当前宏块的预测模式
 	mode = MbPartPredMode(0);
+	if (fix_slice_type == SLIECETYPE::H264_SLIECE_TYPE_P && sliceBase->CurrMbAddr > 16)
+	{
+		uint64_t a = bs.readMultiBit(50);
 
+		printf("%d", a);
+	}
 	uint8_t  numMbPart = NumMbPart(fix_mb_type, fix_slice_type);
 
 	if (mbType == H264_MB_TYPE::I_PCM)  //I_PCM 不经过预测，变换，量化
@@ -436,7 +443,10 @@ bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* s
 
 				mode = MbPartPredMode(0);
 			}
-
+			if (sliceBase->CurrMbAddr >= 8)
+			{
+				int a = 0;
+			}
 			mb_pred(bs, numMbPart, cabac);
 		}
 
@@ -510,7 +520,7 @@ bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* s
 
 	//QPY = ( ( QPY,PREV + mb_qp_delta + 52 + 2 * QpBdOffsetY ) % ( 52 + QpBdOffsetY ) ) －QpBdOffsetY
 	//QpBdOffsetY  亮度偏移
-	QPY = ((sHeader->QPY_prev + mb_qp_delta + 52 + 2 * sHeader->sps.QpBdOffsetY) % (52 + sHeader->sps.QpBdOffsetY) - sHeader->sps.QpBdOffsetY);
+	QPY = ((sHeader->QPY_prev + mb_qp_delta + 52 + 2 * sHeader->sps.QpBdOffsetY) % (52 + sHeader->sps.QpBdOffsetY)) - sHeader->sps.QpBdOffsetY;
 	//对于条带中的第一个宏块，QPY_prev 的初始值为SliceQPY,QPY_prev是当前条带中按解码顺序排列的前一个宏块的亮度量化参数 QPY
 	sHeader->QPY_prev = QPY;
 
@@ -527,6 +537,48 @@ bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* s
 		TransformBypassModeFlag = false;
 	}
 
+	return false;
+}
+
+bool Macroblock::macroblock_layer_skip(ParseSlice* Slice, SliceData* slice_data)
+{
+	sliceBase = Slice;
+	SliceHeader* sHeader = Slice->sHeader;
+	sliceNumber = sliceBase->sliceNumber;
+
+	FilterOffsetA = sHeader->FilterOffsetA;
+	FilterOffsetB = sHeader->FilterOffsetB;
+	mb_skip_flag = slice_data->mb_skip_flag;
+
+	isAe = Slice->sHeader->pps.entropy_coding_mode_flag;
+	SLIECETYPE sliceTtpy = (SLIECETYPE)(Slice->sHeader->slice_type);
+
+	if (sliceTtpy == SLIECETYPE::H264_SLIECE_TYPE_P || sliceTtpy == SLIECETYPE::H264_SLIECE_TYPE_SP)
+	{
+		mb_type = 5; //inferred: P_Skip
+	}
+	else if (sliceTtpy == SLIECETYPE::H264_SLIECE_TYPE_B)
+	{
+		mb_type = 23; //inferred: B_Skip
+	}
+
+	MbPartPredMode(0);
+
+	mb_qp_delta = 0;
+
+	QPY = ((sHeader->QPY_prev + mb_qp_delta + 52 + 2 * sHeader->sps.QpBdOffsetY) % (52 + sHeader->sps.QpBdOffsetY)) - sHeader->sps.QpBdOffsetY; // (7-37)
+	sHeader->QPY_prev = QPY;
+	QP1Y = QPY + sHeader->sps.QpBdOffsetY;
+
+
+	if (sHeader->sps.qpprime_y_zero_transform_bypass_flag && QP1Y == 0)
+	{
+		TransformBypassModeFlag = true;
+	}
+	else
+	{
+		TransformBypassModeFlag = false;
+	}
 	return false;
 }
 
@@ -617,7 +669,7 @@ bool Macroblock::mb_pred(BitStream& bs, uint32_t numMbPart, Cabac& cabac)
 			//	3 = 平面的
 			if (isAe) // ae(v) 表示CABAC编码
 			{
-				intra_chroma_pred_mode = cabac.decode_intra_chroma_pred_mode(bs, Slice);
+				intra_chroma_pred_mode = cabac.decode_intra_chroma_pred_mode(bs, sliceBase);
 			}
 			else
 			{
@@ -627,11 +679,11 @@ bool Macroblock::mb_pred(BitStream& bs, uint32_t numMbPart, Cabac& cabac)
 	}
 	else if (mode != H264_MB_PART_PRED_MODE::Direct)
 	{
+
 		for (size_t mbPartIdx = 0; mbPartIdx < numMbPart; mbPartIdx++)
 		{
 			//ref_idx_l0[ mbPartIdx ]   用参考帧队列 L0 进行预测，即前向预测时
 			//不支持帧场自适应变量mb_field_decoding_flag=false
-			H264_MB_PART_PRED_MODE aa = MbPartPredMode(mbPartIdx);
 			bool mb_field_decoding_flag = false;
 			if ((sHeader->num_ref_idx_l0_active_minus1 > 0 || false)//(mb_field_decoding_flag)
 				&& MbPartPredMode(mbPartIdx) != H264_MB_PART_PRED_MODE::Pred_L1
@@ -1211,7 +1263,7 @@ bool Macroblock::sub_mb_pred(BitStream& bs, Cabac& cabac)
 					if (isAe)
 					{
 						int mvd_flag = compIdx;
-						cabac.decode_mvd_lX(sliceBase, bs, mbPartIdx, mvd_flag, mvd_l0[mbPartIdx][subMbPartIdx][compIdx]);
+						cabac.decode_mvd_lX(sliceBase, bs, mbPartIdx, subMbPartIdx, mvd_flag, mvd_l0[mbPartIdx][subMbPartIdx][compIdx]);
 					}
 					else
 					{
@@ -1238,7 +1290,7 @@ bool Macroblock::sub_mb_pred(BitStream& bs, Cabac& cabac)
 					if (isAe)
 					{
 						int mvd_flag = 2 + compIdx;
-						cabac.decode_mvd_lX(sliceBase, bs, mbPartIdx, mvd_flag, mvd_l1[mbPartIdx][subMbPartIdx][compIdx]);
+						cabac.decode_mvd_lX(sliceBase, bs, mbPartIdx, subMbPartIdx, mvd_flag, mvd_l1[mbPartIdx][subMbPartIdx][compIdx]);
 					}
 					else
 					{

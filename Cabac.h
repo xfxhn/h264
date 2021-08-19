@@ -4,6 +4,7 @@
 
 
 class ParseSlice;
+class Macroblock;
 class Cabac
 {
 private:

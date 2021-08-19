@@ -2794,6 +2794,7 @@ int Cabac::Derivation_process_of_ctxIdxInc_for_the_syntax_element_coded_block_fl
 int Cabac::Derivation_process_of_ctxIdxInc_for_the_syntax_elements_ref_idx_l0_and_ref_idx_l1(ParseSlice* Slice, int mbPartIdx, bool is_ref_idx_l0)
 {
 	constexpr int subMbPartIdx = 0;
+
 	Macroblock* mb = Slice->macroblock[Slice->CurrMbAddr];
 	H264_MB_TYPE currSubMbType = mb->subMbType[mbPartIdx];
 	int MbPartWidth = mb->MbPartWidth;

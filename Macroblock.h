@@ -189,6 +189,7 @@ public:
 public:
 	Macroblock();
 	bool macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* slice_data, Cabac& cabac);
+	bool macroblock_layer_skip(ParseSlice* Slice, SliceData* slice_data);
 
 
 
