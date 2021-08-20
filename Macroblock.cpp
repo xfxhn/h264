@@ -353,12 +353,7 @@ bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* s
 
 	//获取当前宏块的预测模式
 	mode = MbPartPredMode(0);
-	if (fix_slice_type == SLIECETYPE::H264_SLIECE_TYPE_P && sliceBase->CurrMbAddr > 16)
-	{
-		uint64_t a = bs.readMultiBit(50);
-
-		printf("%d", a);
-	}
+	
 	uint8_t  numMbPart = NumMbPart(fix_mb_type, fix_slice_type);
 
 	if (mbType == H264_MB_TYPE::I_PCM)  //I_PCM 不经过预测，变换，量化
@@ -448,6 +443,7 @@ bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* s
 				int a = 0;
 			}
 			mb_pred(bs, numMbPart, cabac);
+
 		}
 
 
@@ -456,6 +452,7 @@ bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* s
 		{
 			if (isAe)
 			{
+
 				coded_block_pattern = cabac.decode_coded_block_pattern(bs, Slice);
 			}
 			else
@@ -561,6 +558,13 @@ bool Macroblock::macroblock_layer_skip(ParseSlice* Slice, SliceData* slice_data)
 	{
 		mb_type = 23; //inferred: B_Skip
 	}
+
+
+	//修正过后的
+	fix_mb_type = mb_type;
+
+	//当前宏块是什么类型   //修正过后的
+	fix_slice_type = (SLIECETYPE)(sliceTtpy);
 
 	MbPartPredMode(0);
 
@@ -762,6 +766,7 @@ bool Macroblock::mb_pred(BitStream& bs, uint32_t numMbPart, Cabac& cabac)
 				}
 			}
 		}
+
 	}
 	return false;
 }
@@ -1167,7 +1172,7 @@ int Macroblock::residual_luma(BitStream& bs, int i16x16DClevel[16], int i16x16AC
 }
 bool Macroblock::sub_mb_pred(BitStream& bs, Cabac& cabac)
 {
-
+	
 	for (size_t mbPartIdx = 0; mbPartIdx < 4; mbPartIdx++)
 	{
 		if (isAe)
@@ -1202,7 +1207,7 @@ bool Macroblock::sub_mb_pred(BitStream& bs, Cabac& cabac)
 			exit(-1);
 		}
 	}
-
+	
 
 	for (size_t mbPartIdx = 0; mbPartIdx < 4; mbPartIdx++)
 	{

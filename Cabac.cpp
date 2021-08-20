@@ -1023,8 +1023,10 @@ int Cabac::decode_sub_mb_type(BitStream& bs, ParseSlice* Slice)
 	int ctxIdxOffset = 0;
 
 	SLIECETYPE sliceType = (SLIECETYPE)Slice->sHeader->slice_type;
+
 	int synElVal = 0;
-	if (sliceType == SLIECETYPE::H264_SLIECE_TYPE_SP || sliceType == SLIECETYPE::H264_SLIECE_TYPE_SP)
+
+	if (sliceType == SLIECETYPE::H264_SLIECE_TYPE_P || sliceType == SLIECETYPE::H264_SLIECE_TYPE_SP)
 	{
 		synElVal = decode_sub_mb_type_in_P_SP_slices(bs);
 	}
