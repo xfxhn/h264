@@ -29,6 +29,12 @@ ParseSlice::ParseSlice(ParseNalu& nalu, SliceHeader* sHeader) :nalu(nalu)
 
 	sliceNumber = 0;
 	mbCount = 0;
+
+
+	PicOrderCntMsb = 0;
+	PicOrderCntLsb = 0;
+	TopFieldOrderCnt = 0;
+	BottomFieldOrderCnt = 0;
 }
 
 bool ParseSlice::parse()
@@ -266,7 +272,7 @@ void ParseSlice::convertYuv420(uint8_t* buffer, size_t widthBytes)
 			const size_t  index = y * PicWidthInSamplesC + x;
 			bu2[index] = U;
 			bu3[index] = V;
-			
+
 
 
 		}
@@ -3149,6 +3155,74 @@ void ParseSlice::transformDecodeChromaResidualProcess(bool isChromaCb)
 
 }
 
+void ParseSlice::Inter_prediction_process()
+{
+
+	/*if (sHeader->sps.pic_order_cnt_type == 0)
+	{
+		ret = Decoding_process_for_picture_order_count_type_0(m_parent->m_picture_previous_ref);
+		RETURN_IF_FAILED(ret != 0, ret);
+	}
+	else if (sHeader->sps.pic_order_cnt_type == 1)
+	{
+		ret = Decoding_process_for_picture_order_count_type_1(m_parent->m_picture_previous);
+		RETURN_IF_FAILED(ret != 0, ret);
+	}
+	else if (sHeader->sps.pic_order_cnt_type == 2)
+	{
+		ret = Decoding_process_for_picture_order_count_type_2(m_parent->m_picture_previous);
+		RETURN_IF_FAILED(ret != 0, ret);
+	}*/
+
+
+}
+
+//POC图像顺序解码过程
+void ParseSlice::Decoding_process_for_picture_order_count()
+{
+	//把POC的低位编进码流内
+
+	//依赖frame_num求解POC
+}
+
+void ParseSlice::Decoding_process_for_picture_order_count_type_0()
+{
+
+	//前 一个参考图像的 PicOrderCntMsb
+	int prevPicOrderCntMsb = 0;
+	int prevPicOrderCntLsb = 0;
+	if (sHeader->nalu.IdrPicFlag)
+	{
+		prevPicOrderCntMsb = 0;
+		prevPicOrderCntLsb = 0;
+	}
+	else
+	{
+
+	}
+
+	if ((sHeader->pic_order_cnt_lsb < prevPicOrderCntLsb)
+		&& ((prevPicOrderCntLsb - sHeader->pic_order_cnt_lsb) >= (sHeader->sps.MaxPicOrderCntLsb / 2))
+		)
+	{
+		PicOrderCntMsb = prevPicOrderCntMsb + sHeader->sps.MaxPicOrderCntLsb;
+	}
+	else if ((sHeader->pic_order_cnt_lsb > prevPicOrderCntLsb)
+		&& ((sHeader->pic_order_cnt_lsb - prevPicOrderCntLsb) > (sHeader->sps.MaxPicOrderCntLsb / 2)))
+	{
+		PicOrderCntMsb = prevPicOrderCntMsb - sHeader->sps.MaxPicOrderCntLsb;
+	}
+	else
+	{
+		PicOrderCntMsb = prevPicOrderCntMsb;
+	}
+
+	// 当前图像为非底场时
+	TopFieldOrderCnt = PicOrderCntMsb + sHeader->pic_order_cnt_lsb;
+	// 当前图像为非顶场时
+	BottomFieldOrderCnt = TopFieldOrderCnt + sHeader->delta_pic_order_cnt_bottom;
+}
+
 
 
 void ParseSlice::inverseScanner4x4Process(const int value[16], int c[4][4])
@@ -3544,35 +3618,7 @@ int ParseSlice::getQPC(int QPY, bool isChromaCb)
 //色度量化参数的推导过程  
 void ParseSlice::getChromaQuantisationParameters(bool isChromaCb)
 {
-	//CbCr
-	//int qPOffset = 0;
 
-
-	//if (isChromaCb)
-	//{
-	//	//计算色度量化参数的偏移量值
-	//	qPOffset = sHeader->pps.chroma_qp_index_offset;
-	//}
-	//else
-	//{
-	//	qPOffset = sHeader->pps.second_chroma_qp_index_offset;
-	//}
-	////每个色度分量的qPI 值通过下述方式获得  //QpBdOffsetC 色度偏移
-	//int qPI = Clip3(-(int)sHeader->sps.QpBdOffsetC, 51, macroblock[CurrMbAddr]->QPY + qPOffset);
-
-
-	//int QPC = 0;
-	//if (qPI < 30)
-	//{
-	//	QPC = qPI;
-	//}
-	//else
-	//{
-	//	//int qPIs[] = { 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51 }; QPC索引对应下面的QPC的值
-	//	int QPCs[] = { 29, 30, 31, 32, 32, 33, 34, 34, 35, 35, 36, 36, 37, 37, 37, 38, 38, 38, 39, 39, 39, 39 };
-
-	//	QPC = QPCs[qPI - 30];
-	//}
 	const int QPC = getQPC(macroblock[CurrMbAddr]->QPY, isChromaCb);
 
 	const int QP1C = QPC + sHeader->sps.QpBdOffsetC;

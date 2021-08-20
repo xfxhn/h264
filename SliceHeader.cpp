@@ -169,7 +169,7 @@ bool SliceHeader::slice_header(BitStream& bs, const ParsePPS ppsCache[256], cons
 		当前图像被包含在在解码参考图像标记过程 之前的listD中。*/
 	if (sps.pic_order_cnt_type == 0)
 	{
-		/*表示一个编码帧的顶场或一个编码场的图像顺序数对 MaxPicOrderCntLsb  取模。
+		/*表示一个编码帧的顶场或一个编码场的图像顺序数对MaxPicOrderCntLsb取模。
 			pic_order_cnt_lsb 语法元素的大小是log2_max_pic_order_cnt_lsb_minus4 + 4 个比特。
 			pic_order_cnt_lsb 的值应该在 0 到 MaxPicOrderCntLsb – 1 的范围内（包括边界值）。*/
 		pic_order_cnt_lsb = bs.readMultiBit(sps.log2_max_pic_order_cnt_lsb_minus4 + 4); //2 u(v)

@@ -40,6 +40,7 @@ ParseSPS::ParseSPS()
 	log2_max_frame_num_minus4 = 0;
 	pic_order_cnt_type = 0;
 	log2_max_pic_order_cnt_lsb_minus4 = 0;
+	MaxPicOrderCntLsb = 0;
 	delta_pic_order_always_zero_flag = 0;
 	offset_for_non_ref_pic = 0;
 	offset_for_top_to_bottom_field = 0;
@@ -258,7 +259,8 @@ bool ParseSPS::seq_parameter_set_data(BitStream& bs)
 
 	if (this->pic_order_cnt_type == 0)
 	{
-		this->log2_max_pic_order_cnt_lsb_minus4 = bs.readUE(); //log2_max_pic_order_cnt_lsb_minus4 0 ue(v)
+		this->log2_max_pic_order_cnt_lsb_minus4 = bs.readUE(); //取值范围应该在0-12
+		MaxPicOrderCntLsb = std::pow(2, log2_max_pic_order_cnt_lsb_minus4 + 4);
 	}
 	else if (this->pic_order_cnt_type == 1)
 	{
@@ -272,6 +274,7 @@ bool ParseSPS::seq_parameter_set_data(BitStream& bs)
 			this->offset_for_ref_frame[i] = bs.readSE(); //offset_for_ref_frame[ i ] 0 se(v)
 		}
 	}
+
 	//最大允许多少个参考帧
 	max_num_ref_frames = bs.readUE();
 	//是否允许出现不连续的情况,跳帧

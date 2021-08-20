@@ -202,95 +202,7 @@ Macroblock::Macroblock()
 
 }
 
-std::pair<int, int> Macroblock::getMbPartWidthAndHeight(H264_MB_TYPE mbType)
-{
-	int width = 0;
-	int height = 0;
 
-	for (size_t i = 0; i < 47; i++)
-	{
-		if (i >= 0 && i <= 5)
-		{
-			if (mb_type_sleces_sp_p[i].name == mbType)
-			{
-				width = mb_type_sleces_sp_p[i].MbPartWidth;
-				height = mb_type_sleces_sp_p[i].MbPartHeight;
-				break;
-			}
-		}
-		else if (i >= 6 && i <= 29)
-		{
-			if (mb_type_sleces_b[i - 6].name == mbType)
-			{
-				width = mb_type_sleces_b[i - 6].MbPartWidth;
-				height = mb_type_sleces_b[i - 6].MbPartHeight;
-				break;
-			}
-
-		}
-		else if (i >= 30 && i <= 33)
-		{
-			if (sub_mb_type_mbs_p[i - 30].name == mbType)
-			{
-				width = sub_mb_type_mbs_p[i - 30].SubMbPartWidth;
-				height = sub_mb_type_mbs_p[i - 30].SubMbPartHeight;
-				break;
-			}
-		}
-		else if (i >= 34 && i <= 46)
-		{
-			if (sub_mb_type_mbs_b[i - 34].name == mbType)
-			{
-				width = sub_mb_type_mbs_b[i - 34].SubMbPartWidth;
-				height = sub_mb_type_mbs_b[i - 34].SubMbPartHeight;
-				break;
-			}
-		}
-		else
-		{
-			printf("找不到height和width %d %d\n", i, mbType);
-			exit(-1);
-		}
-
-	}
-
-
-	return std::pair<int, int>(width, height);
-}
-
-H264_MB_PART_PRED_MODE Macroblock::getSubMbPredMode(H264_MB_TYPE subMbType, int& NumSubMbPart)
-{
-
-	H264_MB_PART_PRED_MODE mode = H264_MB_PART_PRED_MODE::NA;
-	for (size_t i = 0; i < 17; i++)
-	{
-		if (i >= 0 && i <= 3)
-		{
-			if (sub_mb_type_mbs_p[i].name == subMbType)
-			{
-				mode = sub_mb_type_mbs_p[i].SubMbPredMode;
-				NumSubMbPart = sub_mb_type_mbs_p[i].NumSubMbPart;
-				break;
-			}
-		}
-		else if (i >= 4 && i <= 16)
-		{
-			if (sub_mb_type_mbs_b[i - 4].name == subMbType)
-			{
-				mode = sub_mb_type_mbs_b[i - 4].SubMbPredMode;
-				NumSubMbPart = sub_mb_type_mbs_p[i].NumSubMbPart;
-				break;
-			}
-		}
-		else
-		{
-			printf("找不到子宏块预测模式mode %d %d\n", i, subMbType);
-			exit(-1);
-		}
-	}
-
-	return mode;
-}
 //slice type 五种类型
 //I slice中的宏块类型只能是I宏块类型
 //P slice中包含了I宏块类型,与P宏块类型
@@ -353,7 +265,7 @@ bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* s
 
 	//获取当前宏块的预测模式
 	mode = MbPartPredMode(0);
-	
+
 	uint8_t  numMbPart = NumMbPart(fix_mb_type, fix_slice_type);
 
 	if (mbType == H264_MB_TYPE::I_PCM)  //I_PCM 不经过预测，变换，量化
@@ -1172,7 +1084,7 @@ int Macroblock::residual_luma(BitStream& bs, int i16x16DClevel[16], int i16x16AC
 }
 bool Macroblock::sub_mb_pred(BitStream& bs, Cabac& cabac)
 {
-	
+
 	for (size_t mbPartIdx = 0; mbPartIdx < 4; mbPartIdx++)
 	{
 		if (isAe)
@@ -1207,7 +1119,7 @@ bool Macroblock::sub_mb_pred(BitStream& bs, Cabac& cabac)
 			exit(-1);
 		}
 	}
-	
+
 
 	for (size_t mbPartIdx = 0; mbPartIdx < 4; mbPartIdx++)
 	{

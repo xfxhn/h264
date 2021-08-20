@@ -192,9 +192,6 @@ public:
 	bool macroblock_layer_skip(ParseSlice* Slice, SliceData* slice_data);
 
 
-
-	static std::pair<int, int> getMbPartWidthAndHeight(H264_MB_TYPE mbType);
-	static H264_MB_PART_PRED_MODE getSubMbPredMode(H264_MB_TYPE subMbType, int& NumSubMbPart);
 	static H264_MB_PART_PRED_MODE getMbPartPredMode(SLIECETYPE fix_slice_type, uint8_t fix_mb_type, bool transform_size_8x8_flag, uint8_t mbPartIdx);
 	~Macroblock();
 private:

@@ -177,7 +177,13 @@ void AnnexBReader::getNaluHeader(uint8_t* buffer, int size)
 			//环路滤波器
 			slice->Deblocking_filter_process();
 
+			//存储每个已经解码完成的帧需要的数据
+			Picture picture(slice);
+
+
+
 			slice->saveBmpFile("xf");
+
 
 			if (this->slice)
 			{

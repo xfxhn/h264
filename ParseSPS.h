@@ -46,6 +46,7 @@ public:
 	uint32_t log2_max_frame_num_minus4;  // 0 ue(v)
 	uint32_t pic_order_cnt_type;  // 0 ue(v)
 	uint32_t log2_max_pic_order_cnt_lsb_minus4;  // 0 ue(v)
+	uint32_t  MaxPicOrderCntLsb;
 	bool delta_pic_order_always_zero_flag;  // 0 ue(v)
 	int32_t  offset_for_non_ref_pic;   // 0 se(v)
 	int32_t  offset_for_top_to_bottom_field;   // 0 se(v)

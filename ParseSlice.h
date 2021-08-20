@@ -6,6 +6,7 @@
 #include "ParseSPS.h"
 #include "ParseNalu.h"
 #include "Macroblock.h"
+#include "Picture.h"
 
 
 struct  MyBITMAPFILEHEADER                     /**** BMP file header structure ****/
@@ -74,6 +75,17 @@ public:
 	uint32_t  sliceNumber; //当前帧第几个slice
 
 	uint32_t  mbCount; //解码的宏块的计数
+	uint32_t  sliceCount; //第几个slice(可能一帧里有多个slice)
+
+
+
+
+	int         PicOrderCntMsb;
+	int         PicOrderCntLsb;
+	int         TopFieldOrderCnt;
+	int         BottomFieldOrderCnt;
+
+	Picture* prant;
 
 public:
 	ParseSlice(ParseNalu& nalu, SliceHeader* sHeader);
@@ -96,33 +108,29 @@ public:
 
 	void transformDecodeChromaResidualProcess(bool isChromaCb);
 
+	void Inter_prediction_process();
 
 
+	//参考帧列表
+	void Decoding_process_for_picture_order_count();
 
+	void Decoding_process_for_picture_order_count_type_0();
 
-
-
-
-
-
-
-	void getChromaQuantisationParameters(bool isChromaCb);
 
 
 	void getMbAddrNAndLuma4x4BlkIdxN(int& mbAddrN, const int xN, const int yN, const int maxW, const int maxH, int& xW, int& yW);
 
 
-	void Picture_construction_process_prior_to_deblocking_filter_process(int* u, const char* type, const size_t BlkIdx, const bool isLuam, bool isChromaCb = true);
-
-	void scaling(bool isLuam, bool isChromaCb);
-
 private:
 	void convertYuv420(uint8_t* buffer, size_t widthBytes);
 
+	void scaling(bool isLuam, bool isChromaCb);
+
+	void Picture_construction_process_prior_to_deblocking_filter_process(int* u, const char* type, const size_t BlkIdx, const bool isLuam, bool isChromaCb = true);
 
 	static int Derivation_process_for_4x4_luma_block_indices(int x, int y);
 	static int Derivation_process_for_8x8_luma_block_indices(int x, int y);
-
+	void getChromaQuantisationParameters(bool isChromaCb);
 	int getQPC(int QPY, bool isChromaCb);
 
 	void getIntra4x4PredMode(size_t luma4x4BlkIdx, bool isLuam);

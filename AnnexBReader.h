@@ -7,7 +7,7 @@
 #include "ParseSlice.h"
 #include "ParseNalu.h"
 #include "ParseSEI.h"
-
+#include "Picture.h"
 
 
 class AnnexBReader

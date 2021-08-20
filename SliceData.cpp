@@ -62,12 +62,18 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice)
 	//当前解码的宏块在图片中的坐标位置
 	CurrMbAddr = sHeader->first_mb_in_slice;
 	Slice->CurrMbAddr = CurrMbAddr;
+
 	if (!sHeader->MbaffFrameFlag)
 	{
 		mb_field_decoding_flag = sHeader->field_pic_flag;
 	}
 
+	if (Slice->sliceCount == 0)
+	{
+		Slice->Decoding_process_for_picture_order_count();
+	}
 
+	Slice->sliceCount++;
 	bool moreDataFlag = true;
 	bool prevMbSkipped = false;
 
@@ -218,7 +224,6 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice)
 		CurrMbAddr = NextMbAddress(sHeader, CurrMbAddr);
 	} while (moreDataFlag);
 
-	int a = 1;
 	return false;
 }
 
