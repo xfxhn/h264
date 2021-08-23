@@ -23,6 +23,7 @@
     <ClCompile Include="BitStream.cpp" />
     <ClCompile Include="Cabac.cpp" />
     <ClCompile Include="Common.cpp" />
+    <ClCompile Include="DPB.cpp" />
     <ClCompile Include="Macroblock.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="ParseNalu.cpp" />
@@ -30,6 +31,7 @@
     <ClCompile Include="ParseSEI.cpp" />
     <ClCompile Include="ParseSlice.cpp" />
     <ClCompile Include="ParseSPS.cpp" />
+    <ClCompile Include="Picture.cpp" />
     <ClCompile Include="ResidualBlockCavlc.cpp" />
     <ClCompile Include="SliceData.cpp" />
     <ClCompile Include="SliceHeader.cpp" />
@@ -40,6 +42,7 @@
     <ClInclude Include="Cabac.h" />
     <ClInclude Include="CalvcTable.h" />
     <ClInclude Include="Common.h" />
+    <ClInclude Include="DPB.h" />
     <ClInclude Include="Macroblock.h" />
     <ClInclude Include="NaluType.h" />
     <ClInclude Include="ParseNalu.h" />
@@ -47,6 +50,7 @@
     <ClInclude Include="ParseSEI.h" />
     <ClInclude Include="ParseSlice.h" />
     <ClInclude Include="ParseSPS.h" />
+    <ClInclude Include="Picture.h" />
     <ClInclude Include="ResidualBlockCavlc.h" />
     <ClInclude Include="SliceData.h" />
     <ClInclude Include="SliceHeader.h" />

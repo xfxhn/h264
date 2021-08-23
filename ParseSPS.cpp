@@ -275,7 +275,8 @@ bool ParseSPS::seq_parameter_set_data(BitStream& bs)
 		}
 	}
 
-	//最大允许多少个参考帧
+	//最大允许多少个参考帧 取值范围应该在 0 到 MaxDpbSize 
+	//MaxDpbSize = Min( 1024 * MaxDPB /  ( PicWidthInMbs * FrameHeightInMbs * 384 ), 16 )
 	max_num_ref_frames = bs.readUE();
 	//是否允许出现不连续的情况,跳帧
 	gaps_in_frame_num_value_allowed_flag = bs.readBit();

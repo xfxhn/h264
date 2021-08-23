@@ -19,13 +19,12 @@ public:
 	bool close();
 	int ReadNalu(uint8_t* buffer, rsize_t& dataLen);
 
-	//去掉防竞争字节
-	size_t unescape(uint8_t* src, uint32_t src_len);
+
 	~AnnexBReader();
 private:
 
 	ParseSlice* slice;
-
+	Picture* pic; //存储每个解码完成的图像
 
 	//标识在条带头中提到的图像参数集。变量 pic_parameter_set_id 的值应该在 0 到  255 的 范围内（包括0 和255）。
 	//ParsePPS ppsCache[256];
@@ -41,7 +40,8 @@ private:
 
 	void getNaluHeader(uint8_t* buffer, int size);
 
-
+	//去掉防竞争字节
+	size_t unescape(uint8_t* src, uint32_t src_len);
 	FILE* f = nullptr;
 
 	//使用typedef定义结构体同时，给_NaluUnit结构体别名NaluUnit，后续定义可不用使用struct data，直接使用DATA即可

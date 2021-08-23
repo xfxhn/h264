@@ -9,8 +9,8 @@ AnnexBReader::AnnexBReader()
 	ppsCache = new ParsePPS[256];
 	spsCache = new ParseSPS[32];
 
-
 	slice = nullptr;
+	pic = nullptr;
 }
 
 bool AnnexBReader::open(const char* filePath)
@@ -35,6 +35,9 @@ bool AnnexBReader::close()
 
 int AnnexBReader::ReadNalu(uint8_t* buffer, rsize_t& dataLen)
 {
+
+
+
 	size_t currentLenth = 0;
 
 	//当前在哪个字节
@@ -177,12 +180,12 @@ void AnnexBReader::getNaluHeader(uint8_t* buffer, int size)
 			//环路滤波器
 			slice->Deblocking_filter_process();
 
-			//存储每个已经解码完成的帧需要的数据
-			Picture picture(slice);
+			//存储每个已经解码完成的帧需要的数据,还有存储DPB
+			pic = new Picture(slice);
 
+			slice->endOfPicture();
 
-
-			slice->saveBmpFile("xf");
+			//slice->saveBmpFile("xf");
 
 
 			if (this->slice)
@@ -193,7 +196,7 @@ void AnnexBReader::getNaluHeader(uint8_t* buffer, int size)
 			}
 
 
-			this->slice = new ParseSlice(nalu, sHeader);
+			this->slice = new ParseSlice(nalu, sHeader, pic);
 			this->slice->parse();
 			cout << "解码完这一帧" << endl;
 		}
@@ -208,7 +211,7 @@ void AnnexBReader::getNaluHeader(uint8_t* buffer, int size)
 					slice = nullptr;
 				}
 
-				this->slice = new ParseSlice(nalu, sHeader);
+				this->slice = new ParseSlice(nalu, sHeader, pic);
 				this->slice->parse();
 			}
 			else
@@ -254,6 +257,10 @@ void AnnexBReader::getNaluHeader(uint8_t* buffer, int size)
 
 		if (this->slice && this->slice->CurrMbAddr >= (sHeader->PicSizeInMbs - 1))
 		{
+			//环路滤波器
+			slice->Deblocking_filter_process();
+			//存储每个已经解码完成的帧需要的数据,还有存储DPB
+			pic = new Picture(slice);
 			if (slice)
 			{
 				delete slice;
@@ -261,7 +268,7 @@ void AnnexBReader::getNaluHeader(uint8_t* buffer, int size)
 			}
 
 
-			this->slice = new ParseSlice(nalu, sHeader);
+			this->slice = new ParseSlice(nalu, sHeader, pic);
 			this->slice->parse();
 			cout << "解码完这一帧" << endl;
 		}
@@ -276,7 +283,7 @@ void AnnexBReader::getNaluHeader(uint8_t* buffer, int size)
 					slice = nullptr;
 				}
 
-				this->slice = new ParseSlice(nalu, sHeader);
+				this->slice = new ParseSlice(nalu, sHeader, pic);
 				this->slice->parse();
 			}
 			else

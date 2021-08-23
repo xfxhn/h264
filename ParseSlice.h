@@ -45,7 +45,7 @@ public:
 	SliceHeader* sHeader;
 	Macroblock** macroblock;
 private:
-
+	Picture* dpb[16];
 public:
 
 	uint8_t** lumaData;//存储解码后图片的Y分量数据
@@ -84,11 +84,14 @@ public:
 	int         PicOrderCntLsb;
 	int         TopFieldOrderCnt;
 	int         BottomFieldOrderCnt;
-
-	Picture* prant;
+	int			MaxLongTermFrameIdx;
+	int			LongTermFrameIdx; //长期参考帧
+	PICTURE_MARKING reference_marked_type;
+	//已经解码完成的数据
+	Picture* pic;
 
 public:
-	ParseSlice(ParseNalu& nalu, SliceHeader* sHeader);
+	ParseSlice(ParseNalu& nalu, SliceHeader* sHeader, Picture* pic);
 
 	bool parse();
 
@@ -112,6 +115,9 @@ public:
 
 
 	//参考帧列表
+	void Decoding_process_for_reference_picture_lists_construction();
+
+
 	void Decoding_process_for_picture_order_count();
 
 	void Decoding_process_for_picture_order_count_type_0();
@@ -120,7 +126,7 @@ public:
 
 	void getMbAddrNAndLuma4x4BlkIdxN(int& mbAddrN, const int xN, const int yN, const int maxW, const int maxH, int& xW, int& yW);
 
-
+	void endOfPicture();
 private:
 	void convertYuv420(uint8_t* buffer, size_t widthBytes);
 
@@ -168,5 +174,10 @@ private:
 	void Derivation_process_for_the_thresholds_for_each_block_edge(int p0, int q0, int p1, int q1, bool chromaEdgeFlag, int bS, int filterOffsetA, int  filterOffsetB, int qPp, int qPq, int& indexA, int& alpha, int& beta, bool& filterSamplesFlag);
 	void Filtering_process_for_edges_with_bS_less_than_4(const int p[4], const int q[4], int pp[3], int qq[3], bool chromaEdgeFlag, int bS, int beta, int indexA, bool chromaStyleFilteringFlag);
 	void Filtering_process_for_edges_for_bS_equal_to_4(const int p[4], const int q[4], int pp[3], int qq[3], int alpha, int beta, bool chromaStyleFilteringFlag);
+
+
+	void Decoded_reference_picture_marking_process();
+	void Sliding_window_decoded_reference_picture_marking_process();
+	void Adaptive_memory_control_decoded_reference_picture_marking_process();
 };
 

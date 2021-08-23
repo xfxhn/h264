@@ -53,7 +53,7 @@ public:
 	uint32_t num_ref_frames_in_pic_order_cnt_cycle; // 0 ue(v)
 	uint32_t offset_for_ref_frame[H264_MAX_OFFSET_REF_FRAME_COUNT]; //offset_for_ref_frame[ num_ref_frames_in_pic_order_cnt_cycle ] 0 se(v)
 
-	uint32_t     max_num_ref_frames; // 0 ue(v)
+	uint8_t     max_num_ref_frames; // 0 ue(v)
 	bool     gaps_in_frame_num_value_allowed_flag; // 0 u(1)
 	uint32_t     pic_width_in_mbs_minus1; // 0 ue(v)
 	uint32_t     pic_height_in_map_units_minus1; // 0 ue(v)

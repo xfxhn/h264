@@ -102,6 +102,7 @@ SliceHeader::SliceHeader(ParseNalu& nalu) :nalu(nalu)
 	FilterOffsetB = 0;
 	memset(ScalingList4x4, 0, sizeof(int) * 6 * 16);
 	memset(ScalingList8x8, 0, sizeof(int) * 6 * 64);
+	memset(dec_ref_pic_markings, 0, sizeof(DEC_REF_PIC_MARKING) * 32);
 }
 
 
@@ -384,12 +385,16 @@ bool SliceHeader::dec_ref_pic_marking(BitStream& bs)
 {
 	if (nalu.IdrPicFlag)
 	{
-		//帧间编码的时候作为参考帧的标记
+		//指明是否要将前面已解码的图像全部输出
 		no_output_of_prior_pics_flag = bs.readBit(); //2 | 5 u(1)
+		//判断当前IDR帧是否是长期参考帧
 		long_term_reference_flag = bs.readBit(); //2 | 5 u(1)
 	}
 	else
 	{
+		//指明标记（marking）操作的模式
+		// =0 先入先出（FIFO）：使用滑动窗的机制，先入先出，在这种模式下没有办法对长期参考帧进行操作。
+		// =1 自适应标记（marking）：后续码流中会有一系列句法元素显式指明操作的步骤。自适应是指编码器可根据情况随机灵活地作出决策。
 		adaptive_ref_pic_marking_mode_flag = bs.readBit();
 
 		//当 adaptive_ref_pic_marking_mode_flag 等于 1 时调用。在当前图像解码完毕后，
@@ -397,7 +402,38 @@ bool SliceHeader::dec_ref_pic_marking(BitStream& bs)
 		//按照它们在比特流出现的顺序执行，其中命令参数为 从 1 到 6
 		if (adaptive_ref_pic_marking_mode_flag)
 		{
+			size_t i = 0;
+			do
+			{
+				dec_ref_pic_markings[i].memory_management_control_operation = bs.readUE();
 
+				if (dec_ref_pic_markings[i].memory_management_control_operation == 1 || dec_ref_pic_markings[i].memory_management_control_operation == 3)
+				{
+					// 这个句法元素可以计算得到需要操作的图像在短期参考队列中的序号
+					dec_ref_pic_markings[i].difference_of_pic_nums_minus1 = bs.readUE();
+				}
+
+				if (dec_ref_pic_markings[i].memory_management_control_operation == 2)
+				{
+					//  此句法元素得到所要操作的长期参考图像的序号
+					dec_ref_pic_markings[i].long_term_pic_num = bs.readUE();
+				}
+
+				if (dec_ref_pic_markings[i].memory_management_control_operation == 3 || dec_ref_pic_markings[i].memory_management_control_operation == 6)
+				{
+					// 分配一个长期参考帧的序号给一个图像
+					dec_ref_pic_markings[i].long_term_frame_idx = bs.readUE();
+				}
+
+				if (dec_ref_pic_markings[i].memory_management_control_operation == 4)
+				{
+					//此句法元素减1 ，指明长期参考队列的最大数目。
+					dec_ref_pic_markings[i].max_long_term_frame_idx_plus1 = bs.readUE();
+				}
+
+				++i;
+
+			} while (dec_ref_pic_markings[i - 1].memory_management_control_operation != 0);
 		}
 	}
 	return false;

@@ -4,9 +4,20 @@
 #include "ParseSPS.h"
 #include "ParseNalu.h"
 
+
+struct DEC_REF_PIC_MARKING
+{
+	uint8_t     memory_management_control_operation; //在自适应标记（marking）模式中指明本次操作的具体内容 表7-24
+	uint8_t     difference_of_pic_nums_minus1;
+	uint8_t     long_term_pic_num;
+	uint8_t     long_term_frame_idx;
+	uint8_t     max_long_term_frame_idx_plus1;
+};
+
 class SliceHeader
 {
 public:
+	DEC_REF_PIC_MARKING    dec_ref_pic_markings[32];
 	ParseNalu& nalu;
 	ParsePPS pps;
 	ParseSPS sps;

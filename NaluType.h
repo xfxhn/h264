@@ -206,6 +206,26 @@ enum class RESIDUAL_LEVEL
 	CrIntra16x16ACLevel
 };
 
+
+//enum class PICTURE_MARKING :int
+//{
+//	ENDWHILE, //结束循环，退出标记（marding）操作。
+//	SHOR_TERM_UNUSED_FOR_REFERENCE,//将一个短期参考图像标记为非参考图像，也 即将一个短期参考图像移出参考帧队列
+//	LONG_TERM_UNUSED_FOR_REFERENCE,//将一个长期参考图像标记为非参考图像，也 即将一个长期参考图像移出参考帧队列
+//	SHOR_TERM_TRANS_LONG_TERM,  //将一个短期参考图像转为长期参考图像。
+//	MAX_LONG_TERM_SIZE, //指明长期参考帧的最大数目。
+//	CLEAR_TERM,  //清空参考帧队列，将所有参考图像移出参考 帧队列，并禁用长期参考机制
+//	CURRENT_TRANS_LONG_TERM //将当前图像存为一个长期参考帧。
+//};
+enum class PICTURE_MARKING
+{
+	UNKOWN,
+	USED_FOR_REFERENCE,   //用过的
+	SHORT_TERM_REFERENCE, //短期参考帧
+	LONG_TERM_REFERENCE,  //长期参考帧
+	UNUSED_FOR_REFERENCE, //没有使用过的参考帧
+};
+
 //Intra4x4PredMode 9种4*4帧内预测模式
 constexpr int Intra_4x4_Vertical = 0;
 constexpr int Intra_4x4_Horizontal = 1;

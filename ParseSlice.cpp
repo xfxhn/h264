@@ -5,7 +5,7 @@
 /// <summary>
 /// ParseNalu& nalu  :nalu(nalu)
 /// </summary>
-ParseSlice::ParseSlice(ParseNalu& nalu, SliceHeader* sHeader) :nalu(nalu)
+ParseSlice::ParseSlice(ParseNalu& nalu, SliceHeader* sHeader, Picture* pic) :nalu(nalu), pic(pic)
 {
 	mbX = 0;
 	mbY = 0;
@@ -35,6 +35,10 @@ ParseSlice::ParseSlice(ParseNalu& nalu, SliceHeader* sHeader) :nalu(nalu)
 	PicOrderCntLsb = 0;
 	TopFieldOrderCnt = 0;
 	BottomFieldOrderCnt = 0;
+
+	LongTermFrameIdx = 0;
+	MaxLongTermFrameIdx = NA;
+	reference_marked_type = PICTURE_MARKING::UNKOWN;
 }
 
 bool ParseSlice::parse()
@@ -1178,6 +1182,107 @@ void ParseSlice::Filtering_process_for_edges_for_bS_equal_to_4(const int p[4], c
 		qq[1] = q[1];
 		qq[2] = q[2];
 	}
+}
+
+//已解码参考图像标记过程
+void ParseSlice::Decoded_reference_picture_marking_process()
+{
+	if (sHeader->nalu.IdrPicFlag)
+	{
+		//所有参考图像需要被标记为"未用于参考" 
+		for (size_t i = 0; i < 16; i++)
+		{
+			dpb[i]->reference_marked_type = PICTURE_MARKING::UNUSED_FOR_REFERENCE;
+		}
+
+		if (sHeader->long_term_reference_flag)
+		{
+			//该IDR图像需要 被标记为"用于长期参考"
+			reference_marked_type = PICTURE_MARKING::LONG_TERM_REFERENCE;
+			LongTermFrameIdx = 0;
+			MaxLongTermFrameIdx = 0;
+
+		}
+		else//sHeader->long_term_reference_flag=0
+		{
+			//该IDR图像将被标记为"用于短期参考"
+			reference_marked_type = PICTURE_MARKING::SHORT_TERM_REFERENCE;
+			MaxLongTermFrameIdx = NA; //设置为没有长期索引
+		}
+	}
+	else
+	{
+		// =0 先入先出（FIFO）：使用滑动窗的机制，先入先出，在这种模式下没有办法对长期参考帧进行操作。
+		// =1 自适应标记（marking）：后续码流中会有一系列句法元素显式指明操作的步骤。自适应是指编码器可根据情况随机灵活地作出决策。
+		if (sHeader->adaptive_ref_pic_marking_mode_flag == 0)
+		{
+			//滑动窗口解码参考图像的标识过程
+			Sliding_window_decoded_reference_picture_marking_process(dpb);
+
+		}
+		else //if (slice_header.adaptive_ref_pic_marking_mode_flag == 1)
+		{
+			//自适应标记过程
+			Adaptive_memory_control_decoded_reference_picture_marking_process(dpb);
+		}
+	}
+}
+
+void ParseSlice::Sliding_window_decoded_reference_picture_marking_process()
+{
+	//如果当前编码场是一个互补参考场对的第二个场，并且第一个场已经被标记为“用于短期参考”时，当前图像也应该被标记为“用于短期参考”
+
+	int numShortTerm = 0;
+	int numLongTerm = 0;
+
+	for (size_t i = 0; i < 16; i++)
+	{
+		if (dpb[i]->reference_marked_type == PICTURE_MARKING::SHORT_TERM_REFERENCE)
+		{
+			numShortTerm++;
+		}
+
+		if (dpb[i]->reference_marked_type == PICTURE_MARKING::LONG_TERM_REFERENCE)
+		{
+			numLongTerm++;
+		}
+	}
+
+
+
+	if (numShortTerm + numLongTerm == std::max(sHeader->sps.max_num_ref_frames, (uint8_t)1) && numShortTerm > 0)
+	{
+		//有着最小 FrameNumWrap 值的短期参考帧必须标记为“不用于参考”
+		int FrameNumWrap = -1;
+		Picture* pic = nullptr;
+		for (size_t i = 0; i < 16; i++)
+		{
+			if (dpb[i]->reference_marked_type == PICTURE_MARKING::SHORT_TERM_REFERENCE)
+			{
+				if (FrameNumWrap == -1)
+				{
+					FrameNumWrap = dpb[i]->FrameNumWrap;
+				}
+
+				if (dpb[i]->FrameNumWrap < FrameNumWrap)
+				{
+					pic = dpb[i];
+					FrameNumWrap = dpb[i]->FrameNumWrap;
+				}
+			}
+		}
+
+
+		if (pic != nullptr)
+		{
+			pic->reference_marked_type = PICTURE_MARKING::UNUSED_FOR_REFERENCE;
+		}
+		//如它是一个帧或场对，那么它的两个场必须均标记为“不用于参考”。
+	}
+}
+
+void ParseSlice::Adaptive_memory_control_decoded_reference_picture_marking_process()
+{
 }
 
 int ParseSlice::Derivation_process_for_4x4_luma_block_indices(int x, int y)
@@ -2826,6 +2931,17 @@ void ParseSlice::getMbAddrNAndLuma4x4BlkIdxN(
 
 }
 
+void ParseSlice::endOfPicture()
+{
+
+	if (sHeader->nalu.nal_ref_idc != 0)
+	{
+		Decoded_reference_picture_marking_process();
+	}
+
+
+}
+
 
 //4*4亮度残差
 void ParseSlice::transformDecode4x4LuamResidualProcess()
@@ -3181,13 +3297,27 @@ void ParseSlice::Inter_prediction_process()
 void ParseSlice::Decoding_process_for_picture_order_count()
 {
 	//把POC的低位编进码流内
-
+	if (sHeader->sps.pic_order_cnt_type == 0)
+	{
+		Decoding_process_for_picture_order_count_type_0();
+	}
+	else if (sHeader->sps.pic_order_cnt_type == 1)
+	{
+		/*ret = Decoding_process_for_picture_order_count_type_1(m_parent->m_picture_previous);
+		RETURN_IF_FAILED(ret != 0, ret);*/
+	}
+	else if (sHeader->sps.pic_order_cnt_type == 2)
+	{
+		/*ret = Decoding_process_for_picture_order_count_type_2(m_parent->m_picture_previous);
+		RETURN_IF_FAILED(ret != 0, ret);*/
+	}
 	//依赖frame_num求解POC
 }
 
 void ParseSlice::Decoding_process_for_picture_order_count_type_0()
 {
 
+	pic;
 	//前 一个参考图像的 PicOrderCntMsb
 	int prevPicOrderCntMsb = 0;
 	int prevPicOrderCntLsb = 0;

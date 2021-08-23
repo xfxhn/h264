@@ -71,6 +71,15 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice)
 	if (Slice->sliceCount == 0)
 	{
 		Slice->Decoding_process_for_picture_order_count();
+
+		//参考图像列表  在解码每一个P,SP或B条带开始时
+		if ((SLIECETYPE)sHeader->slice_type == SLIECETYPE::H264_SLIECE_TYPE_P
+			|| (SLIECETYPE)sHeader->slice_type == SLIECETYPE::H264_SLIECE_TYPE_SP
+			|| (SLIECETYPE)sHeader->slice_type == SLIECETYPE::H264_SLIECE_TYPE_B
+			)
+		{
+			//Decoding_process_for_reference_picture_lists_construction
+		}
 	}
 
 	Slice->sliceCount++;
