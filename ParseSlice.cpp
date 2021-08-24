@@ -3039,6 +3039,7 @@ void ParseSlice::endOfPicture()
 
 	if (sHeader->nalu.nal_ref_idc != 0)
 	{
+		//标记当前解码完成的帧是什么类型，然后放到DBP里去管理
 		Decoded_reference_picture_marking_process();
 	}
 
