@@ -56,20 +56,26 @@ SliceHeader::SliceHeader(ParseNalu& nalu) :nalu(nalu)
 	no_output_of_prior_pics_flag = 0;
 	long_term_reference_flag = 0;
 	adaptive_ref_pic_marking_mode_flag = 0;
-
+	memset(dec_ref_pic_markings, 0, sizeof(DEC_REF_PIC_MARKING) * 32);
+	dec_ref_pic_markings_size = 0;
 
 
 	MbaffFrameFlag = false;
 	SliceGroupChangeRate = 0;
 	SliceQPY = 0;
 	QPY_prev = 0;
+	QSY = 0;
 
 	PicHeightInMbs = 0;
 	PicSizeInMbs = 0;
 	mapUnitToSliceGroupMap = nullptr;
 	MbToSliceGroupMap = nullptr;
-	/*memset(m_dec_ref_pic_marking, 0, sizeof(DEC_REF_PIC_MARKING) * 32);
-	dec_ref_pic_marking_count = 0;
+
+
+
+	MaxPicNum = 0;
+	CurrPicNum = 0;
+	/*
 
 	slice_id = 0;
 	syntax_element_categories = 0;
@@ -81,11 +87,10 @@ SliceHeader::SliceHeader(ParseNalu& nalu) :nalu(nalu)
 	PicHeightInSamplesL = 0;
 	PicHeightInSamplesC = 0;
 	PicSizeInMbs = 0;
-	MaxPicNum = 0;
-	CurrPicNum = 0;
+
 	SliceGroupChangeRate = 0;
 	MapUnitsInSliceGroup0 = 0;
-	QSY = 0;
+
 	picNumL0Pred = 0;
 	picNumL1Pred = 0;
 	refIdxL0 = 0;
@@ -102,7 +107,7 @@ SliceHeader::SliceHeader(ParseNalu& nalu) :nalu(nalu)
 	FilterOffsetB = 0;
 	memset(ScalingList4x4, 0, sizeof(int) * 6 * 16);
 	memset(ScalingList8x8, 0, sizeof(int) * 6 * 64);
-	memset(dec_ref_pic_markings, 0, sizeof(DEC_REF_PIC_MARKING) * 32);
+
 }
 
 
@@ -134,7 +139,10 @@ bool SliceHeader::slice_header(BitStream& bs, const ParsePPS ppsCache[256], cons
 		//colour_plane_id等于0、1和2分别对应于Y、Cb和Cr平面。
 		colour_plane_id = bs.readMultiBit(2); //2 u(2)
 	}
-	// 用作一个图像标识符 ，在比特流中应由 log2_max_frame_num_minus4 + 4 个比特表示
+	// 当 gaps_in_frame_num_value_allowed_flag不为1,即frame_num连续的情况下，每个图像的frame_num由前一个参考帧图像对应的值加1
+	// 当 gaps_in_frame_num_value_allowed_flag 等于1，前文已经提到，这时若网络阻塞，编码器可以将编码后的若干图像丢弃，而不用另行通知解码器
+	//它的主要作用是在该图像被其他图像引用作运动补偿的参考时提供一个标识
+	//详情参见毕厚杰书frame_num的描述
 	frame_num = bs.readMultiBit(sps.log2_max_frame_num_minus4 + 4); //2 u(v)
 	//m_picture_coded_type = H264_PICTURE_CODED_TYPE_FRAME;
 
@@ -332,12 +340,14 @@ bool SliceHeader::slice_header(BitStream& bs, const ParsePPS ppsCache[256], cons
 	PicHeightInMbs = sps.PicHeightInMapUnits;
 	//总共有多少宏块
 	PicSizeInMbs = sps.PicSizeInMapUnits;
+	//PicNum 的最大值
+	MaxPicNum = (field_pic_flag == 0) ? sps.MaxFrameNum : (2 * sps.MaxFrameNum);
+	CurrPicNum = (field_pic_flag == 0) ? frame_num : (2 * frame_num + 1);
 	/*
 	PicHeightInSamplesL = PicHeightInMbs * 16;
 	PicHeightInSamplesC = PicHeightInMbs * m_sps.MbHeightC;
 
-	MaxPicNum = (field_pic_flag == 0) ? m_sps.MaxFrameNum : (2 * m_sps.MaxFrameNum);
-	CurrPicNum = (field_pic_flag == 0) ? frame_num : (2 * frame_num + 1);
+
 	MapUnitsInSliceGroup0 = MIN(slice_group_change_cycle * SliceGroupChangeRate, m_sps.PicSizeInMapUnits);
 */
 
@@ -434,6 +444,8 @@ bool SliceHeader::dec_ref_pic_marking(BitStream& bs)
 				++i;
 
 			} while (dec_ref_pic_markings[i - 1].memory_management_control_operation != 0);
+
+			dec_ref_pic_markings_size = i;
 		}
 	}
 	return false;

@@ -44,6 +44,7 @@ public:
 	bool seq_scaling_matrix_present_flag;  // 0 u(1)
 	bool  seq_scaling_list_present_flag[12]; //seq_scaling_list_present_flag[ i ] 0 u(1)
 	uint32_t log2_max_frame_num_minus4;  // 0 ue(v)
+	uint32_t MaxFrameNum;
 	uint32_t pic_order_cnt_type;  // 0 ue(v)
 	uint32_t log2_max_pic_order_cnt_lsb_minus4;  // 0 ue(v)
 	uint32_t  MaxPicOrderCntLsb;

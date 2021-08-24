@@ -11,4 +11,7 @@ Picture::Picture(ParseSlice* slice)
 	BottomFieldOrderCnt = slice->BottomFieldOrderCnt;
 
 	FrameNumWrap = 0;
+	PicNum = 0;
+	LongTermPicNum = 0;
+	LongTermFrameIdx = 0;
 }

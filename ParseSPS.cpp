@@ -36,8 +36,9 @@ ParseSPS::ParseSPS()
 	bit_depth_chroma_minus8 = 0;
 	qpprime_y_zero_transform_bypass_flag = false;
 	seq_scaling_matrix_present_flag = false;
-	memset(seq_scaling_list_present_flag, 0, sizeof(int32_t) * 12);
+	memset(seq_scaling_list_present_flag, 0, sizeof(bool) * 12);
 	log2_max_frame_num_minus4 = 0;
+	MaxFrameNum = 0;
 	pic_order_cnt_type = 0;
 	log2_max_pic_order_cnt_lsb_minus4 = 0;
 	MaxPicOrderCntLsb = 0;
@@ -252,6 +253,7 @@ bool ParseSPS::seq_parameter_set_data(BitStream& bs)
 	//这个句法元素同时也指明了frame_num 的所能达到的最大值:MaxFrameNum = 2*exp( log2_max_frame_num_minus4 + 4 )
 	//最大帧率
 	log2_max_frame_num_minus4 = bs.readUE();
+	MaxFrameNum = std::pow(2, log2_max_frame_num_minus4 + 4);
 	//指明了 poc  (picture  order  count)  的编码方法，poc 标识图像的播放顺序。
 	//由poc 可以由 frame-num 通过映射关系计算得来，也可以索性由编码器显式地传送。
 	//是指解码图像顺序的计数方法（如  8.2.1 节所述）。pic_order_cnt_type 的取值范围是0 到 2（包括0 和2）。

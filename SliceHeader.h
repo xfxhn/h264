@@ -17,7 +17,7 @@ struct DEC_REF_PIC_MARKING
 class SliceHeader
 {
 public:
-	DEC_REF_PIC_MARKING    dec_ref_pic_markings[32];
+
 	ParseNalu& nalu;
 	ParsePPS pps;
 	ParseSPS sps;
@@ -55,12 +55,11 @@ public:
 	int		QSY;
 
 
-	// dec_ref_pic_marking
 	bool     no_output_of_prior_pics_flag; // 2 | 5 u(1)
 	bool     long_term_reference_flag; // 2 | 5 u(1)
 	bool     adaptive_ref_pic_marking_mode_flag; // 2 | 5 u(1)
-	//DEC_REF_PIC_MARKING    m_dec_ref_pic_marking[32];
-	//int32_t     dec_ref_pic_marking_count; //m_dec_ref_pic_marking[]数组大小
+	DEC_REF_PIC_MARKING    dec_ref_pic_markings[32];
+	size_t				   dec_ref_pic_markings_size;
 
 
 
@@ -102,6 +101,8 @@ public:
 
 	uint32_t  PicHeightInMbs;
 	uint32_t  PicSizeInMbs;
+	int8_t         MaxPicNum; //MaxPicNum = (field_pic_flag == 0) ? MaxFrameNum : (2 * MaxFrameNum);
+	int8_t         CurrPicNum; //CurrPicNum = (field_pic_flag == 0) ? frame_num : (2 * frame_num + 1);
 
 	/*图像中每个“mapUnit(映射单元)”属于哪个组号，需要一个数组来记录，将这个数据定义为mapUnitToSliceGroupMap[]，
 	数组中的第i个元素表示以光栅顺序扫描时，第i个“mapUnit(映射单元)”对应哪个组（组号）。*/
