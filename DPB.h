@@ -1,19 +1,25 @@
 #pragma once
-#include "ParseSlice.h"
+#include "SliceHeader.h"
 #include "Picture.h"
 #include "Array.hpp"
+class ParseSlice;
 class DPB
 {
 public:
 	Array<Picture*> dpb;
+
 	/*Picture* dpb[16];*/
-	Picture* fs_ref[16];  //短期参考图像列表(当然，在这里是未经排序的)
-	Picture* fs_ltref[16]; //长期参考图像列表
-	uint8_t	 size; //dpb最大容量，能容得下多少帧,最大不超过16
-	uint8_t	 used_size; //dpb实际存了多少帧,以帧为单位,如果只有其中一场,也被看做一帧
+	//Picture* fs_ref[16];  //短期参考图像列表(当然，在这里是未经排序的)
+	//Picture* fs_ltref[16]; //长期参考图像列表
+	//uint8_t	 size; //dpb最大容量，能容得下多少帧,最大不超过16
+	//uint8_t	 used_size; //dpb实际存了多少帧,以帧为单位,如果只有其中一场,也被看做一帧
 
 public:
 	DPB();
 	void Decoded_reference_picture_marking_process(ParseSlice* slice);
+
+	void Adaptive_memory_control_decoded_reference_picture_marking_process(SliceHeader* sHeader, Picture* pic);
+
+	void Sliding_window_decoded_reference_picture_marking_process(uint8_t max_num_ref_frames);
 };
 

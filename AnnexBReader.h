@@ -8,6 +8,7 @@
 #include "ParseNalu.h"
 #include "ParseSEI.h"
 #include "Picture.h"
+#include "DPB.h"
 
 
 class AnnexBReader
@@ -33,6 +34,7 @@ private:
 	//ParseSPS spsCache[32];
 	ParseSPS* spsCache;
 
+	DPB dpb;
 private:
 	static const int MAX_BUFFER_SIZE;
 	bool CheckStartCode(int& startCodeLen, uint8_t* bufPtr, int bufLen);

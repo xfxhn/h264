@@ -4,11 +4,10 @@ template<class T>
 class Array
 {
 public:
-	int capcity;
-	int curLen;
+	size_t capacity;
+	size_t length;
 	T* arr;
 public:
-	/*Array();*/
 	Array(size_t capacity);
 	void push(T data);
 	T& operator[](int idx);
@@ -17,36 +16,27 @@ public:
 
 
 
-
-
-//template<class T>
-//inline Array<T>::Array()
-//{
-//}
-
 template<class T>
 Array<T>::Array(size_t capacity)
 {
-	this->capcity = capcity;
-	this->curLen = 0;
-	this->arr = new T[this->capcity];
-	for (size_t i = 0; i < capcity; i++)
-	{
-		this->arr[i]();
-	}
+	this->capacity = capacity;
+	this->length = 0;
+	printf("Ö´ÐÐ¼¸´Î");
+	this->arr = new T[this->capacity];
+
 }
 
 template<class T>
 void Array<T>::push(T data)
 {
-	if (curLen >= capcity)
+	if (length >= capacity)
 	{
 		return;
 	}
 	else
 	{
-		arr[curLen] = data;
-		curLen++;
+		arr[length] = data;
+		length++;
 	}
 }
 
@@ -61,8 +51,12 @@ Array<T>::~Array()
 {
 	if (arr)
 	{
-		delete arr;
-		arr = nullptr;
+		for (size_t i = 0; i < length; i++)
+		{
+			delete arr[i];
+			arr[i] = nullptr;
+		}
+		delete[] arr;
 	}
 }
 

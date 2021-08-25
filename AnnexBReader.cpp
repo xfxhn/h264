@@ -49,7 +49,8 @@ int AnnexBReader::ReadNalu(uint8_t* buffer, rsize_t& dataLen)
 	int start = 0;
 	uint8_t* data = nullptr;
 
-
+	/*DPB bpb;
+	bpb.dpb.capacity;*/
 
 	while (slice <= dataLen)
 	{
@@ -183,9 +184,9 @@ void AnnexBReader::getNaluHeader(uint8_t* buffer, int size)
 			//存储每个已经解码完成的帧需要的数据,还有存储DPB
 			pic = new Picture(slice);
 
-			slice->endOfPicture();
+			//slice->endOfPicture(dpb);
 
-			//slice->saveBmpFile("xf");
+			slice->saveBmpFile("xf");
 
 
 			if (this->slice)
@@ -207,6 +208,7 @@ void AnnexBReader::getNaluHeader(uint8_t* buffer, int size)
 			{
 				if (slice)
 				{
+					//释放掉上个slice header
 					delete slice;
 					slice = nullptr;
 				}
@@ -253,7 +255,6 @@ void AnnexBReader::getNaluHeader(uint8_t* buffer, int size)
 	{
 		SliceHeader* sHeader = new SliceHeader(nalu);
 		sHeader->slice_header(bs, ppsCache, spsCache);
-
 
 		if (this->slice && this->slice->CurrMbAddr >= (sHeader->PicSizeInMbs - 1))
 		{

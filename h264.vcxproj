@@ -38,6 +38,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AnnexBReader.h" />
+    <ClInclude Include="Array.hpp" />
     <ClInclude Include="BitStream.h" />
     <ClInclude Include="Cabac.h" />
     <ClInclude Include="CalvcTable.h" />

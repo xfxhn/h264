@@ -7,7 +7,7 @@
 #include "ParseNalu.h"
 #include "Macroblock.h"
 #include "Picture.h"
-
+#include "DPB.h"
 
 struct  MyBITMAPFILEHEADER                     /**** BMP file header structure ****/
 {
@@ -41,11 +41,10 @@ class ParseSlice
 	//	Macroblock** macroblock;
 	//	SliceHeader* sHeader;
 public:
-	const ParseNalu& nalu;
 	SliceHeader* sHeader;
 	Macroblock** macroblock;
-private:
-	Picture* dpb[16];
+	//private:
+	//	Picture* dpb[16];
 public:
 
 	uint8_t** lumaData;//存储解码后图片的Y分量数据
@@ -82,12 +81,14 @@ public:
 
 	int         PicOrderCntMsb;
 	int         PicOrderCntLsb;
+
 	int         TopFieldOrderCnt;
 	int         BottomFieldOrderCnt;
-	int			MaxLongTermFrameIdx; //长期参考帧的最大数目
-	int			LongTermFrameIdx; //长期参考帧
-	PICTURE_MARKING reference_marked_type;
-	bool memory_management_control_operation_5_flag; //所有图像标记为不用作参考
+
+	//int			MaxLongTermFrameIdx; //长期参考帧的最大数目
+	//int			LongTermFrameIdx; //长期参考帧
+	//PICTURE_MARKING reference_marked_type;
+	//bool memory_management_control_operation_5_flag; //所有图像标记为不用作参考
 	//已经解码完成的数据
 	Picture* pic;
 
@@ -127,7 +128,7 @@ public:
 
 	void getMbAddrNAndLuma4x4BlkIdxN(int& mbAddrN, const int xN, const int yN, const int maxW, const int maxH, int& xW, int& yW);
 
-	void endOfPicture();
+	void endOfPicture(DPB& dpb);
 private:
 	void convertYuv420(uint8_t* buffer, size_t widthBytes);
 
@@ -177,8 +178,8 @@ private:
 	void Filtering_process_for_edges_for_bS_equal_to_4(const int p[4], const int q[4], int pp[3], int qq[3], int alpha, int beta, bool chromaStyleFilteringFlag);
 
 
-	void Decoded_reference_picture_marking_process();
-	void Sliding_window_decoded_reference_picture_marking_process();
-	void Adaptive_memory_control_decoded_reference_picture_marking_process();
+	//void Decoded_reference_picture_marking_process();
+	//void Sliding_window_decoded_reference_picture_marking_process();
+	//void Adaptive_memory_control_decoded_reference_picture_marking_process();
 };
 

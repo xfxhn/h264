@@ -116,6 +116,9 @@
     <ClInclude Include="DPB.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="Array.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitignore">
