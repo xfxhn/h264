@@ -24,6 +24,7 @@
     <ClCompile Include="Cabac.cpp" />
     <ClCompile Include="Common.cpp" />
     <ClCompile Include="DPB.cpp" />
+    <ClCompile Include="FileReader.cpp" />
     <ClCompile Include="Macroblock.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="ParseNalu.cpp" />
@@ -44,6 +45,7 @@
     <ClInclude Include="CalvcTable.h" />
     <ClInclude Include="Common.h" />
     <ClInclude Include="DPB.h" />
+    <ClInclude Include="FileReader.h" />
     <ClInclude Include="Macroblock.h" />
     <ClInclude Include="NaluType.h" />
     <ClInclude Include="ParseNalu.h" />

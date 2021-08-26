@@ -51,7 +51,6 @@ int AnnexBReader::ReadNalu(uint8_t* buffer, rsize_t& dataLen)
 
 	/*DPB bpb;
 	bpb.dpb.capacity;*/
-
 	while (slice <= dataLen)
 	{
 		//获取startCode占取几个字节
@@ -72,7 +71,8 @@ int AnnexBReader::ReadNalu(uint8_t* buffer, rsize_t& dataLen)
 				size_t size = unescape(data, blockSize);
 
 
-				getNaluHeader(data, size);
+				//getNaluHeader(data, size);
+
 
 			}
 
@@ -106,6 +106,7 @@ int AnnexBReader::ReadNalu(uint8_t* buffer, rsize_t& dataLen)
 		}
 		++slice;
 	}
+
 
 	return 0;
 }

@@ -63,6 +63,9 @@
     <ClCompile Include="DPB.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="FileReader.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AnnexBReader.h">
@@ -117,6 +120,9 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="Array.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="FileReader.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
