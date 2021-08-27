@@ -5,12 +5,10 @@ DPB::DPB() :dpb(16)
 {
 }
 
-void DPB::Decoded_reference_picture_marking_process(ParseSlice* slice)
+void DPB::Decoded_reference_picture_marking_process(Picture* pic, const SliceHeader& sHeader)
 {
-	Picture* pic = new Picture(slice);
 
-	SliceHeader* sHeader = slice->sHeader;
-	if (sHeader->nalu.IdrPicFlag)
+	if (sHeader.nalu.IdrPicFlag)
 	{
 		//所有参考图像需要被标记为"不用于参考" 
 		for (size_t i = 0; i < dpb.length; i++)
@@ -18,7 +16,7 @@ void DPB::Decoded_reference_picture_marking_process(ParseSlice* slice)
 			dpb[i]->reference_marked_type = PICTURE_MARKING::UNUSED_FOR_REFERENCE;
 		}
 
-		if (sHeader->long_term_reference_flag)
+		if (sHeader.long_term_reference_flag)
 		{
 			//该IDR图像需要 被标记为"用于长期参考"
 			pic->reference_marked_type = PICTURE_MARKING::LONG_TERM_REFERENCE;
@@ -26,7 +24,7 @@ void DPB::Decoded_reference_picture_marking_process(ParseSlice* slice)
 			pic->MaxLongTermFrameIdx = 0;
 
 		}
-		else//sHeader->long_term_reference_flag=0
+		else//sHeader.long_term_reference_flag=0
 		{
 			//该IDR图像将被标记为"用于短期参考"
 			pic->reference_marked_type = PICTURE_MARKING::SHORT_TERM_REFERENCE;
@@ -37,7 +35,7 @@ void DPB::Decoded_reference_picture_marking_process(ParseSlice* slice)
 	{
 		// =0 先入先出（FIFO）：使用滑动窗的机制，先入先出，在这种模式下没有办法对长期参考帧进行操作。
 		// =1 自适应标记（marking）：后续码流中会有一系列句法元素显式指明操作的步骤。自适应是指编码器可根据情况随机灵活地作出决策。
-		if (sHeader->adaptive_ref_pic_marking_mode_flag)
+		if (sHeader.adaptive_ref_pic_marking_mode_flag)
 		{
 			//自适应标记过程
 			Adaptive_memory_control_decoded_reference_picture_marking_process(sHeader, pic);
@@ -45,8 +43,20 @@ void DPB::Decoded_reference_picture_marking_process(ParseSlice* slice)
 		else
 		{
 			//滑动窗口解码参考图像的标识过程
-			Sliding_window_decoded_reference_picture_marking_process(sHeader->sps.max_num_ref_frames);
+			Sliding_window_decoded_reference_picture_marking_process(sHeader.sps.max_num_ref_frames);
 		}
+	}
+
+}
+
+
+void DPB::Decoding_to_complete(ParseSlice* slice, const  SliceHeader& sHeader)
+{
+	Picture* pic = new Picture(slice);
+	if (sHeader.nalu.nal_ref_idc != 0)
+	{
+		//标记当前解码完成的帧是什么类型，然后放到DBP里去管理
+		Decoded_reference_picture_marking_process(pic, sHeader);
 	}
 
 	dpb.push(pic);
@@ -105,15 +115,15 @@ void DPB::Sliding_window_decoded_reference_picture_marking_process(uint8_t max_n
 	}
 }
 
-void DPB::Adaptive_memory_control_decoded_reference_picture_marking_process(SliceHeader* sHeader, Picture* pic)
+void DPB::Adaptive_memory_control_decoded_reference_picture_marking_process(const SliceHeader& sHeader, Picture* pic)
 {
 
-	for (size_t i = 0; i < sHeader->dec_ref_pic_markings_size; i++)
+	for (size_t i = 0; i < sHeader.dec_ref_pic_markings_size; i++)
 	{
 		//将一个短期参考图像标记为非参考图像，也 即将一个短期参考图像移出参考帧队列
-		if (sHeader->dec_ref_pic_markings[i].memory_management_control_operation == 1)
+		if (sHeader.dec_ref_pic_markings[i].memory_management_control_operation == 1)
 		{
-			int picNumX = sHeader->CurrPicNum - (sHeader->dec_ref_pic_markings[i].difference_of_pic_nums_minus1 + 1);
+			int picNumX = sHeader.CurrPicNum - (sHeader.dec_ref_pic_markings[i].difference_of_pic_nums_minus1 + 1);
 			//如果field_pic_flag等于0, 则picNumX指定的短期参考帧被标记为“unused for reference”。
 
 			for (size_t j = 0; j < dpb.length; j++)
@@ -126,12 +136,12 @@ void DPB::Adaptive_memory_control_decoded_reference_picture_marking_process(Slic
 		}
 
 		//将一个长期参考图像标记为非参考图像，也 即将一个长期参考图像移出参考帧队列
-		if (sHeader->dec_ref_pic_markings[i].memory_management_control_operation == 2)
+		if (sHeader.dec_ref_pic_markings[i].memory_management_control_operation == 2)
 		{
 			//如果field_pic_flag为0，则LongTermPicNum等于long_term_pic_num的长期参考帧被标记为“不用于参考”
 			for (size_t j = 0; j < dpb.length; j++)
 			{
-				if (dpb[j]->reference_marked_type == PICTURE_MARKING::LONG_TERM_REFERENCE && dpb[j]->LongTermPicNum == sHeader->dec_ref_pic_markings[i].long_term_pic_num)
+				if (dpb[j]->reference_marked_type == PICTURE_MARKING::LONG_TERM_REFERENCE && dpb[j]->LongTermPicNum == sHeader.dec_ref_pic_markings[i].long_term_pic_num)
 				{
 					dpb[j]->reference_marked_type = PICTURE_MARKING::UNUSED_FOR_REFERENCE;
 				}
@@ -139,13 +149,13 @@ void DPB::Adaptive_memory_control_decoded_reference_picture_marking_process(Slic
 		}
 
 		//将一个短期参考图像转为长期参考图像
-		if (sHeader->dec_ref_pic_markings[i].memory_management_control_operation == 3)
+		if (sHeader.dec_ref_pic_markings[i].memory_management_control_operation == 3)
 		{
-			int picNumX = sHeader->CurrPicNum - (sHeader->dec_ref_pic_markings[i].difference_of_pic_nums_minus1 + 1);
+			int picNumX = sHeader.CurrPicNum - (sHeader.dec_ref_pic_markings[i].difference_of_pic_nums_minus1 + 1);
 			//当LongTermFrameIdx等于long_term_frame_idx已经被分配给一个长期参考帧,该帧被标记为“未使用的参考”
 			for (size_t j = 0; j < dpb.length; j++)
 			{
-				if (dpb[j]->reference_marked_type == PICTURE_MARKING::LONG_TERM_REFERENCE && dpb[j]->LongTermFrameIdx == sHeader->dec_ref_pic_markings[i].long_term_frame_idx)
+				if (dpb[j]->reference_marked_type == PICTURE_MARKING::LONG_TERM_REFERENCE && dpb[j]->LongTermFrameIdx == sHeader.dec_ref_pic_markings[i].long_term_frame_idx)
 				{
 					dpb[j]->reference_marked_type = PICTURE_MARKING::UNUSED_FOR_REFERENCE;
 				}
@@ -163,27 +173,27 @@ void DPB::Adaptive_memory_control_decoded_reference_picture_marking_process(Slic
 		}
 
 		//指明长期参考帧的最大数目。
-		if (sHeader->dec_ref_pic_markings[i].memory_management_control_operation == 4)
+		if (sHeader.dec_ref_pic_markings[i].memory_management_control_operation == 4)
 		{
 			for (size_t j = 0; j < dpb.length; j++)
 			{
-				if ((dpb[j]->LongTermFrameIdx > sHeader->dec_ref_pic_markings[i].max_long_term_frame_idx_plus1 - 1) && dpb[j]->reference_marked_type == PICTURE_MARKING::LONG_TERM_REFERENCE)
+				if ((dpb[j]->LongTermFrameIdx > sHeader.dec_ref_pic_markings[i].max_long_term_frame_idx_plus1 - 1) && dpb[j]->reference_marked_type == PICTURE_MARKING::LONG_TERM_REFERENCE)
 				{
 					dpb[j]->reference_marked_type = PICTURE_MARKING::UNUSED_FOR_REFERENCE;
 				}
 			}
-			if (sHeader->dec_ref_pic_markings[i].max_long_term_frame_idx_plus1 == 0)
+			if (sHeader.dec_ref_pic_markings[i].max_long_term_frame_idx_plus1 == 0)
 			{
 				pic->MaxLongTermFrameIdx = NA;//非长期帧索引
 			}
 			else
 			{
-				pic->MaxLongTermFrameIdx = sHeader->dec_ref_pic_markings[i].max_long_term_frame_idx_plus1 - 1;
+				pic->MaxLongTermFrameIdx = sHeader.dec_ref_pic_markings[i].max_long_term_frame_idx_plus1 - 1;
 			}
 		}
 
 		//清空参考帧队列，将所有参考图像移出参考帧队列，并禁用长期参考机制
-		if (sHeader->dec_ref_pic_markings[i].memory_management_control_operation == 5)
+		if (sHeader.dec_ref_pic_markings[i].memory_management_control_operation == 5)
 		{
 			for (size_t j = 0; j < dpb.length; j++)
 			{
@@ -194,18 +204,18 @@ void DPB::Adaptive_memory_control_decoded_reference_picture_marking_process(Slic
 		}
 
 		//将当前图像存为一个长期参考帧
-		if (sHeader->dec_ref_pic_markings[i].memory_management_control_operation == 6)
+		if (sHeader.dec_ref_pic_markings[i].memory_management_control_operation == 6)
 		{
 			for (size_t j = 0; j < dpb.length; j++)
 			{
-				if (dpb[j]->LongTermFrameIdx == sHeader->dec_ref_pic_markings[i].long_term_frame_idx && dpb[j]->reference_marked_type == PICTURE_MARKING::LONG_TERM_REFERENCE)
+				if (dpb[j]->LongTermFrameIdx == sHeader.dec_ref_pic_markings[i].long_term_frame_idx && dpb[j]->reference_marked_type == PICTURE_MARKING::LONG_TERM_REFERENCE)
 				{
 					dpb[j]->reference_marked_type = PICTURE_MARKING::UNUSED_FOR_REFERENCE;
 				}
 			}
 
 			pic->reference_marked_type = PICTURE_MARKING::LONG_TERM_REFERENCE;
-			pic->LongTermFrameIdx = sHeader->dec_ref_pic_markings[i].long_term_frame_idx;
+			pic->LongTermFrameIdx = sHeader.dec_ref_pic_markings[i].long_term_frame_idx;
 		}
 	}
 }

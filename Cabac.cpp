@@ -966,7 +966,7 @@ void Cabac::getMN(const int ctxIdx, const SLIECETYPE slice_type, const int cabac
 
 int Cabac::decode_mb_skip_flag(BitStream& bs, ParseSlice* Slice)
 {
-	SLIECETYPE sliceType = (SLIECETYPE)Slice->sHeader->slice_type;
+	SLIECETYPE sliceType = (SLIECETYPE)Slice->sHeader.slice_type;
 
 	//该语法元素索引的上限，通常也可认为以最多多少个bit位来表示二值化后的语法元素；表9-34
 	int maxBinIdxCtx = 0;
@@ -997,7 +997,7 @@ int Cabac::decode_mb_skip_flag(BitStream& bs, ParseSlice* Slice)
 int Cabac::decode_mb_type(BitStream& bs, ParseSlice* Slice)
 {
 	int synElVal = 0;
-	SLIECETYPE sliceType = (SLIECETYPE)Slice->sHeader->slice_type;
+	SLIECETYPE sliceType = (SLIECETYPE)Slice->sHeader.slice_type;
 
 	if (sliceType == SLIECETYPE::H264_SLIECE_TYPE_SI)
 	{
@@ -1022,7 +1022,7 @@ int Cabac::decode_sub_mb_type(BitStream& bs, ParseSlice* Slice)
 {
 	int ctxIdxOffset = 0;
 
-	SLIECETYPE sliceType = (SLIECETYPE)Slice->sHeader->slice_type;
+	SLIECETYPE sliceType = (SLIECETYPE)Slice->sHeader.slice_type;
 
 	int synElVal = 0;
 
@@ -1093,7 +1093,7 @@ int Cabac::decode_coded_block_pattern(BitStream& bs, ParseSlice* Slice)
 
 	//当ChromaArrayType不等于0或3时，后缀部分会出现
 	int CodedBlockPatternChroma = 0;
-	if (Slice->sHeader->sps.ChromaArrayType != 0 && Slice->sHeader->sps.ChromaArrayType != 3)
+	if (Slice->sHeader.sps.ChromaArrayType != 0 && Slice->sHeader.sps.ChromaArrayType != 3)
 	{
 		//CodedBlockPatternChroma由TU二值化表示给出 cMax = 2;截断一元二值化，等于cMax，二进制码全部为1，长度为cMax。不然最后一位为0
 		ctxIdxOffset = 77;
@@ -1264,7 +1264,7 @@ bool Cabac::decode_coded_block_flag(ParseSlice* Slice, BitStream& bs, RESIDUAL_L
 {
 
 	//NumC8x8 = 4 / ( SubWidthC * SubHeightC ) 
-	const int NumC8x8 = 4 / (Slice->sHeader->sps.SubWidthC * Slice->sHeader->sps.SubHeightC);
+	const int NumC8x8 = 4 / (Slice->sHeader.sps.SubWidthC * Slice->sHeader.sps.SubHeightC);
 
 
 
@@ -1301,7 +1301,7 @@ bool Cabac::decode_coded_block_flag(ParseSlice* Slice, BitStream& bs, RESIDUAL_L
 }
 bool Cabac::decode_significant_coeff_flag_and_last_significant_coeff_flag(ParseSlice* Slice, BitStream& bs, RESIDUAL_LEVEL residualLevel, int levelListIdx, bool lastFlag)
 {
-	const int NumC8x8 = 4 / (Slice->sHeader->sps.SubWidthC * Slice->sHeader->sps.SubHeightC);
+	const int NumC8x8 = 4 / (Slice->sHeader.sps.SubWidthC * Slice->sHeader.sps.SubHeightC);
 
 
 
@@ -1483,7 +1483,7 @@ bool Cabac::decode_significant_coeff_flag_and_last_significant_coeff_flag(ParseS
 int Cabac::decode_coeff_abs_level_minus1(ParseSlice* Slice, BitStream& bs, RESIDUAL_LEVEL residualLevel, int numDecodAbsLevelEq1, int numDecodAbsLevelGt1)
 {
 
-	const int NumC8x8 = 4 / (Slice->sHeader->sps.SubWidthC * Slice->sHeader->sps.SubHeightC);
+	const int NumC8x8 = 4 / (Slice->sHeader.sps.SubWidthC * Slice->sHeader.sps.SubHeightC);
 
 
 	int ctxIdxInc = 0;
@@ -1729,7 +1729,7 @@ int Cabac::residual_block_cabac(
 	// =1 至少包含一个非零变换系数幅值。
 	//当coded_block_flag不存在时，它将被推断为等于1。
 	bool coded_block_flag = true;
-	if (maxNumCoeff != 64 || Slice->sHeader->sps.ChromaArrayType == 3)
+	if (maxNumCoeff != 64 || Slice->sHeader.sps.ChromaArrayType == 3)
 	{
 		//coded_block_flag
 		coded_block_flag = decode_coded_block_flag(Slice, bs, residualLevel, BlkIdx, iCbCr);
@@ -2079,7 +2079,7 @@ int Cabac::Derivation_process_of_ctxIdxInc_for_the_syntax_element_mb_qp_delta(Pa
 	int ctxIdxInc = 0;
 	int prevMbAddr = Slice->CurrMbAddr - 1;
 
-	if (Slice->CurrMbAddr == Slice->sHeader->first_mb_in_slice)
+	if (Slice->CurrMbAddr == Slice->sHeader.first_mb_in_slice)
 	{
 		prevMbAddr = -1;
 	}
@@ -2174,8 +2174,8 @@ int Cabac::Derivation_process_of_ctxIdxInc_for_the_syntax_element_coded_block_fl
 	else
 	{
 		//色度块高度和宽度
-		maxH = Slice->sHeader->sps.MbHeightC;
-		maxW = Slice->sHeader->sps.MbWidthC;
+		maxH = Slice->sHeader.sps.MbHeightC;
+		maxW = Slice->sHeader.sps.MbWidthC;
 	}
 	if (ctxBlockCat == 0     //Intra16x16DCLevel
 		|| ctxBlockCat == 6  //CbIntra16x16DCLevel
@@ -2751,9 +2751,9 @@ int Cabac::Derivation_process_of_ctxIdxInc_for_the_syntax_element_coded_block_fl
 	if ((mbAddrA == NA && !isInterMode(Slice->macroblock[Slice->CurrMbAddr]->mode))
 		|| (mbAddrA != NA && transBlockA == NA && Slice->macroblock[mbAddrA]->mbType != H264_MB_TYPE::I_PCM)
 		|| (isInterMode(Slice->macroblock[Slice->CurrMbAddr]->mode)
-			&& Slice->sHeader->pps.constrained_intra_pred_flag
+			&& Slice->sHeader.pps.constrained_intra_pred_flag
 			&& mbAddrA != NA && !isInterMode(Slice->macroblock[mbAddrA]->mode)
-			&& (Slice->sHeader->nalu.nal_unit_type >= 2 && Slice->sHeader->nalu.nal_unit_type <= 4)
+			&& (Slice->sHeader.nalu.nal_unit_type >= 2 && Slice->sHeader.nalu.nal_unit_type <= 4)
 			)
 		)
 	{
@@ -2772,9 +2772,9 @@ int Cabac::Derivation_process_of_ctxIdxInc_for_the_syntax_element_coded_block_fl
 	if ((mbAddrB == NA && !isInterMode(Slice->macroblock[Slice->CurrMbAddr]->mode))
 		|| (mbAddrB != NA && transBlockB == NA && Slice->macroblock[mbAddrB]->mbType != H264_MB_TYPE::I_PCM)
 		|| (isInterMode(Slice->macroblock[Slice->CurrMbAddr]->mode)
-			&& Slice->sHeader->pps.constrained_intra_pred_flag
+			&& Slice->sHeader.pps.constrained_intra_pred_flag
 			&& mbAddrB != NA && !isInterMode(Slice->macroblock[mbAddrB]->mode)
-			&& (Slice->sHeader->nalu.nal_unit_type >= 2 && Slice->sHeader->nalu.nal_unit_type <= 4)
+			&& (Slice->sHeader.nalu.nal_unit_type >= 2 && Slice->sHeader.nalu.nal_unit_type <= 4)
 			)
 		)
 	{

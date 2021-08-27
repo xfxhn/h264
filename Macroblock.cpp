@@ -226,15 +226,15 @@ bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* s
 
 	sliceBase = Slice;
 
-	SliceHeader* sHeader = sliceBase->sHeader;
+	SliceHeader& sHeader = sliceBase->sHeader;
 
 	sliceNumber = sliceBase->sliceNumber;
 
-	FilterOffsetA = sHeader->FilterOffsetA;
-	FilterOffsetB = sHeader->FilterOffsetB;
+	FilterOffsetA = sHeader.FilterOffsetA;
+	FilterOffsetB = sHeader.FilterOffsetB;
 	mb_skip_flag = sliceData->mb_skip_flag;
 
-	isAe = sHeader->pps.entropy_coding_mode_flag;  //ae(v)表示CABAC编码
+	isAe = sHeader.pps.entropy_coding_mode_flag;  //ae(v)表示CABAC编码
 
 
 	if (isAe) // ae(v) 表示CABAC编码
@@ -249,7 +249,7 @@ bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* s
 
 
 
-	uint8_t	 slice_type = sHeader->slice_type;
+	uint8_t	 slice_type = sHeader.slice_type;
 
 	//修正过后的
 	fix_mb_type = mb_type;
@@ -280,7 +280,7 @@ bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* s
 
 		for (size_t i = 0; i < 256; i++)
 		{
-			int v = sHeader->sps.BitDepthY;
+			int v = sHeader.sps.BitDepthY;
 			/*pcm_sample_luma[i]是一个样点值。第一个 pcm_sample_luma[i]值代表宏块里光栅扫描中的亮度样点值。
 			  比特的数目通常代表这些样点每一个都是BitDepthY 。
 			  当 profile_idc 不等于 100, 110, 122 或 144 时， pcm_sample_luma[i]不能等于0*/
@@ -288,10 +288,10 @@ bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* s
 		}
 
 		//MbWidthC   MbHeightC色度阵列的宽度和高度
-		pcm_sample_chroma = new uint32_t[2 * sHeader->sps.MbWidthC * sHeader->sps.MbHeightC]();
-		for (size_t i = 0; i < 2 * sHeader->sps.MbWidthC * sHeader->sps.MbHeightC; i++)
+		pcm_sample_chroma = new uint32_t[2 * sHeader.sps.MbWidthC * sHeader.sps.MbHeightC]();
+		for (size_t i = 0; i < 2 * sHeader.sps.MbWidthC * sHeader.sps.MbHeightC; i++)
 		{
-			int v = sHeader->sps.BitDepthC;
+			int v = sHeader.sps.BitDepthC;
 			/*pcm_sample_ chroma[i]是一个样点值。色度
 			第一个 MbWidthC* MbHeightC pcm_sample_ chroma[i]值代表宏块里光栅扫描中的Cb样点值且其余的MbWidthC* MbHeightC
 			pcm_sample_chroma[i]值代表宏块里光栅扫描中 的 Cr 样点值。比特的数目通常代表这些样点每一个都是 BitDepthC
@@ -321,7 +321,7 @@ bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* s
 						noSubMbPartSizeLessThan8x8Flag = false;
 					}
 				}
-				else if (!sHeader->sps.direct_8x8_inference_flag)
+				else if (!sHeader.sps.direct_8x8_inference_flag)
 				{
 					noSubMbPartSizeLessThan8x8Flag = false;
 
@@ -331,7 +331,7 @@ bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* s
 		else
 		{
 			//8x8解码
-			if (sHeader->pps.transform_8x8_mode_flag && mbType == H264_MB_TYPE::I_NxN)
+			if (sHeader.pps.transform_8x8_mode_flag && mbType == H264_MB_TYPE::I_NxN)
 			{
 
 				//使用8x8变换解码
@@ -370,7 +370,7 @@ bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* s
 			else
 			{
 				//宏块预测模式等于 Intra_4x4, Intra_8x8 或者  Inter 时，coded_block_pattern 的值不同
-				coded_block_pattern = bs.readME(sHeader->sps.ChromaArrayType, mode);
+				coded_block_pattern = bs.readME(sHeader.sps.ChromaArrayType, mode);
 
 			}
 			//公式7-33
@@ -387,10 +387,10 @@ bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* s
 
 			if (
 				CodedBlockPatternLuma > 0 &&
-				sHeader->pps.transform_8x8_mode_flag &&
+				sHeader.pps.transform_8x8_mode_flag &&
 				mbType != H264_MB_TYPE::I_NxN &&
 				noSubMbPartSizeLessThan8x8Flag &&
-				(mbType != H264_MB_TYPE::B_Direct_16x16 || sHeader->sps.direct_8x8_inference_flag)
+				(mbType != H264_MB_TYPE::B_Direct_16x16 || sHeader.sps.direct_8x8_inference_flag)
 				)
 			{
 				if (isAe)
@@ -429,15 +429,15 @@ bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* s
 
 	//QPY = ( ( QPY,PREV + mb_qp_delta + 52 + 2 * QpBdOffsetY ) % ( 52 + QpBdOffsetY ) ) －QpBdOffsetY
 	//QpBdOffsetY  亮度偏移
-	QPY = ((sHeader->QPY_prev + mb_qp_delta + 52 + 2 * sHeader->sps.QpBdOffsetY) % (52 + sHeader->sps.QpBdOffsetY)) - sHeader->sps.QpBdOffsetY;
+	QPY = ((sHeader.QPY_prev + mb_qp_delta + 52 + 2 * sHeader.sps.QpBdOffsetY) % (52 + sHeader.sps.QpBdOffsetY)) - sHeader.sps.QpBdOffsetY;
 	//对于条带中的第一个宏块，QPY_prev 的初始值为SliceQPY,QPY_prev是当前条带中按解码顺序排列的前一个宏块的亮度量化参数 QPY
-	sHeader->QPY_prev = QPY;
+	sHeader.QPY_prev = QPY;
 
-	QP1Y = QPY + sHeader->sps.QpBdOffsetY;
+	QP1Y = QPY + sHeader.sps.QpBdOffsetY;
 
 	//只有HP模式下才有qpprime_y_zero_transform_bypass_flag这个变量
 	//qpprime_y_zero_transform_bypass_flag 等于 1 是指当 QP1Y 等于 0 时变换系数解码过程的变换旁路操作和图像构建过程将会在第8.5 节给出的去块效应滤波过程之前执行
-	if (sHeader->sps.qpprime_y_zero_transform_bypass_flag && QP1Y == 0)
+	if (sHeader.sps.qpprime_y_zero_transform_bypass_flag && QP1Y == 0)
 	{
 		TransformBypassModeFlag = true;
 	}
@@ -452,15 +452,15 @@ bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* s
 bool Macroblock::macroblock_layer_skip(ParseSlice* Slice, SliceData* slice_data)
 {
 	sliceBase = Slice;
-	SliceHeader* sHeader = Slice->sHeader;
+	SliceHeader& sHeader = Slice->sHeader;
 	sliceNumber = sliceBase->sliceNumber;
 
-	FilterOffsetA = sHeader->FilterOffsetA;
-	FilterOffsetB = sHeader->FilterOffsetB;
+	FilterOffsetA = sHeader.FilterOffsetA;
+	FilterOffsetB = sHeader.FilterOffsetB;
 	mb_skip_flag = slice_data->mb_skip_flag;
 
-	isAe = Slice->sHeader->pps.entropy_coding_mode_flag;
-	SLIECETYPE sliceTtpy = (SLIECETYPE)(Slice->sHeader->slice_type);
+	isAe = Slice->sHeader.pps.entropy_coding_mode_flag;
+	SLIECETYPE sliceTtpy = (SLIECETYPE)(Slice->sHeader.slice_type);
 
 	if (sliceTtpy == SLIECETYPE::H264_SLIECE_TYPE_P || sliceTtpy == SLIECETYPE::H264_SLIECE_TYPE_SP)
 	{
@@ -482,12 +482,12 @@ bool Macroblock::macroblock_layer_skip(ParseSlice* Slice, SliceData* slice_data)
 
 	mb_qp_delta = 0;
 
-	QPY = ((sHeader->QPY_prev + mb_qp_delta + 52 + 2 * sHeader->sps.QpBdOffsetY) % (52 + sHeader->sps.QpBdOffsetY)) - sHeader->sps.QpBdOffsetY; // (7-37)
-	sHeader->QPY_prev = QPY;
-	QP1Y = QPY + sHeader->sps.QpBdOffsetY;
+	QPY = ((sHeader.QPY_prev + mb_qp_delta + 52 + 2 * sHeader.sps.QpBdOffsetY) % (52 + sHeader.sps.QpBdOffsetY)) - sHeader.sps.QpBdOffsetY; // (7-37)
+	sHeader.QPY_prev = QPY;
+	QP1Y = QPY + sHeader.sps.QpBdOffsetY;
 
 
-	if (sHeader->sps.qpprime_y_zero_transform_bypass_flag && QP1Y == 0)
+	if (sHeader.sps.qpprime_y_zero_transform_bypass_flag && QP1Y == 0)
 	{
 		TransformBypassModeFlag = true;
 	}
@@ -502,7 +502,7 @@ bool Macroblock::macroblock_layer_skip(ParseSlice* Slice, SliceData* slice_data)
 //宏块预测语法
 bool Macroblock::mb_pred(BitStream& bs, uint32_t numMbPart, Cabac& cabac)
 {
-	SliceHeader* sHeader = sliceBase->sHeader;
+	const SliceHeader& sHeader = sliceBase->sHeader;
 	//Direct 直接预测：一种不用解码运动矢量的块的帧间预测模式。针对空域预测和时域预测又两种直接预测模式。
 	if (mode == H264_MB_PART_PRED_MODE::Intra_4x4 || mode == H264_MB_PART_PRED_MODE::Intra_8x8 || mode == H264_MB_PART_PRED_MODE::Intra_16x16)
 	{
@@ -574,7 +574,7 @@ bool Macroblock::mb_pred(BitStream& bs, uint32_t numMbPart, Cabac& cabac)
 
 
 		// YUV 4 : 2 : 0 || YUV 4 : 2 : 2，yuv一起编码
-		if (sHeader->sps.ChromaArrayType == 1 || sHeader->sps.ChromaArrayType == 2)
+		if (sHeader.sps.ChromaArrayType == 1 || sHeader.sps.ChromaArrayType == 2)
 		{
 			//宏块中用于色度的空间预测类型使用Intra_4x4 或 Intra_16x16 预测
 			//intra_chroma_pred_mode 的取值范围为0 到  3。
@@ -601,7 +601,7 @@ bool Macroblock::mb_pred(BitStream& bs, uint32_t numMbPart, Cabac& cabac)
 			//ref_idx_l0[ mbPartIdx ]   用参考帧队列 L0 进行预测，即前向预测时
 			//不支持帧场自适应变量mb_field_decoding_flag=false
 			bool mb_field_decoding_flag = false;
-			if ((sHeader->num_ref_idx_l0_active_minus1 > 0 || false)//(mb_field_decoding_flag)
+			if ((sHeader.num_ref_idx_l0_active_minus1 > 0 || false)//(mb_field_decoding_flag)
 				&& MbPartPredMode(mbPartIdx) != H264_MB_PART_PRED_MODE::Pred_L1
 				)
 			{
@@ -613,16 +613,16 @@ bool Macroblock::mb_pred(BitStream& bs, uint32_t numMbPart, Cabac& cabac)
 				else
 				{
 
-					//sHeader->num_ref_idx_l1_active_minus1 - 1;
+					//sHeader.num_ref_idx_l1_active_minus1 - 1;
 					//ref_idx_l0[ mbPartIdx ]的取值范围将是0到num_ref_idx_l0_active_minus
-					ref_idx_l0[mbPartIdx] = bs.readTE(sHeader->num_ref_idx_l0_active_minus1);
+					ref_idx_l0[mbPartIdx] = bs.readTE(sHeader.num_ref_idx_l0_active_minus1);
 				}
 			}
 		}
 		//这个句法元素用于参考帧队列 L1，即后向预测
 		for (size_t mbPartIdx = 0; mbPartIdx < numMbPart; mbPartIdx++)
 		{
-			if ((sHeader->num_ref_idx_l1_active_minus1 > 0 || false) && MbPartPredMode(mbPartIdx) != H264_MB_PART_PRED_MODE::Pred_L0)
+			if ((sHeader.num_ref_idx_l1_active_minus1 > 0 || false) && MbPartPredMode(mbPartIdx) != H264_MB_PART_PRED_MODE::Pred_L0)
 			{
 				if (isAe)
 				{
@@ -631,7 +631,7 @@ bool Macroblock::mb_pred(BitStream& bs, uint32_t numMbPart, Cabac& cabac)
 				}
 				else
 				{
-					ref_idx_l1[mbPartIdx] = bs.readTE(sHeader->num_ref_idx_l1_active_minus1);
+					ref_idx_l1[mbPartIdx] = bs.readTE(sHeader.num_ref_idx_l1_active_minus1);
 				}
 
 			}
@@ -862,7 +862,7 @@ bool Macroblock::residual(BitStream& bs, int startIdx, int endIdx, Cabac& cabac)
 
 
 	int TotalCoeff = 0;
-	SliceHeader* sHeader = sliceBase->sHeader;
+	const SliceHeader& sHeader = sliceBase->sHeader;
 	ResidualBlockCavlc residual_block(sliceBase);
 
 
@@ -876,12 +876,12 @@ bool Macroblock::residual(BitStream& bs, int startIdx, int endIdx, Cabac& cabac)
 
 	//CodedBlockPatternChroma 只会有0,1,2三个值
 	//解析色度
-	if (sHeader->sps.ChromaArrayType == 1 || sHeader->sps.ChromaArrayType == 2)
+	if (sHeader.sps.ChromaArrayType == 1 || sHeader.sps.ChromaArrayType == 2)
 	{
 		TotalCoeff = 0;
-		//sps.SubWidthC=2,  sHeader->sps.SubHeightC=1		//422
-		//sps.SubWidthC=2,  sHeader->sps.SubHeightC=2		//420
-		int NumC8x8 = 4 / (sHeader->sps.SubWidthC * sHeader->sps.SubHeightC);
+		//sps.SubWidthC=2,  sHeader.sps.SubHeightC=1		//422
+		//sps.SubWidthC=2,  sHeader.sps.SubHeightC=2		//420
+		int NumC8x8 = 4 / (sHeader.sps.SubWidthC * sHeader.sps.SubHeightC);
 		//420对应一个u，一个v
 		for (size_t iCbCr = 0; iCbCr < 2; iCbCr++)
 		{
@@ -959,7 +959,7 @@ bool Macroblock::residual(BitStream& bs, int startIdx, int endIdx, Cabac& cabac)
 
 
 	}
-	else if (sHeader->sps.ChromaArrayType == 3)
+	else if (sHeader.sps.ChromaArrayType == 3)
 	{
 		//residual_luma(bs, i16x16DClevel, i16x16AClevel, level4x4, level8x8, startIdx, endIdx);
 	}
@@ -969,7 +969,7 @@ bool Macroblock::residual(BitStream& bs, int startIdx, int endIdx, Cabac& cabac)
 int Macroblock::residual_luma(BitStream& bs, int i16x16DClevel[16], int i16x16AClevel[16][16], int level4x4[16][16], int level8x8[4][64], int startIdx, int endIdx, Cabac& cabac)
 {
 	ResidualBlockCavlc residual_block(sliceBase);
-	SliceHeader* sHeader = sliceBase->sHeader;
+	const SliceHeader& sHeader = sliceBase->sHeader;
 	int TotalCoeff = 0;
 
 	//先解析16*16的DC直流分量
@@ -1050,7 +1050,7 @@ int Macroblock::residual_luma(BitStream& bs, int i16x16DClevel[16], int i16x16AC
 				}
 
 				//cavlc，并且8*8模式
-				if (!sHeader->pps.entropy_coding_mode_flag && transform_size_8x8_flag)
+				if (!sHeader.pps.entropy_coding_mode_flag && transform_size_8x8_flag)
 				{
 					for (size_t i = 0; i < 16; i++)
 					{
@@ -1123,7 +1123,7 @@ bool Macroblock::sub_mb_pred(BitStream& bs, Cabac& cabac)
 
 	for (size_t mbPartIdx = 0; mbPartIdx < 4; mbPartIdx++)
 	{
-		if ((sliceBase->sHeader->num_ref_idx_l0_active_minus1 > 0 || false)
+		if ((sliceBase->sHeader.num_ref_idx_l0_active_minus1 > 0 || false)
 			&& mbType != H264_MB_TYPE::P_8x8ref0
 			&& subMbType[mbPartIdx] != H264_MB_TYPE::B_Direct_8x8
 			&& subMode[mbPartIdx] != H264_MB_PART_PRED_MODE::Pred_L1
@@ -1136,9 +1136,9 @@ bool Macroblock::sub_mb_pred(BitStream& bs, Cabac& cabac)
 			}
 			else
 			{
-				//sHeader->num_ref_idx_l1_active_minus1 - 1;
+				//sHeader.num_ref_idx_l1_active_minus1 - 1;
 					//ref_idx_l0[ mbPartIdx ]的取值范围将是0到num_ref_idx_l0_active_minus
-				ref_idx_l0[mbPartIdx] = bs.readTE(sliceBase->sHeader->num_ref_idx_l0_active_minus1);
+				ref_idx_l0[mbPartIdx] = bs.readTE(sliceBase->sHeader.num_ref_idx_l0_active_minus1);
 			}
 		}
 	}
@@ -1146,7 +1146,7 @@ bool Macroblock::sub_mb_pred(BitStream& bs, Cabac& cabac)
 	//这个句法元素用于参考帧队列 L1，即后向预测
 	for (size_t mbPartIdx = 0; mbPartIdx < 4; mbPartIdx++)
 	{
-		if ((sliceBase->sHeader->num_ref_idx_l1_active_minus1 > 0 || false)
+		if ((sliceBase->sHeader.num_ref_idx_l1_active_minus1 > 0 || false)
 			&& mbType != H264_MB_TYPE::P_8x8ref0
 			&& subMbType[mbPartIdx] != H264_MB_TYPE::B_Direct_8x8
 			&& subMode[mbPartIdx] != H264_MB_PART_PRED_MODE::Pred_L0
@@ -1159,9 +1159,9 @@ bool Macroblock::sub_mb_pred(BitStream& bs, Cabac& cabac)
 			}
 			else
 			{
-				//sHeader->num_ref_idx_l1_active_minus1 - 1;
+				//sHeader.num_ref_idx_l1_active_minus1 - 1;
 					//ref_idx_l0[ mbPartIdx ]的取值范围将是0到num_ref_idx_l0_active_minus
-				ref_idx_l1[mbPartIdx] = bs.readTE(sliceBase->sHeader->num_ref_idx_l1_active_minus1);
+				ref_idx_l1[mbPartIdx] = bs.readTE(sliceBase->sHeader.num_ref_idx_l1_active_minus1);
 			}
 		}
 	}

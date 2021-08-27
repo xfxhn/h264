@@ -1,7 +1,8 @@
 #include "SliceHeader.h"
 
-SliceHeader::SliceHeader(ParseNalu& nalu) :nalu(nalu)
+SliceHeader::SliceHeader(const ParseNalu& nalu)
 {
+	this->nalu = nalu;
 	first_mb_in_slice = 0;
 	slice_type = 0;
 	pic_parameter_set_id = 0;
@@ -31,9 +32,9 @@ SliceHeader::SliceHeader(ParseNalu& nalu) :nalu(nalu)
 	slice_group_change_cycle = 0;
 
 	ref_pic_list_modification_flag_l0 = 0;
-	memset(modification_of_pic_nums_idc, 0, sizeof(int32_t) * 32 * 2);
-	memset(abs_diff_pic_num_minus1, 0, sizeof(int32_t) * 32 * 2);
-	memset(long_term_pic_num, 0, sizeof(int32_t) * 32 * 2);
+	memset(modification_of_pic_nums_idc, 0, sizeof(uint32_t) * 32 * 2);
+	memset(abs_diff_pic_num_minus1, 0, sizeof(uint32_t) * 32 * 2);
+	memset(long_term_pic_num, 0, sizeof(uint32_t) * 32 * 2);
 	ref_pic_list_modification_flag_l1 = 0;
 	ref_pic_list_modification_count_l0 = 0;
 	ref_pic_list_modification_count_l1 = 0;
@@ -75,34 +76,7 @@ SliceHeader::SliceHeader(ParseNalu& nalu) :nalu(nalu)
 
 	MaxPicNum = 0;
 	CurrPicNum = 0;
-	/*
 
-	slice_id = 0;
-	syntax_element_categories = 0;
-	slice_type_fixed = 0;
-	mb_cnt = 0;
-	SliceQPY = 0;
-	MbaffFrameFlag = 0;
-	PicHeightInMbs = 0;
-	PicHeightInSamplesL = 0;
-	PicHeightInSamplesC = 0;
-	PicSizeInMbs = 0;
-
-	SliceGroupChangeRate = 0;
-	MapUnitsInSliceGroup0 = 0;
-
-	picNumL0Pred = 0;
-	picNumL1Pred = 0;
-	refIdxL0 = 0;
-	refIdxL1 = 0;
-
-	mapUnitToSliceGroupMap = NULL;
-	MbToSliceGroupMap = NULL;
-	PrevRefFrameNum = 0;
-	UnusedShortTermFrameNum = 0;
-
-	m_picture_coded_type = H264_PICTURE_CODED_TYPE_UNKNOWN;
-	m_is_malloc_mem_self = 0;*/
 	FilterOffsetA = 0;
 	FilterOffsetB = 0;
 	memset(ScalingList4x4, 0, sizeof(int) * 6 * 16);
@@ -111,6 +85,116 @@ SliceHeader::SliceHeader(ParseNalu& nalu) :nalu(nalu)
 }
 
 
+
+
+SliceHeader& SliceHeader::operator=(const SliceHeader& src)
+{
+	if (this == &src) return *this;
+
+	this->nalu = src.nalu;
+	first_mb_in_slice = src.first_mb_in_slice;
+	slice_type = src.slice_type;
+	pic_parameter_set_id = src.pic_parameter_set_id;
+	colour_plane_id = src.colour_plane_id;
+	frame_num = src.frame_num;
+	field_pic_flag = src.field_pic_flag;
+	bottom_field_flag = src.bottom_field_flag;
+	idr_pic_id = src.idr_pic_id;
+	pic_order_cnt_lsb = src.pic_order_cnt_lsb;
+	delta_pic_order_cnt_bottom = 0;
+
+	memcpy(delta_pic_order_cnt, src.delta_pic_order_cnt, sizeof(int) * 2);
+
+
+	redundant_pic_cnt = src.redundant_pic_cnt;
+	direct_spatial_mv_pred_flag = src.direct_spatial_mv_pred_flag;
+	num_ref_idx_active_override_flag = src.num_ref_idx_active_override_flag;
+	num_ref_idx_l0_active_minus1 = src.num_ref_idx_l0_active_minus1;
+	num_ref_idx_l1_active_minus1 = src.num_ref_idx_l1_active_minus1;
+	cabac_init_idc = src.cabac_init_idc;
+	slice_qp_delta = src.slice_qp_delta;
+	sp_for_switch_flag = src.sp_for_switch_flag;
+	slice_qs_delta = src.slice_qs_delta;
+	disable_deblocking_filter_idc = src.disable_deblocking_filter_idc;
+	slice_alpha_c0_offset_div2 = src.slice_alpha_c0_offset_div2;
+	slice_beta_offset_div2 = src.slice_beta_offset_div2;
+	slice_group_change_cycle = src.slice_group_change_cycle;
+	ref_pic_list_modification_flag_l0 = src.ref_pic_list_modification_flag_l0;
+
+	memcpy(modification_of_pic_nums_idc, src.modification_of_pic_nums_idc, sizeof(uint32_t) * 2 * 32);
+	memcpy(abs_diff_pic_num_minus1, src.abs_diff_pic_num_minus1, sizeof(uint32_t) * 2 * 32);
+	memcpy(long_term_pic_num, src.long_term_pic_num, sizeof(uint32_t) * 2 * 32);
+
+
+	ref_pic_list_modification_flag_l1 = src.ref_pic_list_modification_flag_l1;
+	ref_pic_list_modification_count_l0 = src.ref_pic_list_modification_count_l0;
+	ref_pic_list_modification_count_l1 = src.ref_pic_list_modification_count_l1;
+
+	luma_log2_weight_denom = src.luma_log2_weight_denom;
+	chroma_log2_weight_denom = src.chroma_log2_weight_denom;
+	luma_weight_l0_flag = src.luma_weight_l0_flag;
+
+	memcpy(luma_weight_l0, src.luma_weight_l0, sizeof(int) * 32);
+	memcpy(luma_offset_l0, src.luma_offset_l0, sizeof(int) * 32);
+
+	chroma_weight_l0_flag = src.chroma_weight_l0_flag;
+	memcpy(chroma_weight_l0, src.chroma_weight_l0, sizeof(int) * 32 * 2);
+	memcpy(chroma_offset_l0, src.chroma_offset_l0, sizeof(int) * 32 * 2);
+
+	luma_weight_l1_flag = src.luma_weight_l1_flag;
+
+	memcpy(luma_weight_l1, src.luma_weight_l1, sizeof(int) * 32);
+	memcpy(luma_offset_l1, src.luma_offset_l1, sizeof(int) * 32);
+	chroma_weight_l1_flag = src.chroma_weight_l1_flag;
+	memcpy(chroma_weight_l1, src.chroma_weight_l1, sizeof(int) * 32 * 2);
+	memcpy(chroma_offset_l1, src.chroma_offset_l1, sizeof(int) * 32 * 2);
+
+
+	no_output_of_prior_pics_flag = src.no_output_of_prior_pics_flag;
+	long_term_reference_flag = src.long_term_reference_flag;
+	adaptive_ref_pic_marking_mode_flag = src.adaptive_ref_pic_marking_mode_flag;
+
+	memcpy(dec_ref_pic_markings, src.dec_ref_pic_markings, sizeof(DEC_REF_PIC_MARKING) * 32);
+	dec_ref_pic_markings_size = src.dec_ref_pic_markings_size;
+
+
+	MbaffFrameFlag = src.MbaffFrameFlag;
+	SliceGroupChangeRate = src.SliceGroupChangeRate;
+	SliceQPY = src.SliceQPY;
+	QPY_prev = src.QPY_prev;
+	QSY = src.QSY;
+
+	PicHeightInMbs = src.PicHeightInMbs;
+	PicSizeInMbs = src.PicSizeInMbs;
+
+	if (mapUnitToSliceGroupMap)
+	{
+		delete[] mapUnitToSliceGroupMap;
+		mapUnitToSliceGroupMap = nullptr;
+	}
+	mapUnitToSliceGroupMap = new uint32_t[src.PicSizeInMbs]();
+	memcpy(mapUnitToSliceGroupMap, src.mapUnitToSliceGroupMap, sizeof(uint32_t) * src.PicSizeInMbs);
+
+	if (MbToSliceGroupMap)
+	{
+		delete[] MbToSliceGroupMap;
+		MbToSliceGroupMap = nullptr;
+	}
+	MbToSliceGroupMap = new uint32_t[src.PicSizeInMbs]();
+	memcpy(MbToSliceGroupMap, src.MbToSliceGroupMap, sizeof(uint32_t) * src.PicSizeInMbs);
+
+
+	MaxPicNum = src.MaxPicNum;
+	CurrPicNum = src.CurrPicNum;
+
+	FilterOffsetA = src.FilterOffsetA;
+	FilterOffsetB = src.FilterOffsetB;
+
+	memcpy(ScalingList4x4, src.ScalingList4x4, sizeof(int) * 6 * 16);
+	memcpy(ScalingList8x8, src.ScalingList8x8, sizeof(int) * 6 * 64);
+
+	return *this;
+}
 
 bool SliceHeader::isFinishPicture()
 {

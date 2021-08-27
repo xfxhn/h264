@@ -16,9 +16,12 @@ public:
 
 public:
 	DPB();
-	void Decoded_reference_picture_marking_process(ParseSlice* slice);
+	void Decoding_to_complete(ParseSlice* slice, const  SliceHeader& sHeader);
 
-	void Adaptive_memory_control_decoded_reference_picture_marking_process(SliceHeader* sHeader, Picture* pic);
+
+	void Decoded_reference_picture_marking_process(Picture* pic, const  SliceHeader& sHeader);
+
+	void Adaptive_memory_control_decoded_reference_picture_marking_process(const SliceHeader& sHeader, Picture* pic);
 
 	void Sliding_window_decoded_reference_picture_marking_process(uint8_t max_num_ref_frames);
 };

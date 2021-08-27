@@ -19,7 +19,7 @@ public:
 public:
 
 	SliceData();
-	int NextMbAddress(SliceHeader* sHeader, uint32_t n);
+	int NextMbAddress(const SliceHeader& sHeader, uint32_t n);
 	bool slice_data(BitStream& bs, ParseSlice* Slice);
 	~SliceData();
 };

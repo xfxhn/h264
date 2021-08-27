@@ -18,7 +18,7 @@ class SliceHeader
 {
 public:
 
-	ParseNalu& nalu;
+	ParseNalu nalu;
 	ParsePPS pps;
 	ParseSPS sps;
 
@@ -113,11 +113,15 @@ public:
 	int ScalingList4x4[6][16];
 	int ScalingList8x8[6][64];
 
+
 public:
 
 
-	SliceHeader(ParseNalu& nalu);
+	SliceHeader(const ParseNalu& nalu);
+
 	~SliceHeader();
+
+	SliceHeader& operator= (const SliceHeader& src);
 
 
 	bool isFinishPicture();

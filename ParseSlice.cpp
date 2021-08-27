@@ -5,8 +5,9 @@
 /// <summary>
 /// ParseNalu& nalu  :nalu(nalu)
 /// </summary>
-ParseSlice::ParseSlice(ParseNalu& nalu, SliceHeader* sHeader, Picture* pic) :pic(pic)
+ParseSlice::ParseSlice(SliceHeader& sHeader) :sHeader(sHeader)
 {
+	decodeFinished = false;
 	mbX = 0;
 	mbY = 0;
 
@@ -17,13 +18,12 @@ ParseSlice::ParseSlice(ParseNalu& nalu, SliceHeader* sHeader, Picture* pic) :pic
 	memset(LevelScale4x4, 0, sizeof(int) * 6 * 4 * 4);
 	memset(LevelScale8x8, 0, sizeof(int) * 6 * 8 * 8);
 	CurrMbAddr = 0;
-	this->sHeader = sHeader;
 
-	PicWidthInSamplesL = sHeader->sps.PicWidthInSamplesL;
-	PicHeightInSamplesL = sHeader->sps.PicHeightInSamplesL;
-	PicWidthInSamplesC = sHeader->sps.PicWidthInSamplesC;
-	PicHeightInSamplesC = sHeader->sps.PicHeightInSamplesC;
-	PicSizeInMbs = sHeader->PicSizeInMbs;
+	PicWidthInSamplesL = sHeader.sps.PicWidthInSamplesL;
+	PicHeightInSamplesL = sHeader.sps.PicHeightInSamplesL;
+	PicWidthInSamplesC = sHeader.sps.PicWidthInSamplesC;
+	PicHeightInSamplesC = sHeader.sps.PicHeightInSamplesC;
+	PicSizeInMbs = sHeader.PicSizeInMbs;
 
 
 
@@ -74,20 +74,9 @@ bool ParseSlice::parse()
 
 	return false;
 }
-void ParseSlice::init()
-{
-
-
-}
-
 
 ParseSlice::~ParseSlice()
 {
-	if (sHeader)
-	{
-		delete sHeader;
-		sHeader = nullptr;
-	}
 
 	if (macroblock)
 	{
@@ -307,7 +296,7 @@ void ParseSlice::Deblocking_filter_process()
 		getMbAddrNAndLuma4x4BlkIdxN(mbAddrB, 0, -1, maxW, maxH, xW, yW);
 		//如果MbaffFrameFlag = 1且mb_field_decoding_flag = 1，则fieldMbInFrameFlag设置为1  
 
-		if (sHeader->MbaffFrameFlag && sHeader->field_pic_flag)
+		if (sHeader.MbaffFrameFlag && sHeader.field_pic_flag)
 		{
 			fieldMbInFrameFlag = true;
 		}
@@ -321,7 +310,7 @@ void ParseSlice::Deblocking_filter_process()
 			1：关闭去块滤波功能。
 			2：开启去块滤波功能，仅限slice内部*/
 
-		if (sHeader->disable_deblocking_filter_idc == 1)
+		if (sHeader.disable_deblocking_filter_idc == 1)
 		{
 			filterInternalEdgesFlag = false;
 		}
@@ -332,10 +321,10 @@ void ParseSlice::Deblocking_filter_process()
 
 
 		//currMb宏块是否在这帧图像最左侧边缘，是=false，否则=true
-		if ((!sHeader->MbaffFrameFlag && (currMb % sHeader->sps.PicWidthInMbs == 0))
-			|| (sHeader->MbaffFrameFlag && ((currMb >> 1) % sHeader->sps.PicWidthInMbs == 0))
-			|| (sHeader->disable_deblocking_filter_idc == 1)
-			|| (sHeader->disable_deblocking_filter_idc == 2 && mbAddrA == NA)
+		if ((!sHeader.MbaffFrameFlag && (currMb % sHeader.sps.PicWidthInMbs == 0))
+			|| (sHeader.MbaffFrameFlag && ((currMb >> 1) % sHeader.sps.PicWidthInMbs == 0))
+			|| (sHeader.disable_deblocking_filter_idc == 1)
+			|| (sHeader.disable_deblocking_filter_idc == 2 && mbAddrA == NA)
 			)
 		{
 			filterLeftMbEdgeFlag = false;
@@ -346,11 +335,11 @@ void ParseSlice::Deblocking_filter_process()
 		}
 
 
-		if ((!sHeader->MbaffFrameFlag && currMb < sHeader->sps.PicWidthInMbs)
-			|| (sHeader->MbaffFrameFlag && (currMb >> 1) < sHeader->sps.PicWidthInMbs && sHeader->field_pic_flag)
-			|| (sHeader->MbaffFrameFlag && (currMb >> 1) < sHeader->sps.PicWidthInMbs && !sHeader->field_pic_flag && (currMb % 2) == 0)
-			|| (sHeader->disable_deblocking_filter_idc == 1)
-			|| (sHeader->disable_deblocking_filter_idc == 2 && mbAddrB == NA)
+		if ((!sHeader.MbaffFrameFlag && currMb < sHeader.sps.PicWidthInMbs)
+			|| (sHeader.MbaffFrameFlag && (currMb >> 1) < sHeader.sps.PicWidthInMbs && sHeader.field_pic_flag)
+			|| (sHeader.MbaffFrameFlag && (currMb >> 1) < sHeader.sps.PicWidthInMbs && !sHeader.field_pic_flag && (currMb % 2) == 0)
+			|| (sHeader.disable_deblocking_filter_idc == 1)
+			|| (sHeader.disable_deblocking_filter_idc == 2 && mbAddrB == NA)
 			)
 		{
 			filterTopMbEdgeFlag = false;
@@ -496,7 +485,7 @@ void ParseSlice::Deblocking_filter_process()
 
 
 
-		if (sHeader->sps.ChromaArrayType != 0)
+		if (sHeader.sps.ChromaArrayType != 0)
 		{
 			if (filterLeftMbEdgeFlag)
 			{
@@ -505,7 +494,7 @@ void ParseSlice::Deblocking_filter_process()
 				fieldModeInFrameFilteringFlag = fieldMbInFrameFlag;
 				mbEdgeFlag = true;
 
-				for (size_t k = 0; k < sHeader->sps.MbHeightC; k++)
+				for (size_t k = 0; k < sHeader.sps.MbHeightC; k++)
 				{
 					xE[k] = 0; //(xEk, yEk) = (0, k)
 					yE[k] = k;
@@ -524,10 +513,10 @@ void ParseSlice::Deblocking_filter_process()
 				mbEdgeFlag = false;
 
 
-				if (sHeader->sps.ChromaArrayType != 3 || macroblock[currMb]->transform_size_8x8_flag == false)
+				if (sHeader.sps.ChromaArrayType != 3 || macroblock[currMb]->transform_size_8x8_flag == false)
 				{
 
-					for (size_t k = 0; k < sHeader->sps.MbHeightC; k++)
+					for (size_t k = 0; k < sHeader.sps.MbHeightC; k++)
 					{
 						xE[k] = 4; //(xEk, yEk) =  (4, k)
 						yE[k] = k;
@@ -539,9 +528,9 @@ void ParseSlice::Deblocking_filter_process()
 					Filtering_process_for_block_edges(currMb, mbAddrA, chromaEdgeFlag, verticalEdgeFlag, fieldModeInFrameFilteringFlag, iCbCr, mbEdgeFlag, xE, yE);
 				}
 
-				if (sHeader->sps.ChromaArrayType == 3)
+				if (sHeader.sps.ChromaArrayType == 3)
 				{
-					for (size_t k = 0; k < sHeader->sps.MbHeightC; k++)
+					for (size_t k = 0; k < sHeader.sps.MbHeightC; k++)
 					{
 						xE[k] = 8; //(xEk, yEk) =  (8, k)
 						yE[k] = k;
@@ -552,9 +541,9 @@ void ParseSlice::Deblocking_filter_process()
 					Filtering_process_for_block_edges(currMb, mbAddrA, chromaEdgeFlag, verticalEdgeFlag, fieldModeInFrameFilteringFlag, iCbCr, mbEdgeFlag, xE, yE);
 				}
 
-				if (sHeader->sps.ChromaArrayType == 3 && macroblock[currMb]->transform_size_8x8_flag == false)
+				if (sHeader.sps.ChromaArrayType == 3 && macroblock[currMb]->transform_size_8x8_flag == false)
 				{
-					for (size_t k = 0; k < sHeader->sps.MbHeightC; k++)
+					for (size_t k = 0; k < sHeader.sps.MbHeightC; k++)
 					{
 						xE[k] = 12; //(xEk, yEk) =  (12, k)
 						yE[k] = k;
@@ -575,7 +564,7 @@ void ParseSlice::Deblocking_filter_process()
 				fieldModeInFrameFilteringFlag = fieldMbInFrameFlag;
 				mbEdgeFlag = true;
 
-				for (size_t k = 0; k < sHeader->sps.MbWidthC; k++)
+				for (size_t k = 0; k < sHeader.sps.MbWidthC; k++)
 				{
 					xE[k] = k; //(xEk, yEk) =(k,  0)
 					yE[k] = 0;
@@ -594,9 +583,9 @@ void ParseSlice::Deblocking_filter_process()
 				fieldModeInFrameFilteringFlag = fieldMbInFrameFlag;
 				mbEdgeFlag = false;
 
-				if (sHeader->sps.ChromaArrayType != 3 || macroblock[currMb]->transform_size_8x8_flag == false)
+				if (sHeader.sps.ChromaArrayType != 3 || macroblock[currMb]->transform_size_8x8_flag == false)
 				{
-					for (size_t k = 0; k < sHeader->sps.MbHeightC; k++)
+					for (size_t k = 0; k < sHeader.sps.MbHeightC; k++)
 					{
 						xE[k] = k; //(xEk, yEk) = (k, 4)
 						yE[k] = 4;
@@ -609,9 +598,9 @@ void ParseSlice::Deblocking_filter_process()
 				}
 
 
-				if (sHeader->sps.ChromaArrayType != 1)
+				if (sHeader.sps.ChromaArrayType != 1)
 				{
-					for (size_t k = 0; k < sHeader->sps.MbHeightC; k++)
+					for (size_t k = 0; k < sHeader.sps.MbHeightC; k++)
 					{
 						xE[k] = k; //(xEk, yEk) = (k, 4)
 						yE[k] = 8;
@@ -624,9 +613,9 @@ void ParseSlice::Deblocking_filter_process()
 				}
 
 				//422
-				if (sHeader->sps.ChromaArrayType == 2)
+				if (sHeader.sps.ChromaArrayType == 2)
 				{
-					for (size_t k = 0; k < sHeader->sps.MbHeightC; k++)
+					for (size_t k = 0; k < sHeader.sps.MbHeightC; k++)
 					{
 						xE[k] = k; //(xEk, yEk) = (k, 12)
 						yE[k] = 12;
@@ -637,9 +626,9 @@ void ParseSlice::Deblocking_filter_process()
 					Filtering_process_for_block_edges(currMb, mbAddrA, chromaEdgeFlag, verticalEdgeFlag, fieldModeInFrameFilteringFlag, iCbCr, mbEdgeFlag, xE, yE);
 				}
 
-				if (sHeader->sps.ChromaArrayType == 3 && macroblock[currMb]->transform_size_8x8_flag == false)
+				if (sHeader.sps.ChromaArrayType == 3 && macroblock[currMb]->transform_size_8x8_flag == false)
 				{
-					for (size_t k = 0; k < sHeader->sps.MbHeightC; k++)
+					for (size_t k = 0; k < sHeader.sps.MbHeightC; k++)
 					{
 						xE[k] = k; //(xEk, yEk) = (k, 12)
 						yE[k] = 12;
@@ -661,7 +650,7 @@ void ParseSlice::Filtering_process_for_block_edges(int mbAddr, int mbAddrN, bool
 	//一个边沿包含的像素数量，亮度为16，色度420为8；
 	if (chromaEdgeFlag)
 	{
-		nE = verticalEdgeFlag ? sHeader->sps.MbHeightC : sHeader->sps.MbWidthC;
+		nE = verticalEdgeFlag ? sHeader.sps.MbHeightC : sHeader.sps.MbWidthC;
 	}
 	else
 	{
@@ -705,8 +694,8 @@ void ParseSlice::Filtering_process_for_block_edges(int mbAddr, int mbAddrN, bool
 
 	if (chromaEdgeFlag)
 	{
-		xP = xI / sHeader->sps.SubWidthC;
-		yP = (yI + sHeader->sps.SubHeightC - 1) / sHeader->sps.SubHeightC;
+		xP = xI / sHeader.sps.SubWidthC;
+		yP = (yI + sHeader.sps.SubHeightC - 1) / sHeader.sps.SubHeightC;
 	}
 	else
 	{
@@ -757,7 +746,7 @@ void ParseSlice::Filtering_process_for_block_edges(int mbAddr, int mbAddrN, bool
 			{
 				if (chromaEdgeFlag)
 				{
-					mb_p0_x += sHeader->sps.MbWidthC;
+					mb_p0_x += sHeader.sps.MbWidthC;
 				}
 				else
 				{
@@ -790,7 +779,7 @@ void ParseSlice::Filtering_process_for_block_edges(int mbAddr, int mbAddrN, bool
 			{
 				if (chromaEdgeFlag)
 				{
-					mb_p0_y += sHeader->sps.MbHeightC;
+					mb_p0_y += sHeader.sps.MbHeightC;
 				}
 				else
 				{
@@ -831,10 +820,10 @@ void ParseSlice::Filtering_process_for_a_set_of_samples_across_a_horizontal_or_v
 	int bS = 0;
 	if (chromaEdgeFlag)
 	{
-		const int mb_x_p0_chroma = sHeader->sps.SubWidthC * mb_p0_x;
-		const int mb_y_p0_chroma = sHeader->sps.SubWidthC * mb_p0_y;
-		const int mb_x_q0_chroma = sHeader->sps.SubWidthC * mb_q0_x;
-		const int mb_y_q0_chroma = sHeader->sps.SubWidthC * mb_q0_y;
+		const int mb_x_p0_chroma = sHeader.sps.SubWidthC * mb_p0_x;
+		const int mb_y_p0_chroma = sHeader.sps.SubWidthC * mb_p0_y;
+		const int mb_x_q0_chroma = sHeader.sps.SubWidthC * mb_q0_x;
+		const int mb_y_q0_chroma = sHeader.sps.SubWidthC * mb_q0_y;
 		bS = Derivation_process_for_the_luma_content_dependent_boundary_filtering_strength(mbAddr, false, mbAddrN,
 			mbEdgeFlag, p[0], q[0], verticalEdgeFlag, mb_x_p0_chroma, mb_y_p0_chroma, mb_x_q0_chroma, mb_y_q0_chroma);
 	}
@@ -843,7 +832,7 @@ void ParseSlice::Filtering_process_for_a_set_of_samples_across_a_horizontal_or_v
 		bS = Derivation_process_for_the_luma_content_dependent_boundary_filtering_strength(mbAddr, false, mbAddrN, mbEdgeFlag, p[0], q[0], verticalEdgeFlag, mb_p0_x, mb_p0_y, mb_q0_x, mb_q0_y);
 	}
 
-	//sHeader->FilterOffsetA
+	//sHeader.FilterOffsetA
 
 	const int mbAddr_p0 = mbEdgeFlag ? mbAddrN : mbAddr;
 	const int mbAddr_q0 = mbAddr;
@@ -909,7 +898,7 @@ void ParseSlice::Filtering_process_for_a_set_of_samples_across_a_horizontal_or_v
 	int indexA = 0;
 	Derivation_process_for_the_thresholds_for_each_block_edge(p[0], q[0], p[1], q[1], chromaEdgeFlag, bS, filterOffsetA, filterOffsetB, qPp, qPq, indexA, alpha, beta, filterSamplesFlag);
 
-	const bool chromaStyleFilteringFlag = chromaEdgeFlag && (sHeader->sps.ChromaArrayType != 3);
+	const bool chromaStyleFilteringFlag = chromaEdgeFlag && (sHeader.sps.ChromaArrayType != 3);
 	if (filterSamplesFlag)
 	{
 		if (bS < 4)
@@ -955,18 +944,18 @@ int ParseSlice::Derivation_process_for_the_luma_content_dependent_boundary_filte
 	{
 		//样点p0和q0都在帧宏块内，而且两个样点p0和q0之中的两个或者一个在采用帧内宏块预测模式编码的宏块内
 
-		if (sHeader->sps.frame_mbs_only_flag && (isInterMode(macroblock[mbAddr_p0]->mode) || isInterMode(macroblock[mbAddr_q0]->mode))
-			|| (sHeader->sps.frame_mbs_only_flag && (
+		if (sHeader.sps.frame_mbs_only_flag && (isInterMode(macroblock[mbAddr_p0]->mode) || isInterMode(macroblock[mbAddr_q0]->mode))
+			|| (sHeader.sps.frame_mbs_only_flag && (
 				(macroblock[mbAddr_p0]->sliceNumber == macroblock[mbAddr_q0]->sliceNumber)
-				&& ((SLIECETYPE)sHeader->slice_type == SLIECETYPE::H264_SLIECE_TYPE_SP || (SLIECETYPE)sHeader->slice_type == SLIECETYPE::H264_SLIECE_TYPE_SI))
+				&& ((SLIECETYPE)sHeader.slice_type == SLIECETYPE::H264_SLIECE_TYPE_SP || (SLIECETYPE)sHeader.slice_type == SLIECETYPE::H264_SLIECE_TYPE_SI))
 				)
-			|| ((MbaffFrameFlag || sHeader->field_pic_flag)
+			|| ((MbaffFrameFlag || sHeader.field_pic_flag)
 				&& verticalEdgeFlag
 				&& (isInterMode(macroblock[mbAddr_p0]->mode) || isInterMode(macroblock[mbAddr_q0]->mode))
 				)
-			|| ((MbaffFrameFlag || sHeader->field_pic_flag)
+			|| ((MbaffFrameFlag || sHeader.field_pic_flag)
 				&& verticalEdgeFlag
-				&& ((SLIECETYPE)sHeader->slice_type == SLIECETYPE::H264_SLIECE_TYPE_SP || (SLIECETYPE)sHeader->slice_type == SLIECETYPE::H264_SLIECE_TYPE_SI)
+				&& ((SLIECETYPE)sHeader.slice_type == SLIECETYPE::H264_SLIECE_TYPE_SP || (SLIECETYPE)sHeader.slice_type == SLIECETYPE::H264_SLIECE_TYPE_SI)
 				)
 			)
 		{
@@ -980,7 +969,7 @@ int ParseSlice::Derivation_process_for_the_luma_content_dependent_boundary_filte
 			)
 		|| (!mixedModeEdgeFlag
 			&& ((macroblock[mbAddr_p0]->sliceNumber == macroblock[mbAddr_q0]->sliceNumber)
-				&& ((SLIECETYPE)sHeader->slice_type == SLIECETYPE::H264_SLIECE_TYPE_SP || (SLIECETYPE)sHeader->slice_type == SLIECETYPE::H264_SLIECE_TYPE_SI))
+				&& ((SLIECETYPE)sHeader.slice_type == SLIECETYPE::H264_SLIECE_TYPE_SP || (SLIECETYPE)sHeader.slice_type == SLIECETYPE::H264_SLIECE_TYPE_SI))
 			)
 		//mixedModeEdgeFlag==1
 		)
@@ -1041,13 +1030,13 @@ void ParseSlice::Derivation_process_for_the_thresholds_for_each_block_edge(int p
 
 	if (!chromaEdgeFlag)
 	{
-		alpha = alphas[indexA] * (1 << (sHeader->sps.BitDepthY - 8));
-		beta = betas[indexB] * (1 << (sHeader->sps.BitDepthY - 8));
+		alpha = alphas[indexA] * (1 << (sHeader.sps.BitDepthY - 8));
+		beta = betas[indexB] * (1 << (sHeader.sps.BitDepthY - 8));
 	}
 	else
 	{
-		alpha = alphas[indexA] * (1 << (sHeader->sps.BitDepthC - 8));
-		beta = betas[indexB] * (1 << (sHeader->sps.BitDepthC - 8));
+		alpha = alphas[indexA] * (1 << (sHeader.sps.BitDepthC - 8));
+		beta = betas[indexB] * (1 << (sHeader.sps.BitDepthC - 8));
 	}
 
 	filterSamplesFlag = (bS != 0 && std::abs(p0 - q0) < alpha && std::abs(p1 - p0) < beta && std::abs(q1 - q0) < beta);
@@ -1088,11 +1077,11 @@ void ParseSlice::Filtering_process_for_edges_with_bS_less_than_4(const int p[4],
 	int tC0 = 0;
 	if (chromaEdgeFlag)
 	{
-		tC0 = tC0Table[bS - 1][indexA] * (1 << (sHeader->sps.BitDepthC - 8));
+		tC0 = tC0Table[bS - 1][indexA] * (1 << (sHeader.sps.BitDepthC - 8));
 	}
 	else
 	{
-		tC0 = tC0Table[bS - 1][indexA] * (1 << (sHeader->sps.BitDepthY - 8));
+		tC0 = tC0Table[bS - 1][indexA] * (1 << (sHeader.sps.BitDepthY - 8));
 	}
 
 	// p3 p2 p1 p0 | q0 q1 q2 q3
@@ -1117,13 +1106,13 @@ void ParseSlice::Filtering_process_for_edges_with_bS_less_than_4(const int p[4],
 
 	if (chromaEdgeFlag)
 	{
-		pp[0] = Clip3(0, (1 << sHeader->sps.BitDepthC) - 1, p[0] + delta);
-		qq[0] = Clip3(0, (1 << sHeader->sps.BitDepthC) - 1, q[0] + delta);
+		pp[0] = Clip3(0, (1 << sHeader.sps.BitDepthC) - 1, p[0] + delta);
+		qq[0] = Clip3(0, (1 << sHeader.sps.BitDepthC) - 1, q[0] + delta);
 	}
 	else
 	{
-		pp[0] = Clip3(0, (1 << sHeader->sps.BitDepthY) - 1, p[0] + delta);
-		qq[0] = Clip3(0, (1 << sHeader->sps.BitDepthY) - 1, q[0] + delta);
+		pp[0] = Clip3(0, (1 << sHeader.sps.BitDepthY) - 1, p[0] + delta);
+		qq[0] = Clip3(0, (1 << sHeader.sps.BitDepthY) - 1, q[0] + delta);
 	}
 
 
@@ -1185,208 +1174,7 @@ void ParseSlice::Filtering_process_for_edges_for_bS_equal_to_4(const int p[4], c
 	}
 }
 
-////已解码参考图像标记过程
-//void ParseSlice::Decoded_reference_picture_marking_process()
-//{
-//	if (sHeader->nalu.IdrPicFlag)
-//	{
-//		//所有参考图像需要被标记为"未用于参考" 
-//		for (size_t i = 0; i < 16; i++)
-//		{
-//			dpb[i]->reference_marked_type = PICTURE_MARKING::UNUSED_FOR_REFERENCE;
-//		}
-//
-//		if (sHeader->long_term_reference_flag)
-//		{
-//			//该IDR图像需要 被标记为"用于长期参考"
-//			reference_marked_type = PICTURE_MARKING::LONG_TERM_REFERENCE;
-//			LongTermFrameIdx = 0;
-//			MaxLongTermFrameIdx = 0;
-//
-//		}
-//		else//sHeader->long_term_reference_flag=0
-//		{
-//			//该IDR图像将被标记为"用于短期参考"
-//			reference_marked_type = PICTURE_MARKING::SHORT_TERM_REFERENCE;
-//			MaxLongTermFrameIdx = NA; //设置为没有长期索引
-//		}
-//	}
-//	else
-//	{
-//		// =0 先入先出（FIFO）：使用滑动窗的机制，先入先出，在这种模式下没有办法对长期参考帧进行操作。
-//		// =1 自适应标记（marking）：后续码流中会有一系列句法元素显式指明操作的步骤。自适应是指编码器可根据情况随机灵活地作出决策。
-//		if (sHeader->adaptive_ref_pic_marking_mode_flag)
-//		{
-//			//自适应标记过程
-//			Adaptive_memory_control_decoded_reference_picture_marking_process();
-//
-//		}
-//		else
-//		{
-//			//滑动窗口解码参考图像的标识过程
-//			Sliding_window_decoded_reference_picture_marking_process();
-//		}
-//	}
-//}
-//
-//void ParseSlice::Sliding_window_decoded_reference_picture_marking_process()
-//{
-//	//如果当前编码场是一个互补参考场对的第二个场，并且第一个场已经被标记为“用于短期参考”时，当前图像也应该被标记为“用于短期参考”
-//
-//	int numShortTerm = 0;
-//	int numLongTerm = 0;
-//
-//	for (size_t i = 0; i < 16; i++)
-//	{
-//		if (dpb[i]->reference_marked_type == PICTURE_MARKING::SHORT_TERM_REFERENCE)
-//		{
-//			numShortTerm++;
-//		}
-//
-//		if (dpb[i]->reference_marked_type == PICTURE_MARKING::LONG_TERM_REFERENCE)
-//		{
-//			numLongTerm++;
-//		}
-//	}
-//
-//
-//
-//	if (numShortTerm + numLongTerm == std::max(sHeader->sps.max_num_ref_frames, (uint8_t)1) && numShortTerm > 0)
-//	{
-//		//有着最小 FrameNumWrap 值的短期参考帧必须标记为“不用于参考”
-//		int FrameNumWrap = -1;
-//		Picture* pic = nullptr;
-//		for (size_t i = 0; i < 16; i++)
-//		{
-//			if (dpb[i]->reference_marked_type == PICTURE_MARKING::SHORT_TERM_REFERENCE)
-//			{
-//				if (FrameNumWrap == -1)
-//				{
-//					FrameNumWrap = dpb[i]->FrameNumWrap;
-//				}
-//
-//				if (dpb[i]->FrameNumWrap < FrameNumWrap)
-//				{
-//					pic = dpb[i];
-//					FrameNumWrap = dpb[i]->FrameNumWrap;
-//				}
-//			}
-//		}
-//
-//
-//		if (pic != nullptr)
-//		{
-//			pic->reference_marked_type = PICTURE_MARKING::UNUSED_FOR_REFERENCE;
-//		}
-//		//如它是一个帧或场对，那么它的两个场必须均标记为“不用于参考”。
-//	}
-//}
-//
-//void ParseSlice::Adaptive_memory_control_decoded_reference_picture_marking_process()
-//{
-//
-//	for (size_t i = 0; i < sHeader->dec_ref_pic_markings_size; i++)
-//	{
-//		//将一个短期参考图像标记为非参考图像，也 即将一个短期参考图像移出参考帧队列
-//		if (sHeader->dec_ref_pic_markings[i].memory_management_control_operation == 1)
-//		{
-//			int picNumX = sHeader->CurrPicNum - (sHeader->dec_ref_pic_markings[i].difference_of_pic_nums_minus1 + 1);
-//			//如果field_pic_flag等于0, 则picNumX指定的短期参考帧被标记为“unused for reference”。
-//
-//			for (size_t j = 0; j < 16; j++)
-//			{
-//				if (dpb[j]->reference_marked_type == PICTURE_MARKING::SHORT_TERM_REFERENCE && dpb[j]->PicNum == picNumX)
-//				{
-//					dpb[i]->reference_marked_type = PICTURE_MARKING::UNUSED_FOR_REFERENCE;
-//				}
-//			}
-//		}
-//
-//		//将一个长期参考图像标记为非参考图像，也 即将一个长期参考图像移出参考帧队列
-//		if (sHeader->dec_ref_pic_markings[i].memory_management_control_operation == 2)
-//		{
-//			//如果field_pic_flag为0，则LongTermPicNum等于long_term_pic_num的长期参考帧被标记为“不用于参考”
-//			for (size_t j = 0; j < 16; j++)
-//			{
-//				if (dpb[j]->reference_marked_type == PICTURE_MARKING::LONG_TERM_REFERENCE && dpb[j]->LongTermPicNum == sHeader->dec_ref_pic_markings[i].long_term_pic_num)
-//				{
-//					dpb[j]->reference_marked_type = PICTURE_MARKING::UNUSED_FOR_REFERENCE;
-//				}
-//			}
-//		}
-//
-//		//将一个短期参考图像转为长期参考图像
-//		if (sHeader->dec_ref_pic_markings[i].memory_management_control_operation == 3)
-//		{
-//			int picNumX = sHeader->CurrPicNum - (sHeader->dec_ref_pic_markings[i].difference_of_pic_nums_minus1 + 1);
-//			//当LongTermFrameIdx等于long_term_frame_idx已经被分配给一个长期参考帧,该帧被标记为“未使用的参考”
-//			for (size_t j = 0; j < 16; j++)
-//			{
-//				if (dpb[j]->reference_marked_type == PICTURE_MARKING::LONG_TERM_REFERENCE && dpb[j]->LongTermFrameIdx == sHeader->dec_ref_pic_markings[i].long_term_frame_idx)
-//				{
-//					dpb[j]->reference_marked_type = PICTURE_MARKING::UNUSED_FOR_REFERENCE;
-//				}
-//			}
-//
-//			//如果field_pic_flag等于0，则PicNumX所确定的短期参考帧将从“用于短期参考”转化为“用于长期参考”
-//			for (size_t j = 0; j < 16; j++)
-//			{
-//				if (dpb[j]->reference_marked_type == PICTURE_MARKING::SHORT_TERM_REFERENCE && dpb[j]->PicNum == picNumX)
-//				{
-//					dpb[j]->reference_marked_type = PICTURE_MARKING::LONG_TERM_REFERENCE;
-//				}
-//			}
-//
-//		}
-//
-//		//指明长期参考帧的最大数目。
-//		if (sHeader->dec_ref_pic_markings[i].memory_management_control_operation == 4)
-//		{
-//			for (size_t j = 0; j < 16; j++)
-//			{
-//				if ((dpb[j]->LongTermFrameIdx > sHeader->dec_ref_pic_markings[i].max_long_term_frame_idx_plus1 - 1) && dpb[j]->reference_marked_type == PICTURE_MARKING::LONG_TERM_REFERENCE)
-//				{
-//					dpb[j]->reference_marked_type = PICTURE_MARKING::UNUSED_FOR_REFERENCE;
-//				}
-//			}
-//			if (sHeader->dec_ref_pic_markings[i].max_long_term_frame_idx_plus1 == 0)
-//			{
-//				MaxLongTermFrameIdx = -1;//非长期帧索引
-//			}
-//			else
-//			{
-//				MaxLongTermFrameIdx = sHeader->dec_ref_pic_markings[i].max_long_term_frame_idx_plus1 - 1;
-//			}
-//		}
-//
-//		//清空参考帧队列，将所有参考图像移出参考帧队列，并禁用长期参考机制
-//		if (sHeader->dec_ref_pic_markings[i].memory_management_control_operation == 5)
-//		{
-//			for (size_t j = 0; j < 16; j++)
-//			{
-//
-//				dpb[j]->reference_marked_type = PICTURE_MARKING::UNUSED_FOR_REFERENCE;
-//			}
-//			MaxLongTermFrameIdx = NA;
-//			memory_management_control_operation_5_flag = true;
-//		}
-//
-//		//将当前图像存为一个长期参考帧
-//		if (sHeader->dec_ref_pic_markings[i].memory_management_control_operation == 6)
-//		{
-//			for (size_t j = 0; j < 16; j++)
-//			{
-//				if (dpb[j]->LongTermFrameIdx == sHeader->dec_ref_pic_markings[i].long_term_frame_idx && dpb[j]->reference_marked_type == PICTURE_MARKING::LONG_TERM_REFERENCE)
-//				{
-//					dpb[j]->reference_marked_type = PICTURE_MARKING::UNUSED_FOR_REFERENCE;
-//				}
-//			}
-//
-//			reference_marked_type = PICTURE_MARKING::LONG_TERM_REFERENCE;
-//			LongTermFrameIdx = sHeader->dec_ref_pic_markings[i].long_term_frame_idx;
-//		}
-//	}
-//}
+
 
 int ParseSlice::Derivation_process_for_4x4_luma_block_indices(int x, int y)
 {
@@ -1403,15 +1191,15 @@ void ParseSlice::transformDecodeChromaDCProcess(int c[4][2], int dcC[4][2], int 
 
 	//只有当ChromaArrayType等于1或2时才会调用这个过程。
 
-	int BitDepth = sHeader->sps.BitDepthC;
+	int BitDepth = sHeader.sps.BitDepthC;
 
 
 	getChromaQuantisationParameters(isChromaCb);
 
 	int qP = macroblock[CurrMbAddr]->QP1C;
 
-	/*int MbWidthC = sHeader->sps.MbWidthC;
-	int MbHeightC = sHeader->sps.MbHeightC;*/
+	/*int MbWidthC = sHeader.sps.MbWidthC;
+	int MbHeightC = sHeader.sps.MbHeightC;*/
 	if (macroblock[CurrMbAddr]->TransformBypassModeFlag)
 	{
 		for (size_t i = 0; i < (MbWidthC / 4); i++)
@@ -1424,7 +1212,7 @@ void ParseSlice::transformDecodeChromaDCProcess(int c[4][2], int dcC[4][2], int 
 	}
 	else
 	{
-		if (sHeader->sps.ChromaArrayType == 1)
+		if (sHeader.sps.ChromaArrayType == 1)
 		{
 
 
@@ -1468,7 +1256,7 @@ void ParseSlice::transformDecodeChromaDCProcess(int c[4][2], int dcC[4][2], int 
 			}
 
 		}
-		else if (sHeader->sps.ChromaArrayType == 2)
+		else if (sHeader.sps.ChromaArrayType == 2)
 		{
 			int a[4][4] = {
 				{1,1,1,1},
@@ -1568,8 +1356,8 @@ void ParseSlice::Intra_4x4_prediction(size_t luma4x4BlkIdx, bool isLuam)
 		else
 		{
 			//色度块高度和宽度
-			maxH = sHeader->sps.MbHeightC;
-			maxW = sHeader->sps.MbWidthC;
+			maxH = sHeader.sps.MbHeightC;
+			maxW = sHeader.sps.MbWidthC;
 		}
 
 		int mbAddrN = NA;
@@ -1586,8 +1374,8 @@ void ParseSlice::Intra_4x4_prediction(size_t luma4x4BlkIdx, bool isLuam)
 		//}
 
 		if (mbAddrN == NA
-			|| (isInterframe(macroblock[mbAddrN]->mode) && sHeader->pps.constrained_intra_pred_flag)
-			|| (macroblock[CurrMbAddr]->fix_slice_type == SLIECETYPE::H264_SLIECE_TYPE_SI && sHeader->pps.constrained_intra_pred_flag)
+			|| (isInterframe(macroblock[mbAddrN]->mode) && sHeader.pps.constrained_intra_pred_flag)
+			|| (macroblock[CurrMbAddr]->fix_slice_type == SLIECETYPE::H264_SLIECE_TYPE_SI && sHeader.pps.constrained_intra_pred_flag)
 			|| (x > 3) && (luma4x4BlkIdx == 3 || luma4x4BlkIdx == 11)
 			)
 		{
@@ -1596,8 +1384,8 @@ void ParseSlice::Intra_4x4_prediction(size_t luma4x4BlkIdx, bool isLuam)
 		else
 		{
 			//xM  yM mbAddrN宏块左上角样点位置到当前图像左上角的距离
-			int xM = InverseRasterScan(mbAddrN, 16, 16, sHeader->sps.PicWidthInSamplesL, 0);
-			int yM = InverseRasterScan(mbAddrN, 16, 16, sHeader->sps.PicWidthInSamplesL, 1);
+			int xM = InverseRasterScan(mbAddrN, 16, 16, sHeader.sps.PicWidthInSamplesL, 0);
+			int yM = InverseRasterScan(mbAddrN, 16, 16, sHeader.sps.PicWidthInSamplesL, 1);
 
 			P(x, y) = lumaData[xM + xW][yM + yW];
 		}
@@ -1668,7 +1456,7 @@ void ParseSlice::Intra_4x4_prediction(size_t luma4x4BlkIdx, bool isLuam)
 		else
 		{
 			//h264一个亮度像素都是8个bit
-			val = 1 << (sHeader->sps.BitDepthY - 1); //128 在h264
+			val = 1 << (sHeader.sps.BitDepthY - 1); //128 在h264
 		}
 
 
@@ -1871,8 +1659,8 @@ void ParseSlice::Intra_8x8_prediction(size_t luma8x8BlkIdx, bool isLuam)
 		}
 		else
 		{
-			maxH = sHeader->sps.MbHeightC;
-			maxW = sHeader->sps.MbWidthC;
+			maxH = sHeader.sps.MbHeightC;
+			maxW = sHeader.sps.MbWidthC;
 		}
 		int mbAddrN = NA;
 		int xW = NA;
@@ -1887,15 +1675,15 @@ void ParseSlice::Intra_8x8_prediction(size_t luma8x8BlkIdx, bool isLuam)
 
 		getMbAddrNAndLuma4x4BlkIdxN(mbAddrN, xN, yN, maxW, maxH, xW, yW);
 
-		if (mbAddrN == NA || (isInterframe(macroblock[mbAddrN]->mode) && sHeader->pps.constrained_intra_pred_flag == 1))
+		if (mbAddrN == NA || (isInterframe(macroblock[mbAddrN]->mode) && sHeader.pps.constrained_intra_pred_flag == 1))
 		{
 			P(x, y) = -1;//不可用于Intra_8x8预测
 		}
 		else
 		{
 			//xM  yM mbAddrN宏块左上角样点位置到当前图像左上角的距离
-			int xM = InverseRasterScan(mbAddrN, 16, 16, sHeader->sps.PicWidthInSamplesL, 0);
-			int yM = InverseRasterScan(mbAddrN, 16, 16, sHeader->sps.PicWidthInSamplesL, 1);
+			int xM = InverseRasterScan(mbAddrN, 16, 16, sHeader.sps.PicWidthInSamplesL, 0);
+			int yM = InverseRasterScan(mbAddrN, 16, 16, sHeader.sps.PicWidthInSamplesL, 1);
 
 			P(x, y) = lumaData[xM + xW][yM + yW];
 		}
@@ -2048,7 +1836,7 @@ void ParseSlice::Intra_8x8_prediction(size_t luma8x8BlkIdx, bool isLuam)
 		}
 		else //some samples p[ x, -1 ], with x = 0..7, and some samples p[ -1, y ], with y = 0..7, are marked as "not available for Intra_8x8 prediction")
 		{
-			val = 1 << (sHeader->sps.BitDepthY - 1); //mean_value = 1 << (8 - 1) = 128;
+			val = 1 << (sHeader.sps.BitDepthY - 1); //mean_value = 1 << (8 - 1) = 128;
 		}
 
 
@@ -2259,8 +2047,8 @@ void ParseSlice::Intra_16x16_prediction(bool isLuam)
 		else //if (isChroma == 1)
 		{
 			//色度块高度和宽度
-			maxH = sHeader->sps.MbHeightC;
-			maxW = sHeader->sps.MbWidthC;
+			maxH = sHeader.sps.MbHeightC;
+			maxW = sHeader.sps.MbWidthC;
 		}
 
 
@@ -2276,8 +2064,8 @@ void ParseSlice::Intra_16x16_prediction(bool isLuam)
 
 
 		if (mbAddrN == NA
-			|| (isInterframe(macroblock[mbAddrN]->mode) && sHeader->pps.constrained_intra_pred_flag)
-			|| (macroblock[CurrMbAddr]->fix_slice_type == SLIECETYPE::H264_SLIECE_TYPE_SI && sHeader->pps.constrained_intra_pred_flag)
+			|| (isInterframe(macroblock[mbAddrN]->mode) && sHeader.pps.constrained_intra_pred_flag)
+			|| (macroblock[CurrMbAddr]->fix_slice_type == SLIECETYPE::H264_SLIECE_TYPE_SI && sHeader.pps.constrained_intra_pred_flag)
 			)
 		{
 			P(x, y) = -1;
@@ -2285,8 +2073,8 @@ void ParseSlice::Intra_16x16_prediction(bool isLuam)
 		else
 		{
 			//xM  yM mbAddrN宏块左上角样点位置到当前图像左上角的距离
-			int xM = InverseRasterScan(mbAddrN, 16, 16, sHeader->sps.PicWidthInSamplesL, 0);
-			int yM = InverseRasterScan(mbAddrN, 16, 16, sHeader->sps.PicWidthInSamplesL, 1);
+			int xM = InverseRasterScan(mbAddrN, 16, 16, sHeader.sps.PicWidthInSamplesL, 0);
+			int yM = InverseRasterScan(mbAddrN, 16, 16, sHeader.sps.PicWidthInSamplesL, 1);
 
 			P(x, y) = lumaData[xM + xW][yM + yW];
 		}
@@ -2363,7 +2151,7 @@ void ParseSlice::Intra_16x16_prediction(bool isLuam)
 		else
 		{
 			//h264一个亮度像素都是8个bit
-			val = 1 << (sHeader->sps.BitDepthY - 1); //128 在h264
+			val = 1 << (sHeader.sps.BitDepthY - 1); //128 在h264
 		}
 
 
@@ -2406,7 +2194,7 @@ void ParseSlice::Intra_16x16_prediction(bool isLuam)
 			{
 				for (int32_t x = 0; x < 16; x++)
 				{
-					macroblock[CurrMbAddr]->luma16x16PredSamples[x][y] = Clip3(0, (1 << sHeader->sps.BitDepthY) - 1, (a + b * (x - 7) + c * (y - 7) + 16) >> 5);
+					macroblock[CurrMbAddr]->luma16x16PredSamples[x][y] = Clip3(0, (1 << sHeader.sps.BitDepthY) - 1, (a + b * (x - 7) + c * (y - 7) + 16) >> 5);
 				}
 			}
 		}
@@ -2421,14 +2209,14 @@ void ParseSlice::Intra_16x16_prediction(bool isLuam)
 
 void ParseSlice::Intra_chroma_prediction(bool isChromaCb)
 {
-	if (sHeader->sps.ChromaArrayType == 3)
+	if (sHeader.sps.ChromaArrayType == 3)
 	{
 
 	}
 	else // 420, 422
 	{
-		const int MbWidthC = sHeader->sps.MbWidthC;
-		const int MbHeightC = sHeader->sps.MbHeightC;
+		const int MbWidthC = sHeader.sps.MbWidthC;
+		const int MbHeightC = sHeader.sps.MbHeightC;
 
 		const int maxSamplesVal = MbWidthC + MbHeightC + 1;
 		int* referenceCoordinateX = new int[maxSamplesVal]();
@@ -2472,8 +2260,8 @@ void ParseSlice::Intra_chroma_prediction(bool isChromaCb)
 
 
 			if (mbAddrN == NA
-				|| (isInterframe(macroblock[mbAddrN]->mode) && sHeader->pps.constrained_intra_pred_flag)
-				|| (macroblock[mbAddrN]->fix_slice_type == SLIECETYPE::H264_SLIECE_TYPE_SI && sHeader->pps.constrained_intra_pred_flag && macroblock[CurrMbAddr]->fix_slice_type != SLIECETYPE::H264_SLIECE_TYPE_SI)
+				|| (isInterframe(macroblock[mbAddrN]->mode) && sHeader.pps.constrained_intra_pred_flag)
+				|| (macroblock[mbAddrN]->fix_slice_type == SLIECETYPE::H264_SLIECE_TYPE_SI && sHeader.pps.constrained_intra_pred_flag && macroblock[CurrMbAddr]->fix_slice_type != SLIECETYPE::H264_SLIECE_TYPE_SI)
 				)
 			{
 				P(x, y) = -1;
@@ -2481,8 +2269,8 @@ void ParseSlice::Intra_chroma_prediction(bool isChromaCb)
 			else
 			{
 				//xL  yL mbAddrN宏块左上角样点位置到当前图像左上角的距离
-				int xL = InverseRasterScan(mbAddrN, 16, 16, sHeader->sps.PicWidthInSamplesL, 0);
-				int yL = InverseRasterScan(mbAddrN, 16, 16, sHeader->sps.PicWidthInSamplesL, 1);
+				int xL = InverseRasterScan(mbAddrN, 16, 16, sHeader.sps.PicWidthInSamplesL, 0);
+				int yL = InverseRasterScan(mbAddrN, 16, 16, sHeader.sps.PicWidthInSamplesL, 1);
 
 				//macroblock mbAddr左上角色度样本的位置(xM, yM)
 				int xM = (xL >> 4) * MbWidthC;
@@ -2506,7 +2294,7 @@ void ParseSlice::Intra_chroma_prediction(bool isChromaCb)
 
 		if (IntraChromaPredMode == 0) //DC
 		{
-			for (size_t chroma4x4BlkIdx = 0; chroma4x4BlkIdx < (1 << (sHeader->sps.ChromaArrayType + 1)); chroma4x4BlkIdx++)
+			for (size_t chroma4x4BlkIdx = 0; chroma4x4BlkIdx < (1 << (sHeader.sps.ChromaArrayType + 1)); chroma4x4BlkIdx++)
 			{
 				//相对于宏块的左上色度样本的索引为chroma4x4BlkIdx的4x4色度块的左上色度样本的位置(x, y)。
 				const int xO = InverseRasterScan(chroma4x4BlkIdx, 4, 4, 8, 0);
@@ -2538,7 +2326,7 @@ void ParseSlice::Intra_chroma_prediction(bool isChromaCb)
 					}
 					else //some samples p[ x + xO, −1 ], with x = 0..3, and some samples p[ −1, y +yO ], with y = 0..3, are marked as "not available for Intra chroma prediction"
 					{
-						val = (1 << (sHeader->sps.BitDepthC - 1));
+						val = (1 << (sHeader.sps.BitDepthC - 1));
 					}
 				}
 				else if (xO > 0 && yO == 0)
@@ -2553,7 +2341,7 @@ void ParseSlice::Intra_chroma_prediction(bool isChromaCb)
 					}
 					else //some samples p[ x + xO, −1 ], with x = 0..3, and some samples p[ −1, y +yO ], with y = 0..3, are marked as "not available for Intra chroma prediction"
 					{
-						val = (1 << (sHeader->sps.BitDepthC - 1));
+						val = (1 << (sHeader.sps.BitDepthC - 1));
 					}
 				}
 				else if (xO == 0 && yO > 0)
@@ -2568,7 +2356,7 @@ void ParseSlice::Intra_chroma_prediction(bool isChromaCb)
 					}
 					else //some samples p[ x + xO, −1 ], with x = 0..3, and some samples p[ −1, y +yO ], with y = 0..3, are marked as "not available for Intra chroma prediction"
 					{
-						val = (1 << (sHeader->sps.BitDepthC - 1));
+						val = (1 << (sHeader.sps.BitDepthC - 1));
 					}
 				}
 
@@ -2651,8 +2439,8 @@ void ParseSlice::Intra_chroma_prediction(bool isChromaCb)
 			//This mode shall be used only when the samples p[ x, −1 ], with x = 0..MbWidthC − 1 and p[ −1, y ], with y = −1..MbHeightC − 1 are marked as "available for Intra chroma prediction".
 			if (flag)
 			{
-				int xCF = ((sHeader->sps.ChromaArrayType == 3) ? 4 : 0);
-				int yCF = ((sHeader->sps.ChromaArrayType != 1) ? 4 : 0);
+				int xCF = ((sHeader.sps.ChromaArrayType == 3) ? 4 : 0);
+				int yCF = ((sHeader.sps.ChromaArrayType != 1) ? 4 : 0);
 
 				int H = 0;
 				int V = 0;
@@ -2668,14 +2456,14 @@ void ParseSlice::Intra_chroma_prediction(bool isChromaCb)
 				}
 
 				int a = 16 * (P(-1, MbHeightC - 1) + P(MbWidthC - 1, -1));
-				int b = ((34 - 29 * (sHeader->sps.ChromaArrayType == 3)) * H + 32) >> 6;
-				int c = ((34 - 29 * (sHeader->sps.ChromaArrayType != 1)) * V + 32) >> 6;
+				int b = ((34 - 29 * (sHeader.sps.ChromaArrayType == 3)) * H + 32) >> 6;
+				int c = ((34 - 29 * (sHeader.sps.ChromaArrayType != 1)) * V + 32) >> 6;
 
 				for (int y = 0; y < MbHeightC; y++)
 				{
 					for (int x = 0; x < MbWidthC; x++)
 					{
-						macroblock[CurrMbAddr]->chromaPredSamples[x][y] = Clip3(0, (1 << sHeader->sps.BitDepthC) - 1, (a + b * (x - 3 - xCF) + c * (y - 3 - yCF) + 16) >> 5);
+						macroblock[CurrMbAddr]->chromaPredSamples[x][y] = Clip3(0, (1 << sHeader.sps.BitDepthC) - 1, (a + b * (x - 3 - xCF) + c * (y - 3 - yCF) + 16) >> 5);
 					}
 				}
 			}
@@ -2713,8 +2501,8 @@ void ParseSlice::getIntra4x4PredMode(size_t luma4x4BlkIdx, bool isLuam)
 	else
 	{
 		//色度块高度和宽度
-		maxH = sHeader->sps.MbHeightC;
-		maxW = sHeader->sps.MbWidthC;
+		maxH = sHeader.sps.MbHeightC;
+		maxW = sHeader.sps.MbWidthC;
 	}
 
 	//不考虑帧场自适应
@@ -2766,8 +2554,8 @@ void ParseSlice::getIntra4x4PredMode(size_t luma4x4BlkIdx, bool isLuam)
 		即帧内编码的宏块只能用邻近帧内编码的宏块的像素作为自己的预测；而本句法元素等于 0 时，表示不存在这种限制。*/
 	if (mbAddrA == NA ||
 		mbAddrB == NA ||
-		(mbAddrA != NA && isInterframe(macroblock[mbAddrA]->mode) && sHeader->pps.constrained_intra_pred_flag) ||
-		(mbAddrB != NA && isInterframe(macroblock[mbAddrB]->mode)) && sHeader->pps.constrained_intra_pred_flag)
+		(mbAddrA != NA && isInterframe(macroblock[mbAddrA]->mode) && sHeader.pps.constrained_intra_pred_flag) ||
+		(mbAddrB != NA && isInterframe(macroblock[mbAddrB]->mode)) && sHeader.pps.constrained_intra_pred_flag)
 	{
 		dcPredModePredictedFlag = true;
 	}
@@ -2849,8 +2637,8 @@ void ParseSlice::getIntra8x8PredMode(size_t luma8x8BlkIdx, bool isLuam)
 	else
 	{
 		//色度块高度和宽度
-		maxH = sHeader->sps.MbHeightC;
-		maxW = sHeader->sps.MbWidthC;
+		maxH = sHeader.sps.MbHeightC;
+		maxW = sHeader.sps.MbWidthC;
 	}
 	/*xN = (luma8x8BlkIdx % 2) * 8 + xD
 	yN = (luma8x8BlkIdx / 2) * 8 + yD*/
@@ -2888,8 +2676,8 @@ void ParseSlice::getIntra8x8PredMode(size_t luma8x8BlkIdx, bool isLuam)
 
 	if (mbAddrA == NA
 		|| mbAddrB == NA
-		|| (mbAddrA != NA && isInterframe(macroblock[mbAddrA]->mode) && sHeader->pps.constrained_intra_pred_flag)
-		|| (mbAddrB != NA && isInterframe(macroblock[mbAddrB]->mode) && sHeader->pps.constrained_intra_pred_flag)
+		|| (mbAddrA != NA && isInterframe(macroblock[mbAddrA]->mode) && sHeader.pps.constrained_intra_pred_flag)
+		|| (mbAddrB != NA && isInterframe(macroblock[mbAddrB]->mode) && sHeader.pps.constrained_intra_pred_flag)
 		)
 	{
 		dcPredModePredictedFlag = true;
@@ -2972,10 +2760,10 @@ void ParseSlice::getMbAddrNAndLuma4x4BlkIdxN(
 	{
 		//6.4.5 节规定的过程的输入为 mbAddrD = CurrMbAddr – PicWidthInMbs – 1，输出为 mbAddrD 是否可用。
 		//另 外，当CurrMbAddr % PicWidthInMbs 等于0 时mbAddrD 将被标识为不可用。
-		int mbAddrD = CurrMbAddr - sHeader->sps.PicWidthInMbs - 1;
+		int mbAddrD = CurrMbAddr - sHeader.sps.PicWidthInMbs - 1;
 		//不可用
 
-		if (isMbUsable(mbAddrD, CurrMbAddr) || CurrMbAddr % sHeader->sps.PicWidthInMbs == 0)
+		if (isMbUsable(mbAddrD, CurrMbAddr) || CurrMbAddr % sHeader.sps.PicWidthInMbs == 0)
 		{
 
 		}
@@ -2987,7 +2775,7 @@ void ParseSlice::getMbAddrNAndLuma4x4BlkIdxN(
 	else if (xN < 0 && (yN >= 0 && yN <= maxH - 1))
 	{
 		int mbAddrA = CurrMbAddr - 1;
-		if (isMbUsable(mbAddrA, CurrMbAddr) || CurrMbAddr % sHeader->sps.PicWidthInMbs == 0)
+		if (isMbUsable(mbAddrA, CurrMbAddr) || CurrMbAddr % sHeader.sps.PicWidthInMbs == 0)
 		{
 
 		}
@@ -2998,7 +2786,7 @@ void ParseSlice::getMbAddrNAndLuma4x4BlkIdxN(
 	}
 	else if ((xN >= 0 && xN <= maxW - 1) && yN < 0)
 	{
-		int mbAddrB = CurrMbAddr - sHeader->sps.PicWidthInMbs;
+		int mbAddrB = CurrMbAddr - sHeader.sps.PicWidthInMbs;
 		if (isMbUsable(mbAddrB, CurrMbAddr))
 		{
 
@@ -3010,8 +2798,8 @@ void ParseSlice::getMbAddrNAndLuma4x4BlkIdxN(
 	}
 	else if (xN > maxW - 1 && yN < 0)
 	{
-		int mbAddrC = CurrMbAddr - sHeader->sps.PicWidthInMbs + 1;
-		if (isMbUsable(mbAddrC, CurrMbAddr) || (CurrMbAddr + 1) % sHeader->sps.PicWidthInMbs == 0)
+		int mbAddrC = CurrMbAddr - sHeader.sps.PicWidthInMbs + 1;
+		if (isMbUsable(mbAddrC, CurrMbAddr) || (CurrMbAddr + 1) % sHeader.sps.PicWidthInMbs == 0)
 		{
 
 		}
@@ -3034,17 +2822,7 @@ void ParseSlice::getMbAddrNAndLuma4x4BlkIdxN(
 
 }
 
-void ParseSlice::endOfPicture(DPB& dpb)
-{
 
-	if (sHeader->nalu.nal_ref_idc != 0)
-	{
-		//标记当前解码完成的帧是什么类型，然后放到DBP里去管理
-		dpb.Decoded_reference_picture_marking_process(this);
-	}
-
-
-}
 
 
 //4*4亮度残差
@@ -3101,7 +2879,7 @@ void ParseSlice::transformDecode4x4LuamResidualProcess()
 				{
 					//macroblock[CurrMbAddr]->predL[xO + j][yO + i]
 					//Clip1Y( x ) = Clip3( 0， ( 1 << BitDepthY ) − 1 ， x ) 
-					u[i * 4 + j] = Clip3(0, (1 << sHeader->sps.BitDepthY) - 1, macroblock[CurrMbAddr]->lumaPredSamples[luma4x4BlkIdx][j][i] + r[i][j]);
+					u[i * 4 + j] = Clip3(0, (1 << sHeader.sps.BitDepthY) - 1, macroblock[CurrMbAddr]->lumaPredSamples[luma4x4BlkIdx][j][i] + r[i][j]);
 				}
 			}
 
@@ -3152,7 +2930,7 @@ void ParseSlice::transformDecode8x8LuamResidualProcess()
 		{
 			for (size_t j = 0; j < 8; j++)
 			{
-				u[i * 8 + j] = Clip3(0, (1 << sHeader->sps.BitDepthY) - 1, macroblock[CurrMbAddr]->luma8x8PredSamples[luma8x8BlkIdx][j][i] + r[i][j]);
+				u[i * 8 + j] = Clip3(0, (1 << sHeader.sps.BitDepthY) - 1, macroblock[CurrMbAddr]->luma8x8PredSamples[luma8x8BlkIdx][j][i] + r[i][j]);
 			}
 		}
 
@@ -3240,7 +3018,7 @@ void ParseSlice::transformDecode16x16LuamResidualProcess(const int i16x16DClevel
 	{
 		for (size_t j = 0; j < 16; j++)
 		{
-			u[i * 16 + j] = Clip3(0, (1 << sHeader->sps.BitDepthY) - 1, macroblock[CurrMbAddr]->luma16x16PredSamples[j][i] + rMb[j][i]);
+			u[i * 16 + j] = Clip3(0, (1 << sHeader.sps.BitDepthY) - 1, macroblock[CurrMbAddr]->luma16x16PredSamples[j][i] + rMb[j][i]);
 		}
 	}
 	Picture_construction_process_prior_to_deblocking_filter_process(u, "16*16", 0, true);
@@ -3250,14 +3028,14 @@ void ParseSlice::transformDecode16x16LuamResidualProcess(const int i16x16DClevel
 //色度解码
 void ParseSlice::transformDecodeChromaResidualProcess(bool isChromaCb)
 {
-	if (sHeader->sps.ChromaArrayType == 0)
+	if (sHeader.sps.ChromaArrayType == 0)
 	{
 		printError("ChromaArrayType==0");
 		exit(0);
 	}
 
 
-	if (sHeader->sps.ChromaArrayType == 3)
+	if (sHeader.sps.ChromaArrayType == 3)
 	{
 		//对ChromaArrayType等于3 444 的色度样本的转换解码过程的规范
 		transformDecodeChromaArrayTypeEqualTo3Process(isChromaCb);
@@ -3265,8 +3043,8 @@ void ParseSlice::transformDecodeChromaResidualProcess(bool isChromaCb)
 	else
 	{
 
-		int MbWidthC = sHeader->sps.MbWidthC;
-		int MbHeightC = sHeader->sps.MbHeightC;
+		int MbWidthC = sHeader.sps.MbWidthC;
+		int MbHeightC = sHeader.sps.MbHeightC;
 		//420 8 8
 		int numChroma4x4Blks = (MbWidthC / 4) * (MbHeightC / 4);
 		int iCbCr = (isChromaCb) ? 0 : 1;
@@ -3274,7 +3052,7 @@ void ParseSlice::transformDecodeChromaResidualProcess(bool isChromaCb)
 
 
 		int dcC[4][2] = { 0 };
-		if (sHeader->sps.ChromaArrayType == 1) //420
+		if (sHeader.sps.ChromaArrayType == 1) //420
 		{
 			int c[2][2] = { 0 };
 
@@ -3285,7 +3063,7 @@ void ParseSlice::transformDecodeChromaResidualProcess(bool isChromaCb)
 			c[1][1] = macroblock[CurrMbAddr]->ChromaDCLevel[iCbCr][3];
 			transformDecodeChromaDCProcess(c, dcC, MbWidthC, MbHeightC, isChromaCb);
 		}
-		else if (sHeader->sps.ChromaArrayType == 2)  //422
+		else if (sHeader.sps.ChromaArrayType == 2)  //422
 		{
 			//422最大DC系数有8个
 			/*
@@ -3362,7 +3140,7 @@ void ParseSlice::transformDecodeChromaResidualProcess(bool isChromaCb)
 		{
 			for (size_t j = 0; j < MbHeightC; j++)
 			{
-				u[i * MbWidthC + j] = Clip3(0, (1 << sHeader->sps.BitDepthC) - 1, macroblock[CurrMbAddr]->chromaPredSamples[j][i] + rMb[j][i]);
+				u[i * MbWidthC + j] = Clip3(0, (1 << sHeader.sps.BitDepthC) - 1, macroblock[CurrMbAddr]->chromaPredSamples[j][i] + rMb[j][i]);
 			}
 		}
 
@@ -3378,17 +3156,17 @@ void ParseSlice::transformDecodeChromaResidualProcess(bool isChromaCb)
 void ParseSlice::Inter_prediction_process()
 {
 
-	/*if (sHeader->sps.pic_order_cnt_type == 0)
+	/*if (sHeader.sps.pic_order_cnt_type == 0)
 	{
 		ret = Decoding_process_for_picture_order_count_type_0(m_parent->m_picture_previous_ref);
 		RETURN_IF_FAILED(ret != 0, ret);
 	}
-	else if (sHeader->sps.pic_order_cnt_type == 1)
+	else if (sHeader.sps.pic_order_cnt_type == 1)
 	{
 		ret = Decoding_process_for_picture_order_count_type_1(m_parent->m_picture_previous);
 		RETURN_IF_FAILED(ret != 0, ret);
 	}
-	else if (sHeader->sps.pic_order_cnt_type == 2)
+	else if (sHeader.sps.pic_order_cnt_type == 2)
 	{
 		ret = Decoding_process_for_picture_order_count_type_2(m_parent->m_picture_previous);
 		RETURN_IF_FAILED(ret != 0, ret);
@@ -3401,16 +3179,16 @@ void ParseSlice::Inter_prediction_process()
 void ParseSlice::Decoding_process_for_picture_order_count()
 {
 	//把POC的低位编进码流内
-	if (sHeader->sps.pic_order_cnt_type == 0)
+	if (sHeader.sps.pic_order_cnt_type == 0)
 	{
 		Decoding_process_for_picture_order_count_type_0();
 	}
-	else if (sHeader->sps.pic_order_cnt_type == 1)
+	else if (sHeader.sps.pic_order_cnt_type == 1)
 	{
 		/*ret = Decoding_process_for_picture_order_count_type_1(m_parent->m_picture_previous);
 		RETURN_IF_FAILED(ret != 0, ret);*/
 	}
-	else if (sHeader->sps.pic_order_cnt_type == 2)
+	else if (sHeader.sps.pic_order_cnt_type == 2)
 	{
 		/*ret = Decoding_process_for_picture_order_count_type_2(m_parent->m_picture_previous);
 		RETURN_IF_FAILED(ret != 0, ret);*/
@@ -3424,7 +3202,7 @@ void ParseSlice::Decoding_process_for_picture_order_count_type_0()
 	//前 一个参考图像的 PicOrderCntMsb
 	int prevPicOrderCntMsb = 0;
 	int prevPicOrderCntLsb = 0;
-	if (sHeader->nalu.IdrPicFlag)
+	if (sHeader.nalu.IdrPicFlag)
 	{
 		prevPicOrderCntMsb = 0;
 		prevPicOrderCntLsb = 0;
@@ -3434,16 +3212,16 @@ void ParseSlice::Decoding_process_for_picture_order_count_type_0()
 
 	}
 
-	if ((sHeader->pic_order_cnt_lsb < prevPicOrderCntLsb)
-		&& ((prevPicOrderCntLsb - sHeader->pic_order_cnt_lsb) >= (sHeader->sps.MaxPicOrderCntLsb / 2))
+	if ((sHeader.pic_order_cnt_lsb < prevPicOrderCntLsb)
+		&& ((prevPicOrderCntLsb - sHeader.pic_order_cnt_lsb) >= (sHeader.sps.MaxPicOrderCntLsb / 2))
 		)
 	{
-		PicOrderCntMsb = prevPicOrderCntMsb + sHeader->sps.MaxPicOrderCntLsb;
+		PicOrderCntMsb = prevPicOrderCntMsb + sHeader.sps.MaxPicOrderCntLsb;
 	}
-	else if ((sHeader->pic_order_cnt_lsb > prevPicOrderCntLsb)
-		&& ((sHeader->pic_order_cnt_lsb - prevPicOrderCntLsb) > (sHeader->sps.MaxPicOrderCntLsb / 2)))
+	else if ((sHeader.pic_order_cnt_lsb > prevPicOrderCntLsb)
+		&& ((sHeader.pic_order_cnt_lsb - prevPicOrderCntLsb) > (sHeader.sps.MaxPicOrderCntLsb / 2)))
 	{
-		PicOrderCntMsb = prevPicOrderCntMsb - sHeader->sps.MaxPicOrderCntLsb;
+		PicOrderCntMsb = prevPicOrderCntMsb - sHeader.sps.MaxPicOrderCntLsb;
 	}
 	else
 	{
@@ -3451,9 +3229,9 @@ void ParseSlice::Decoding_process_for_picture_order_count_type_0()
 	}
 
 	// 当前图像为非底场时
-	TopFieldOrderCnt = PicOrderCntMsb + sHeader->pic_order_cnt_lsb;
+	TopFieldOrderCnt = PicOrderCntMsb + sHeader.pic_order_cnt_lsb;
 	// 当前图像为非顶场时
-	BottomFieldOrderCnt = TopFieldOrderCnt + sHeader->delta_pic_order_cnt_bottom;
+	BottomFieldOrderCnt = TopFieldOrderCnt + sHeader.delta_pic_order_cnt_bottom;
 }
 
 
@@ -3568,11 +3346,11 @@ void ParseSlice::scalingTransformProcess(int c[4][4], int r[4][4], bool isLuam, 
 	if (isLuam)
 	{
 		//亮度深度，偏移
-		bitDepth = sHeader->sps.BitDepthY;
+		bitDepth = sHeader.sps.BitDepthY;
 	}
 	else
 	{
-		bitDepth = sHeader->sps.BitDepthC;
+		bitDepth = sHeader.sps.BitDepthC;
 	}
 
 	bool sMbFlag = false;
@@ -3593,7 +3371,7 @@ void ParseSlice::scalingTransformProcess(int c[4][4], int r[4][4], bool isLuam, 
 	else if (isLuam && sMbFlag)
 	{
 		////QSY 的值用于解码 mb_type 等SI 的SI条带的所有宏块以及预测模式为帧间的SP条带的所有宏块。
-		qP = sHeader->QSY;
+		qP = sHeader.QSY;
 	}
 	else if (!isLuam && !sMbFlag)
 	{
@@ -3703,12 +3481,12 @@ void ParseSlice::Scaling_and_transformation_process_for_residual_8x8_blocks(int 
 	int qP = 0;
 	if (isLuam)
 	{
-		bitDepth = sHeader->sps.BitDepthY;
+		bitDepth = sHeader.sps.BitDepthY;
 		qP = macroblock[CurrMbAddr]->QP1Y;
 	}
 	else //色度
 	{
-		bitDepth = sHeader->sps.BitDepthC;
+		bitDepth = sHeader.sps.BitDepthC;
 		qP = macroblock[CurrMbAddr]->QP1C;
 	}
 	//这里表示要旁路变换，不用经过量化dct变换过程
@@ -3824,14 +3602,14 @@ int ParseSlice::getQPC(int QPY, bool isChromaCb)
 	if (isChromaCb)
 	{
 		//计算色度量化参数的偏移量值
-		qPOffset = sHeader->pps.chroma_qp_index_offset;
+		qPOffset = sHeader.pps.chroma_qp_index_offset;
 	}
 	else
 	{
-		qPOffset = sHeader->pps.second_chroma_qp_index_offset;
+		qPOffset = sHeader.pps.second_chroma_qp_index_offset;
 	}
 	//每个色度分量的qPI 值通过下述方式获得  //QpBdOffsetC 色度偏移
-	const int qPI = Clip3(-(int)sHeader->sps.QpBdOffsetC, 51, QPY + qPOffset);
+	const int qPI = Clip3(-(int)sHeader.sps.QpBdOffsetC, 51, QPY + qPOffset);
 
 
 	int QPC = 0;
@@ -3854,7 +3632,7 @@ void ParseSlice::getChromaQuantisationParameters(bool isChromaCb)
 
 	const int QPC = getQPC(macroblock[CurrMbAddr]->QPY, isChromaCb);
 
-	const int QP1C = QPC + sHeader->sps.QpBdOffsetC;
+	const int QP1C = QPC + sHeader.sps.QpBdOffsetC;
 
 	//QPC:各色度分量Cb和Cr的色度量化参数，
 	macroblock[CurrMbAddr]->QPC = QPC;
@@ -3862,7 +3640,7 @@ void ParseSlice::getChromaQuantisationParameters(bool isChromaCb)
 
 
 
-	if ((SLIECETYPE)sHeader->slice_type == SLIECETYPE::H264_SLIECE_TYPE_SP || (SLIECETYPE)sHeader->slice_type == SLIECETYPE::H264_SLIECE_TYPE_SI)
+	if ((SLIECETYPE)sHeader.slice_type == SLIECETYPE::H264_SLIECE_TYPE_SP || (SLIECETYPE)sHeader.slice_type == SLIECETYPE::H264_SLIECE_TYPE_SI)
 	{
 		//用QSY 代替 QPY，QSC 代替 QPC
 
@@ -3879,8 +3657,8 @@ void ParseSlice::getChromaQuantisationParameters(bool isChromaCb)
 void ParseSlice::Picture_construction_process_prior_to_deblocking_filter_process(int* u, const char* type, const size_t BlkIdx, const bool isLuam, bool isChromaCb)
 {
 	//当前宏块 左上角亮度样点距离当前帧左上角的位置
-	int xP = InverseRasterScan(CurrMbAddr, 16, 16, sHeader->sps.PicWidthInSamplesL, 0);
-	int yP = InverseRasterScan(CurrMbAddr, 16, 16, sHeader->sps.PicWidthInSamplesL, 1);
+	int xP = InverseRasterScan(CurrMbAddr, 16, 16, sHeader.sps.PicWidthInSamplesL, 0);
+	int yP = InverseRasterScan(CurrMbAddr, 16, 16, sHeader.sps.PicWidthInSamplesL, 1);
 
 	int xO = 0;
 	int yO = 0;
@@ -3919,11 +3697,11 @@ void ParseSlice::Picture_construction_process_prior_to_deblocking_filter_process
 	}
 	else
 	{
-		int MbWidthC = sHeader->sps.MbWidthC;
-		int MbHeightC = sHeader->sps.MbHeightC;
+		int MbWidthC = sHeader.sps.MbWidthC;
+		int MbHeightC = sHeader.sps.MbHeightC;
 
 
-		if (sHeader->sps.ChromaArrayType == 1 || sHeader->sps.ChromaArrayType == 2) // YUV420 or YUV422
+		if (sHeader.sps.ChromaArrayType == 1 || sHeader.sps.ChromaArrayType == 2) // YUV420 or YUV422
 		{
 			//6.4.7 Inverse 4x4 chroma block scanning process chroma4x4BlkIdx
 			/*const int xO = 0;
@@ -3946,7 +3724,7 @@ void ParseSlice::Picture_construction_process_prior_to_deblocking_filter_process
 			{
 				for (size_t j = 0; j < MbHeightC; j++)
 				{
-					chromaData[xP / sHeader->sps.SubWidthC + xO + j][yP / sHeader->sps.SubHeightC + yO + i] = u[i * MbWidthC + j];
+					chromaData[xP / sHeader.sps.SubWidthC + xO + j][yP / sHeader.sps.SubHeightC + yO + i] = u[i * MbWidthC + j];
 				}
 
 			}
@@ -3978,10 +3756,10 @@ void ParseSlice::scaling(bool isLuam, bool isChromaCb)
 	//通过下述方式得到变量iYCbCr
 	int iYCbCr = 0;
 	//separate_colour_plane_flag=1 分开编码
-	if (sHeader->sps.separate_colour_plane_flag)
+	if (sHeader.sps.separate_colour_plane_flag)
 	{
 		//colour_plane_id等于0、1和2分别对应于Y、Cb和Cr平面。
-		iYCbCr = sHeader->colour_plane_id;
+		iYCbCr = sHeader.colour_plane_id;
 	}
 	else
 	{
@@ -4002,7 +3780,7 @@ void ParseSlice::scaling(bool isLuam, bool isChromaCb)
 	int weightScale4x4[4][4] = { 0 };
 	//取哪一个scalinglist,在BP/MP/EP中，weightScale4x4是全为16的4x4矩阵
 	//是否是帧间还是帧内，取对应量化缩放矩阵  <3=帧内，>3<=6对应的帧间   mbIsInterFlag ？3:0
-	inverseScanner4x4Process(sHeader->ScalingList4x4[iYCbCr + ((mbIsInterFlag) ? 3 : 0)], weightScale4x4);
+	inverseScanner4x4Process(sHeader.ScalingList4x4[iYCbCr + ((mbIsInterFlag) ? 3 : 0)], weightScale4x4);
 
 	//LevelScale4x4( m, i, j ) = weightScale4x4( i, j ) * normAdjust4x4( m, i, j )
 
@@ -4042,7 +3820,7 @@ void ParseSlice::scaling(bool isLuam, bool isChromaCb)
 
 	int weightScale8x8[8][8] = { 0 };
 	//是否是帧间还是帧内，取对应量化缩放矩阵  0=帧内，1=对应的帧间   mbIsInterFlag
-	inverseScanner8x8Process(sHeader->ScalingList8x8[2 * iYCbCr + mbIsInterFlag], weightScale8x8);
+	inverseScanner8x8Process(sHeader.ScalingList8x8[2 * iYCbCr + mbIsInterFlag], weightScale8x8);
 
 
 	int v8x8[6][6] =

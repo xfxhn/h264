@@ -200,7 +200,7 @@ int ResidualBlockCavlc::getNumberCurrent(RESIDUAL_LEVEL residualLevel, size_t Bl
 	if (residualLevel == RESIDUAL_LEVEL::ChromaDCLevel)
 	{
 		//色度DC固定码表
-		if (sliceBase->sHeader->sps.ChromaArrayType == 1)
+		if (sliceBase->sHeader.sps.ChromaArrayType == 1)
 		{
 			nC = -1;
 		}
@@ -286,8 +286,8 @@ int ResidualBlockCavlc::getNumberCurrent(RESIDUAL_LEVEL residualLevel, size_t Bl
 			int x = InverseRasterScan(cb4x4BlkIdx / 4, 8, 8, 16, 0) + InverseRasterScan(cb4x4BlkIdx % 4, 4, 4, 8, 0);
 			int y = InverseRasterScan(cb4x4BlkIdx / 4, 8, 8, 16, 1) + InverseRasterScan(cb4x4BlkIdx % 4, 4, 4, 8, 1);
 
-			int maxW = sliceBase->sHeader->sps.MbWidthC;
-			int maxH = sliceBase->sHeader->sps.MbHeightC;
+			int maxW = sliceBase->sHeader.sps.MbWidthC;
+			int maxH = sliceBase->sHeader.sps.MbHeightC;
 
 			//		int mbAddrA = NA;
 			int chroma4x4BlkIdxA = NA;
@@ -324,8 +324,8 @@ int ResidualBlockCavlc::getNumberCurrent(RESIDUAL_LEVEL residualLevel, size_t Bl
 			int x = InverseRasterScan(cb4x4BlkIdx / 4, 8, 8, 16, 0) + InverseRasterScan(cb4x4BlkIdx % 4, 4, 4, 8, 0);
 			int y = InverseRasterScan(cb4x4BlkIdx / 4, 8, 8, 16, 1) + InverseRasterScan(cb4x4BlkIdx % 4, 4, 4, 8, 1);
 
-			int maxW = sliceBase->sHeader->sps.MbWidthC;
-			int maxH = sliceBase->sHeader->sps.MbHeightC;
+			int maxW = sliceBase->sHeader.sps.MbWidthC;
+			int maxH = sliceBase->sHeader.sps.MbHeightC;
 
 			//	int mbAddrA = NA;
 			int chroma4x4BlkIdxA = NA;
@@ -365,8 +365,8 @@ int ResidualBlockCavlc::getNumberCurrent(RESIDUAL_LEVEL residualLevel, size_t Bl
 
 
 
-			int maxW = sliceBase->sHeader->sps.MbWidthC;
-			int maxH = sliceBase->sHeader->sps.MbHeightC;
+			int maxW = sliceBase->sHeader.sps.MbWidthC;
+			int maxH = sliceBase->sHeader.sps.MbHeightC;
 
 			//		int mbAddrA = NA;
 			int chroma4x4BlkIdxA = NA;
@@ -399,9 +399,9 @@ int ResidualBlockCavlc::getNumberCurrent(RESIDUAL_LEVEL residualLevel, size_t Bl
 		bool availableFlagA = false;
 		bool availableFlagB = false;
 		if (mbAddrA == NA ||
-			(isInterMode(sliceBase->macroblock[sliceBase->CurrMbAddr]->mode) && sliceBase->sHeader->pps.constrained_intra_pred_flag)
+			(isInterMode(sliceBase->macroblock[sliceBase->CurrMbAddr]->mode) && sliceBase->sHeader.pps.constrained_intra_pred_flag)
 			&& isInterframe(sliceBase->macroblock[mbAddrA]->mode)
-			&& sliceBase->sHeader->nalu.nal_unit_type >= 2 && sliceBase->sHeader->nalu.nal_unit_type <= 4)
+			&& sliceBase->sHeader.nalu.nal_unit_type >= 2 && sliceBase->sHeader.nalu.nal_unit_type <= 4)
 		{
 			availableFlagA = false;
 		}
@@ -411,9 +411,9 @@ int ResidualBlockCavlc::getNumberCurrent(RESIDUAL_LEVEL residualLevel, size_t Bl
 		}
 
 		if (mbAddrB == NA ||
-			(isInterMode(sliceBase->macroblock[sliceBase->CurrMbAddr]->mode) && sliceBase->sHeader->pps.constrained_intra_pred_flag)
+			(isInterMode(sliceBase->macroblock[sliceBase->CurrMbAddr]->mode) && sliceBase->sHeader.pps.constrained_intra_pred_flag)
 			&& isInterframe(sliceBase->macroblock[mbAddrB]->mode)
-			&& sliceBase->sHeader->nalu.nal_unit_type >= 2 && sliceBase->sHeader->nalu.nal_unit_type <= 4)
+			&& sliceBase->sHeader.nalu.nal_unit_type >= 2 && sliceBase->sHeader.nalu.nal_unit_type <= 4)
 		{
 			availableFlagB = false;
 		}
@@ -2364,10 +2364,10 @@ int ResidualBlockCavlc::findTable(BitStream& bs, int maxNumber, int* lengthTable
 int ResidualBlockCavlc::findChromaAC_nA_nB(const int CbCr, const int BlkIdx, int& nA, int& nB, bool& availableLeft, bool& availableTop)
 {
 
-	//const int MbWidthC = sliceBase->sHeader->sps.MbWidthC;    //色度宏块宽度 8
-	//const int MbHeightC = sliceBase->sHeader->sps.MbHeightC;	//色度宏块高度 8
+	//const int MbWidthC = sliceBase->sHeader.sps.MbWidthC;    //色度宏块宽度 8
+	//const int MbHeightC = sliceBase->sHeader.sps.MbHeightC;	//色度宏块高度 8
 
-	if (sliceBase->sHeader->sps.ChromaArrayType == 1)//420
+	if (sliceBase->sHeader.sps.ChromaArrayType == 1)//420
 	{
 		if (BlkIdx % 2 == 0)
 		{
@@ -2391,7 +2391,7 @@ int ResidualBlockCavlc::findChromaAC_nA_nB(const int CbCr, const int BlkIdx, int
 		{
 			if (sliceBase->mbY > 0)
 			{
-				const int topMbIdx = sliceBase->CurrMbAddr - sliceBase->sHeader->sps.PicWidthInMbs;
+				const int topMbIdx = sliceBase->CurrMbAddr - sliceBase->sHeader.sps.PicWidthInMbs;
 				const int leftIdx = BlkIdx + 2;
 				nB = sliceBase->macroblock[topMbIdx]->mb_chroma_4x4_non_zero_count_coeff[CbCr][leftIdx];
 				availableTop = true;
@@ -2403,7 +2403,7 @@ int ResidualBlockCavlc::findChromaAC_nA_nB(const int CbCr, const int BlkIdx, int
 			availableTop = true;
 		}
 	}
-	else if (sliceBase->sHeader->sps.ChromaArrayType == 2)//422
+	else if (sliceBase->sHeader.sps.ChromaArrayType == 2)//422
 	{
 		//2 1
 		if (BlkIdx % 2 == 0)
@@ -2428,7 +2428,7 @@ int ResidualBlockCavlc::findChromaAC_nA_nB(const int CbCr, const int BlkIdx, int
 		{
 			if (sliceBase->mbY > 0)
 			{
-				const int topMbIdx = sliceBase->CurrMbAddr - sliceBase->sHeader->sps.PicWidthInMbs;
+				const int topMbIdx = sliceBase->CurrMbAddr - sliceBase->sHeader.sps.PicWidthInMbs;
 				const int leftIdx = BlkIdx + 6;
 				nB = sliceBase->macroblock[topMbIdx]->mb_chroma_4x4_non_zero_count_coeff[CbCr][leftIdx];
 				availableTop = true;

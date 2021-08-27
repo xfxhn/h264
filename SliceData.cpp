@@ -11,19 +11,19 @@ SliceData::SliceData()
 }
 
 //跳过宏块
-int SliceData::NextMbAddress(SliceHeader* sHeader, uint32_t n)
+int SliceData::NextMbAddress(const SliceHeader& sHeader, uint32_t n)
 {
 	int i = n + 1;
 
 
-	if (i >= sHeader->PicSizeInMbs)
+	if (i >= sHeader.PicSizeInMbs)
 	{
 		printError("i >= slice_header.PicSizeInMbs(%d);");
 		return -1;
 	}
 
 	//i有效且其所属片组与n不同 i=i+1,因为如果有多条带组，宏块的顺序就是乱的
-	while (i < sHeader->PicSizeInMbs && sHeader->MbToSliceGroupMap[i] != sHeader->MbToSliceGroupMap[n])
+	while (i < sHeader.PicSizeInMbs && sHeader.MbToSliceGroupMap[i] != sHeader.MbToSliceGroupMap[n])
 	{
 		i++;
 	}
@@ -35,9 +35,9 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice)
 {
 	Cabac cabac;
 
-	SliceHeader* sHeader = Slice->sHeader;
+	const SliceHeader& sHeader = Slice->sHeader;
 
-	bool isAe = sHeader->pps.entropy_coding_mode_flag;  //ae(v)表示CABAC编码
+	bool isAe = sHeader.pps.entropy_coding_mode_flag;  //ae(v)表示CABAC编码
 
 	if (isAe)
 	{
@@ -50,7 +50,7 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice)
 		}
 
 		//初始化cabac
-		cabac.Initialisation_process_for_context_variables((SLIECETYPE)sHeader->slice_type, sHeader->SliceQPY, sHeader->cabac_init_idc);
+		cabac.Initialisation_process_for_context_variables((SLIECETYPE)sHeader.slice_type, sHeader.SliceQPY, sHeader.cabac_init_idc);
 
 		cabac.Initialisation_process_for_the_arithmetic_decoding_engine(bs);
 	}
@@ -60,12 +60,12 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice)
 	//MbaffFrameFlag表示帧场自适应
 
 	//当前解码的宏块在图片中的坐标位置
-	CurrMbAddr = sHeader->first_mb_in_slice;
+	CurrMbAddr = sHeader.first_mb_in_slice;
 	Slice->CurrMbAddr = CurrMbAddr;
 
-	if (!sHeader->MbaffFrameFlag)
+	if (!sHeader.MbaffFrameFlag)
 	{
-		mb_field_decoding_flag = sHeader->field_pic_flag;
+		mb_field_decoding_flag = sHeader.field_pic_flag;
 	}
 
 	if (Slice->sliceCount == 0)
@@ -73,9 +73,9 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice)
 		Slice->Decoding_process_for_picture_order_count();
 
 		//参考图像列表  在解码每一个P,SP或B条带开始时
-		if ((SLIECETYPE)sHeader->slice_type == SLIECETYPE::H264_SLIECE_TYPE_P
-			|| (SLIECETYPE)sHeader->slice_type == SLIECETYPE::H264_SLIECE_TYPE_SP
-			|| (SLIECETYPE)sHeader->slice_type == SLIECETYPE::H264_SLIECE_TYPE_B
+		if ((SLIECETYPE)sHeader.slice_type == SLIECETYPE::H264_SLIECE_TYPE_P
+			|| (SLIECETYPE)sHeader.slice_type == SLIECETYPE::H264_SLIECE_TYPE_SP
+			|| (SLIECETYPE)sHeader.slice_type == SLIECETYPE::H264_SLIECE_TYPE_B
 			)
 		{
 			//Decoding_process_for_reference_picture_lists_construction
@@ -90,7 +90,7 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice)
 	{
 
 
-		if ((SLIECETYPE)sHeader->slice_type != SLIECETYPE::H264_SLIECE_TYPE_I && (SLIECETYPE)sHeader->slice_type != SLIECETYPE::H264_SLIECE_TYPE_SI)
+		if ((SLIECETYPE)sHeader.slice_type != SLIECETYPE::H264_SLIECE_TYPE_I && (SLIECETYPE)sHeader.slice_type != SLIECETYPE::H264_SLIECE_TYPE_SI)
 		{
 
 			//等于0，那么采用语法表中左边的描述符所指定的方法
@@ -99,7 +99,7 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice)
 			而entropy_coding_mode_flag 等于 0，即熵编码为CAVLC时，
 			  用一种行程的方法给出紧连着的“跳跃”块的数目，即句法元素 mb_skip_run。
 			  mb_skip_run 值的范围 0 to PicSizeInMbs – CurrMbAddr  。*/
-			if (!sHeader->pps.entropy_coding_mode_flag)
+			if (!sHeader.pps.entropy_coding_mode_flag)
 			{
 				/*当图像采用帧间预测编码时，H.264 允许在图像平坦的区域使用“跳跃”块，“跳跃”块本身不携带任何数据，
 				  解码器通过周围已重建的宏块的数据来恢复“跳跃”块。当熵编码为 CAVLC 或 CABAC 时，“跳跃”块的表示方法不同。*/
@@ -110,8 +110,8 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice)
 				for (size_t i = 0; i < mb_skip_run; i++)
 				{
 
-					Slice->mbX = (CurrMbAddr % Slice->sHeader->sps.PicWidthInMbs);
-					Slice->mbY = (CurrMbAddr / Slice->sHeader->sps.PicWidthInMbs);
+					Slice->mbX = (CurrMbAddr % Slice->sHeader.sps.PicWidthInMbs);
+					Slice->mbY = (CurrMbAddr / Slice->sHeader.sps.PicWidthInMbs);
 
 
 					Slice->CurrMbAddr = CurrMbAddr;
@@ -133,8 +133,8 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice)
 			}
 			else  //ae(v)表示CABAC编码
 			{
-				Slice->mbX = (CurrMbAddr % Slice->sHeader->sps.PicWidthInMbs);
-				Slice->mbY = (CurrMbAddr / Slice->sHeader->sps.PicWidthInMbs);
+				Slice->mbX = (CurrMbAddr % Slice->sHeader.sps.PicWidthInMbs);
+				Slice->mbY = (CurrMbAddr / Slice->sHeader.sps.PicWidthInMbs);
 
 				Slice->CurrMbAddr = CurrMbAddr;
 
@@ -157,14 +157,14 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice)
 
 		if (moreDataFlag)
 		{
-			if (sHeader->MbaffFrameFlag && (CurrMbAddr % 2 == 0 || (CurrMbAddr % 2 == 1 && prevMbSkipped))) {
+			if (sHeader.MbaffFrameFlag && (CurrMbAddr % 2 == 0 || (CurrMbAddr % 2 == 1 && prevMbSkipped))) {
 				printError("帧场自适应 sHeader.MbaffFrameFlag && (CurrMbAddr % 2 == 0 || (CurrMbAddr % 2 == 1 && prevMbSkipped))");
 				exit(1);
 			}
 
 
-			Slice->mbX = (CurrMbAddr % Slice->sHeader->sps.PicWidthInMbs);
-			Slice->mbY = (CurrMbAddr / Slice->sHeader->sps.PicWidthInMbs);
+			Slice->mbX = (CurrMbAddr % Slice->sHeader.sps.PicWidthInMbs);
+			Slice->mbY = (CurrMbAddr / Slice->sHeader.sps.PicWidthInMbs);
 
 			Slice->CurrMbAddr = CurrMbAddr;
 			Slice->mbCount++;
@@ -208,19 +208,19 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice)
 		}
 
 
-		if (!sHeader->pps.entropy_coding_mode_flag)
+		if (!sHeader.pps.entropy_coding_mode_flag)
 		{
 			moreDataFlag = bs.more_rbsp_data();
 		}
 		else
 		{
-			if ((SLIECETYPE)sHeader->slice_type != SLIECETYPE::H264_SLIECE_TYPE_I && (SLIECETYPE)sHeader->slice_type != SLIECETYPE::H264_SLIECE_TYPE_SI)
+			if ((SLIECETYPE)sHeader.slice_type != SLIECETYPE::H264_SLIECE_TYPE_I && (SLIECETYPE)sHeader.slice_type != SLIECETYPE::H264_SLIECE_TYPE_SI)
 			{
 				prevMbSkipped = mb_skip_flag;
 			}
 
 
-			if (sHeader->MbaffFrameFlag && CurrMbAddr % 2 == 0)
+			if (sHeader.MbaffFrameFlag && CurrMbAddr % 2 == 0)
 			{
 				moreDataFlag = true;
 			}
@@ -233,6 +233,11 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice)
 		CurrMbAddr = NextMbAddress(sHeader, CurrMbAddr);
 	} while (moreDataFlag);
 
+
+	if (Slice->mbCount == Slice->PicSizeInMbs)
+	{
+		Slice->decodeFinished = true;
+	}
 	return false;
 }
 

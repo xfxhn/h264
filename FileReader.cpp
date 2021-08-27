@@ -89,7 +89,6 @@ FileReader::FileReader(const char* filename)
 	bufferStart = new uint8_t[FileReader::MAX_BUFFER_SIZE];
 	size_t bufferSize = fread(bufferStart, 1, FileReader::MAX_BUFFER_SIZE, file);
 
-	//开辟内存
 	bufferPosition = bufferStart;
 	bufferEnd = bufferStart + bufferSize - 1;
 }
@@ -106,13 +105,13 @@ void FileReader::readNalUint(uint8_t*& data, size_t& size, bool& isStopLoop)
 			startCodeLen2);
 
 		size_t residual = (bufferEnd - pos1 + 1);
-		size_t c = FileReader::MAX_BUFFER_SIZE - residual;
+		size_t readSize = FileReader::MAX_BUFFER_SIZE - residual;
 		if (type == 1) { //表示找到了开头的startCode,没找到后面的
 			for (int i = 0; i < residual; ++i) {
 				bufferStart[i] = pos1[i];
 			}
 			//每次读File::MAX_BUFFER_SIZE个，这里读取的NALU必须要包含一整个slice,字节对齐
-			size_t bufferSize = fread(bufferStart + residual, 1, c, file);
+			size_t bufferSize = fread(bufferStart + residual, 1, readSize, file);
 			if (bufferSize == 0) {
 				//表示读完数据了
 				/*data = bufferStart + startCodeLen1;

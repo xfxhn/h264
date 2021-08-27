@@ -399,38 +399,11 @@ bool ParseSPS::seq_parameter_set_data(BitStream& bs)
 	PicHeightInSamplesC = PicHeightInMapUnits * MbHeightC;
 
 
-	//getWidthAndHeight();
-
 
 
 	return true;
 
 
-}
-
-pair<uint32_t, uint32_t> ParseSPS::getWidthAndHeight()
-{
-	//frame_mbs_only_flag 是否为帧编码
-	//ChromaArrayType=0,表示只有 Y 分量或者表示 YUV 444 的独立模式
-	//frame_cropping_flag图片进行裁剪的偏移量 如果为0那么就不需要裁剪
-	uint32_t width = (pic_width_in_mbs_minus1 + 1) * 16;
-
-	uint32_t height = (2 - frame_mbs_only_flag) * (pic_height_in_map_units_minus1 + 1) * 16;
-
-	/* if (frame_cropping_flag)
-	 {
-		 int crop_unit_x = 0;
-		 int crop_unit_y = 0;
-
-		 if (ChromaArrayType == 0) {
-			 crop_unit_x = 1;
-			 crop_unit_y = 2 - frame_mbs_only_flag;
-		 }
-	 }
-	 cout << width << endl;
-	 cout << height << endl;
-	 cout << "----" << endl;*/
-	return pair<uint32_t, uint32_t>(width, height);
 }
 
 ParseSPS::~ParseSPS()

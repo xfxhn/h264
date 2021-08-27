@@ -41,8 +41,10 @@ class ParseSlice
 	//	Macroblock** macroblock;
 	//	SliceHeader* sHeader;
 public:
-	SliceHeader* sHeader;
+	SliceHeader& sHeader;
 	Macroblock** macroblock;
+
+	bool decodeFinished;
 	//private:
 	//	Picture* dpb[16];
 public:
@@ -93,11 +95,10 @@ public:
 	Picture* pic;
 
 public:
-	ParseSlice(ParseNalu& nalu, SliceHeader* sHeader, Picture* pic);
+	ParseSlice(SliceHeader& sHeader);
 
 	bool parse();
 
-	void init();
 
 	~ParseSlice();
 
@@ -128,7 +129,6 @@ public:
 
 	void getMbAddrNAndLuma4x4BlkIdxN(int& mbAddrN, const int xN, const int yN, const int maxW, const int maxH, int& xW, int& yW);
 
-	void endOfPicture(DPB& dpb);
 private:
 	void convertYuv420(uint8_t* buffer, size_t widthBytes);
 
@@ -178,8 +178,5 @@ private:
 	void Filtering_process_for_edges_for_bS_equal_to_4(const int p[4], const int q[4], int pp[3], int qq[3], int alpha, int beta, bool chromaStyleFilteringFlag);
 
 
-	//void Decoded_reference_picture_marking_process();
-	//void Sliding_window_decoded_reference_picture_marking_process();
-	//void Adaptive_memory_control_decoded_reference_picture_marking_process();
 };
 

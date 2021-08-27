@@ -1,5 +1,6 @@
 #pragma once
 #include "Common.h"
+#include "FileReader.h"
 #include "ParseSPS.h"
 #include "ParsePPS.h"
 #include "SliceHeader.h"
@@ -17,9 +18,6 @@ public:
 	AnnexBReader();
 
 	bool open(const char* filePath);
-	bool close();
-	int ReadNalu(uint8_t* buffer, rsize_t& dataLen);
-
 
 	~AnnexBReader();
 private:
@@ -34,19 +32,12 @@ private:
 	//ParseSPS spsCache[32];
 	ParseSPS* spsCache;
 
-	DPB dpb;
+	
 private:
-	static const int MAX_BUFFER_SIZE;
-	bool CheckStartCode(int& startCodeLen, uint8_t* bufPtr, int bufLen);
 
 
 	void getNaluHeader(uint8_t* buffer, int size);
 
-	//去掉防竞争字节
-	size_t unescape(uint8_t* src, uint32_t src_len);
-	FILE* f = nullptr;
-
-	//使用typedef定义结构体同时，给_NaluUnit结构体别名NaluUnit，后续定义可不用使用struct data，直接使用DATA即可
 };
 
 

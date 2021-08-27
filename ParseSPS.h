@@ -115,8 +115,6 @@ public:
 
 	bool seq_parameter_set_data(BitStream& bs);
 
-
-	pair<uint32_t, uint32_t> getWidthAndHeight();
 	~ParseSPS();
 
 private:
