@@ -8,7 +8,6 @@ AnnexBReader::AnnexBReader()
 	spsCache = new ParseSPS[32];
 
 	slice = nullptr;
-	pic = nullptr;
 }
 
 bool AnnexBReader::open(const char* filePath)
@@ -74,17 +73,12 @@ bool AnnexBReader::open(const char* filePath)
 				{
 					if (slice)
 					{
-						//释放掉上个slice header
 						delete slice;
 						slice = nullptr;
 					}
 
 					this->slice = new ParseSlice(sHeader);
 					this->slice->parse();
-				}
-				else
-				{
-					int a = 1;
 				}
 			}
 
@@ -94,7 +88,7 @@ bool AnnexBReader::open(const char* filePath)
 			}
 			lastHeader = sHeader;
 			SliceData sData;
-			sData.slice_data(bs, slice);
+			sData.slice_data(bs, slice, dpb);
 
 			break;
 		}
@@ -119,8 +113,8 @@ bool AnnexBReader::open(const char* filePath)
 			{
 				//环路滤波器
 				slice->Deblocking_filter_process();
-				//存储每个已经解码完成的帧需要的数据,还有存储DPB
-				pic = new Picture(slice);
+
+
 				if (slice)
 				{
 					delete slice;
@@ -164,7 +158,7 @@ bool AnnexBReader::open(const char* filePath)
 			lastHeader = sHeader;
 
 			SliceData sData;
-			sData.slice_data(bs, slice);
+			sData.slice_data(bs, slice, dpb);
 
 			break;
 		}

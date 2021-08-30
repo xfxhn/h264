@@ -23,7 +23,6 @@ public:
 private:
 
 	ParseSlice* slice;
-	Picture* pic; //存储每个解码完成的图像
 
 	//标识在条带头中提到的图像参数集。变量 pic_parameter_set_id 的值应该在 0 到  255 的 范围内（包括0 和255）。
 	//ParsePPS ppsCache[256];
@@ -32,7 +31,7 @@ private:
 	//ParseSPS spsCache[32];
 	ParseSPS* spsCache;
 
-	
+
 private:
 
 

@@ -83,9 +83,14 @@ public:
 
 	int         PicOrderCntMsb;
 	int         PicOrderCntLsb;
-
 	int         TopFieldOrderCnt;
 	int         BottomFieldOrderCnt;
+
+	int			FrameNumOffset;
+	int			absFrameNum;
+	int			picOrderCntCycleCnt;
+	int			frameNumInPicOrderCntCycle;
+	int			expectedDeltaPerPicOrderCntCycle;
 
 	//int			MaxLongTermFrameIdx; //长期参考帧的最大数目
 	//int			LongTermFrameIdx; //长期参考帧
@@ -117,13 +122,12 @@ public:
 	void Inter_prediction_process();
 
 
-	//参考帧列表
-	void Decoding_process_for_reference_picture_lists_construction();
 
 
-	void Decoding_process_for_picture_order_count();
+	void Decoding_process_for_picture_order_count(DPB& bpb);
 
-	void Decoding_process_for_picture_order_count_type_0();
+	void Decoding_process_for_picture_order_count_type_0(DPB& dpb);
+	void Decoding_process_for_picture_order_count_type_1(DPB& dpb);
 
 
 

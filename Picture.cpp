@@ -2,8 +2,13 @@
 #include "ParseSlice.h"
 
 
-Picture::Picture(ParseSlice* slice)
+Picture::Picture(ParseSlice* slice, const SliceHeader& sHeader)
 {
+	pic_order_cnt_lsb = sHeader.pic_order_cnt_lsb;
+	frame_num = sHeader.frame_num;
+
+
+
 	reference_marked_type = PICTURE_MARKING::UNKOWN;
 
 	PicOrderCntMsb = slice->PicOrderCntMsb;
@@ -13,7 +18,6 @@ Picture::Picture(ParseSlice* slice)
 
 
 	MaxLongTermFrameIdx = NA;
-
 	FrameNumWrap = 0;
 	PicNum = 0;
 	LongTermPicNum = 0;

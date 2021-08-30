@@ -3,6 +3,7 @@
 
 DPB::DPB() :dpb(16)
 {
+	previous = nullptr;
 }
 
 void DPB::Decoded_reference_picture_marking_process(Picture* pic, const SliceHeader& sHeader)
@@ -52,12 +53,14 @@ void DPB::Decoded_reference_picture_marking_process(Picture* pic, const SliceHea
 
 void DPB::Decoding_to_complete(ParseSlice* slice, const  SliceHeader& sHeader)
 {
-	Picture* pic = new Picture(slice);
+	Picture* pic = new Picture(slice, sHeader);
+
 	if (sHeader.nalu.nal_ref_idc != 0)
 	{
 		//标记当前解码完成的帧是什么类型，然后放到DBP里去管理
 		Decoded_reference_picture_marking_process(pic, sHeader);
 	}
+	previous = pic;
 
 	dpb.push(pic);
 }

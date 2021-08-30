@@ -49,10 +49,11 @@ public:
 	uint32_t log2_max_pic_order_cnt_lsb_minus4;  // 0 ue(v)
 	uint32_t  MaxPicOrderCntLsb;
 	bool delta_pic_order_always_zero_flag;  // 0 ue(v)
-	int32_t  offset_for_non_ref_pic;   // 0 se(v)
+	int  offset_for_non_ref_pic;  //-2^31-1 - 2^31-1，有符号4字节整数
 	int32_t  offset_for_top_to_bottom_field;   // 0 se(v)
-	uint32_t num_ref_frames_in_pic_order_cnt_cycle; // 0 ue(v)
-	uint32_t offset_for_ref_frame[H264_MAX_OFFSET_REF_FRAME_COUNT]; //offset_for_ref_frame[ num_ref_frames_in_pic_order_cnt_cycle ] 0 se(v)
+	uint8_t num_ref_frames_in_pic_order_cnt_cycle; // 0-255
+	int offset_for_ref_frame[H264_MAX_OFFSET_REF_FRAME_COUNT]; //-2^31-1 - 2^31-1，有符号4字节整数
+	int ExpectedDeltaPerPicOrderCntCycle; //offset_for_ref_frame[ num_ref_frames_in_pic_order_cnt_cycle ] 0 se(v)
 
 	uint8_t     max_num_ref_frames; // 0 ue(v)
 	bool     gaps_in_frame_num_value_allowed_flag; // 0 u(1)

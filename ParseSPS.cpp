@@ -48,6 +48,8 @@ ParseSPS::ParseSPS()
 	num_ref_frames_in_pic_order_cnt_cycle = 0;
 
 	memset(offset_for_ref_frame, 0, sizeof(int32_t) * H264_MAX_OFFSET_REF_FRAME_COUNT);
+	ExpectedDeltaPerPicOrderCntCycle = 0;
+
 	max_num_ref_frames = 0;
 	gaps_in_frame_num_value_allowed_flag = 0;
 	pic_width_in_mbs_minus1 = 0;
@@ -249,7 +251,7 @@ bool ParseSPS::seq_parameter_set_data(BitStream& bs)
 
 	}
 
-	//这个句法元素主要是为读取另一个句法元素 frame_num  服务的，frame_num  是最重要的句法元素之一，它标识所属图像的解码顺序 。
+	//这个句法元素主要是为读取另一个句法元素 frame_num 服务的，frame_num 是最重要的句法元素之一，它标识所属图像的解码顺序 。
 	//这个句法元素同时也指明了frame_num 的所能达到的最大值:MaxFrameNum = 2*exp( log2_max_frame_num_minus4 + 4 )
 	//最大帧率
 	log2_max_frame_num_minus4 = bs.readUE();
@@ -267,14 +269,21 @@ bool ParseSPS::seq_parameter_set_data(BitStream& bs)
 	else if (this->pic_order_cnt_type == 1)
 	{
 		this->delta_pic_order_always_zero_flag = bs.readBit(); //delta_pic_order_always_zero_flag 0 u(1)
-		this->offset_for_non_ref_pic = bs.readSE(); //offset_for_non_ref_pic 0 se(v)
+		//用于非参考图像的图像顺序号
+		this->offset_for_non_ref_pic = bs.readSE(); //
 		this->offset_for_top_to_bottom_field = bs.readSE(); //offset_for_top_to_bottom_field 0 se(v)
 		this->num_ref_frames_in_pic_order_cnt_cycle = bs.readUE(); //num_ref_frames_in_pic_order_cnt_cycle 0 ue(v)
 
-		for (size_t i = 0; i < (int32_t)this->num_ref_frames_in_pic_order_cnt_cycle; i++)
+		for (size_t i = 0; i < this->num_ref_frames_in_pic_order_cnt_cycle; i++)
 		{
 			this->offset_for_ref_frame[i] = bs.readSE(); //offset_for_ref_frame[ i ] 0 se(v)
+			ExpectedDeltaPerPicOrderCntCycle += offset_for_ref_frame[i];
 		}
+
+
+
+
+
 	}
 
 	//最大允许多少个参考帧 取值范围应该在 0 到 MaxDpbSize 

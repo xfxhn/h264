@@ -3,6 +3,7 @@
 #include "Cabac.h"
 #include "SliceHeader.h"
 #include "Macroblock.h"
+#include "DPB.h"
 
 class ParseSlice;
 class SliceData
@@ -20,7 +21,7 @@ public:
 
 	SliceData();
 	int NextMbAddress(const SliceHeader& sHeader, uint32_t n);
-	bool slice_data(BitStream& bs, ParseSlice* Slice);
+	bool slice_data(BitStream& bs, ParseSlice* Slice, DPB& bpb);
 	~SliceData();
 };
 

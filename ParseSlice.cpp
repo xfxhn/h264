@@ -3176,17 +3176,16 @@ void ParseSlice::Inter_prediction_process()
 }
 
 //POC图像顺序解码过程
-void ParseSlice::Decoding_process_for_picture_order_count()
+void ParseSlice::Decoding_process_for_picture_order_count(DPB& bpb)
 {
 	//把POC的低位编进码流内
 	if (sHeader.sps.pic_order_cnt_type == 0)
 	{
-		Decoding_process_for_picture_order_count_type_0();
+		Decoding_process_for_picture_order_count_type_0(bpb);
 	}
 	else if (sHeader.sps.pic_order_cnt_type == 1)
 	{
-		/*ret = Decoding_process_for_picture_order_count_type_1(m_parent->m_picture_previous);
-		RETURN_IF_FAILED(ret != 0, ret);*/
+		Decoding_process_for_picture_order_count_type_1(bpb);
 	}
 	else if (sHeader.sps.pic_order_cnt_type == 2)
 	{
@@ -3196,10 +3195,10 @@ void ParseSlice::Decoding_process_for_picture_order_count()
 	//依赖frame_num求解POC
 }
 
-void ParseSlice::Decoding_process_for_picture_order_count_type_0()
+void ParseSlice::Decoding_process_for_picture_order_count_type_0(DPB& dpb)
 {
 
-	//前 一个参考图像的 PicOrderCntMsb
+	//前一个参考图像的 PicOrderCntMsb
 	int prevPicOrderCntMsb = 0;
 	int prevPicOrderCntLsb = 0;
 	if (sHeader.nalu.IdrPicFlag)
@@ -3209,7 +3208,18 @@ void ParseSlice::Decoding_process_for_picture_order_count_type_0()
 	}
 	else
 	{
-
+		//如果前面的参考图片在解码顺序中包含一个memory_management_control_operation等于5  
+		if (dpb.previous->memory_management_control_operation_5_flag)
+		{
+			//如果在解码顺序上前一个参考图像不是底场，则prevPicOrderCntMsb设置为0,prevPicOrderCntLsb设置为解码顺序上前一个参考图像的TopFieldOrderCnt值。
+			prevPicOrderCntMsb = 0;
+			prevPicOrderCntLsb = dpb.previous->TopFieldOrderCnt;
+		}
+		else
+		{
+			prevPicOrderCntMsb = dpb.previous->PicOrderCntMsb;
+			prevPicOrderCntLsb = dpb.previous->pic_order_cnt_lsb;
+		}
 	}
 
 	if ((sHeader.pic_order_cnt_lsb < prevPicOrderCntLsb)
@@ -3232,6 +3242,90 @@ void ParseSlice::Decoding_process_for_picture_order_count_type_0()
 	TopFieldOrderCnt = PicOrderCntMsb + sHeader.pic_order_cnt_lsb;
 	// 当前图像为非顶场时
 	BottomFieldOrderCnt = TopFieldOrderCnt + sHeader.delta_pic_order_cnt_bottom;
+}
+
+void ParseSlice::Decoding_process_for_picture_order_count_type_1(DPB& dpb)
+{
+	int prevFrameNumOffset = 0;
+	if (!sHeader.nalu.IdrPicFlag) //not IDR picture
+	{
+		if (dpb.previous->memory_management_control_operation_5_flag == 1) //If the previous picture in decoding order included a memory_management_control_operation equal to 5
+		{
+			prevFrameNumOffset = 0;
+		}
+		else
+		{
+			prevFrameNumOffset = dpb.previous->FrameNumOffset;
+		}
+	}
+	//计算变量帧序号偏移
+	if (sHeader.nalu.IdrPicFlag)
+	{
+		FrameNumOffset = 0;
+	}
+	else if (dpb.previous->frame_num > sHeader.frame_num) //前一图像的帧号比当前图像大
+	{
+		FrameNumOffset = prevFrameNumOffset + sHeader.sps.MaxFrameNum;
+	}
+	else
+	{
+		FrameNumOffset = prevFrameNumOffset;
+	}
+
+
+	if (sHeader.sps.num_ref_frames_in_pic_order_cnt_cycle != 0)
+	{
+		absFrameNum = FrameNumOffset + sHeader.frame_num;
+	}
+	else
+	{
+		absFrameNum = 0;
+	}
+
+	if (sHeader.nalu.nal_ref_idc == 0 && absFrameNum > 0)
+	{
+		absFrameNum = absFrameNum - 1;
+	}
+
+	if (absFrameNum > 0)
+	{
+		picOrderCntCycleCnt = (absFrameNum - 1) / sHeader.sps.num_ref_frames_in_pic_order_cnt_cycle;
+		frameNumInPicOrderCntCycle = (absFrameNum - 1) % sHeader.sps.num_ref_frames_in_pic_order_cnt_cycle;
+	}
+
+	if (absFrameNum > 0)
+	{
+		expectedPicOrderCnt = picOrderCntCycleCnt * sHeader.sps.ExpectedDeltaPerPicOrderCntCycle;
+		for (size_t i = 0; i <= frameNumInPicOrderCntCycle; i++)
+		{
+			expectedPicOrderCnt = expectedPicOrderCnt + sHeader.sps.offset_for_ref_frame[i];
+		}
+	}
+	else
+	{
+		expectedPicOrderCnt = 0;
+	}
+
+
+	if (sHeader.nalu.nal_ref_idc == 0)
+	{
+		expectedPicOrderCnt = expectedPicOrderCnt + sHeader.sps.offset_for_non_ref_pic;
+	}
+
+
+	if (!sHeader.field_pic_flag) //当前图像为帧
+	{
+		TopFieldOrderCnt = expectedPicOrderCnt + sHeader.delta_pic_order_cnt[0];
+		BottomFieldOrderCnt = TopFieldOrderCnt + sHeader.sps.offset_for_top_to_bottom_field + sHeader.delta_pic_order_cnt[1];
+	}
+	else if (!sHeader.bottom_field_flag) //当前图像为顶场
+	{
+		TopFieldOrderCnt = expectedPicOrderCnt + sHeader.delta_pic_order_cnt[0];
+	}
+	else //当前图像为底场
+	{
+		BottomFieldOrderCnt = expectedPicOrderCnt + sHeader.sps.offset_for_top_to_bottom_field + sHeader.delta_pic_order_cnt[0];
+	}
 }
 
 

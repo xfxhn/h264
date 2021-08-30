@@ -7,6 +7,7 @@ class DPB
 {
 public:
 	Array<Picture*> dpb;
+	Picture* previous;
 
 	/*Picture* dpb[16];*/
 	//Picture* fs_ref[16];  //短期参考图像列表(当然，在这里是未经排序的)

@@ -5,6 +5,10 @@ class Picture
 {
 
 public:
+	//解码POC需要用到的
+	uint32_t	pic_order_cnt_lsb;
+	uint32_t	frame_num;
+
 	int         PicOrderCntMsb;
 	int         PicOrderCntLsb;
 	int         TopFieldOrderCnt;
@@ -20,10 +24,9 @@ public:
 	int			LongTermFrameIdx;    //长期参考帧
 	PICTURE_MARKING  reference_marked_type; //参考帧标记状态
 	bool		memory_management_control_operation_5_flag; //所有图像标记为不用作参考
-public:
-	ParseSlice* picturePreviousRef;  //前一个已经解码完成的帧
 
 
-	Picture(ParseSlice* slice);
+
+	Picture(ParseSlice* slice, const SliceHeader& sHeader);
 };
 
