@@ -3293,6 +3293,8 @@ void ParseSlice::Decoding_process_for_picture_order_count_type_1(DPB& dpb)
 		frameNumInPicOrderCntCycle = (absFrameNum - 1) % sHeader.sps.num_ref_frames_in_pic_order_cnt_cycle;
 	}
 
+
+	int expectedPicOrderCnt = 0;
 	if (absFrameNum > 0)
 	{
 		expectedPicOrderCnt = picOrderCntCycleCnt * sHeader.sps.ExpectedDeltaPerPicOrderCntCycle;
