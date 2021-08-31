@@ -1,9 +1,94 @@
 #include "DPB.h"
 #include "ParseSlice.h"
 
-DPB::DPB() :dpb(16)
+DPB::DPB() :dpb(16), RefPicList0(16), RefPicList1(16)
 {
 	previous = nullptr;
+}
+
+void DPB::Decoding_process_for_picture_numbers(const SliceHeader& sHeader)
+{
+
+	for (size_t i = 0; i < dpb.length; i++)
+	{
+		//对每一个短期参考图像
+		if (dpb[i]->reference_marked_type == PICTURE_MARKING::SHORT_TERM_REFERENCE)
+		{
+			//FrameNum 设置成相应短期参考图像的片头中解码所得得语法元素frame_num  
+			if (dpb[i]->FrameNum > sHeader.frame_num)
+			{
+				dpb[i]->FrameNumWrap = dpb[i]->FrameNum - dpb[i]->MaxFrameNum;
+			}
+			else
+			{
+				dpb[i]->FrameNumWrap = dpb[i]->FrameNum;
+			}
+		}
+
+		//LongTermFrameIdx  长期参考图像已经在图像解码完成的时候指定
+	}
+
+
+	//field_pic_flag==0 参考帧或互补参考场对
+	for (size_t i = 0; i < dpb.length; i++)
+	{
+		if (dpb[i]->reference_marked_type == PICTURE_MARKING::SHORT_TERM_REFERENCE)
+		{
+			//解码器使用图像序号 PicNum 标记一个短期参考图像
+			dpb[i]->PicNum = dpb[i]->FrameNumWrap;
+		}
+
+		if (dpb[i]->reference_marked_type == PICTURE_MARKING::LONG_TERM_REFERENCE)
+		{
+			//使用长期图像序号 LongTermPicNum 标记一个长期参考图像
+			dpb[i]->LongTermPicNum = dpb[i]->LongTermFrameIdx;
+		}
+	}
+
+}
+
+void DPB::Initialisation_process_for_reference_picture_lists(const SliceHeader& sHeader)
+{
+	if ((SLIECETYPE)sHeader.slice_type == SLIECETYPE::H264_SLIECE_TYPE_P || (SLIECETYPE)sHeader.slice_type == SLIECETYPE::H264_SLIECE_TYPE_SP)
+	{
+		Initialisation_process_for_the_reference_picture_list_for_P_and_SP_slices_in_frames();
+	}
+}
+
+void DPB::Initialisation_process_for_the_reference_picture_list_for_P_and_SP_slices_in_frames()
+{
+	size_t shortTermIdx = 0;
+	Picture* shortTerm[16] = { 0 };
+	size_t longTermIdx = 0;
+	Picture* longTerm[16] = { 0 };
+	//把所有的短期参考帧放前面，长期参考放后面
+	for (size_t i = 0; i < dpb.length; i++)
+	{
+		if (dpb[i]->reference_marked_type == PICTURE_MARKING::SHORT_TERM_REFERENCE)
+		{
+			shortTerm[shortTermIdx] = dpb[i];
+			shortTermIdx++;
+		}
+		else if (dpb[i]->reference_marked_type == PICTURE_MARKING::LONG_TERM_REFERENCE)
+		{
+			longTerm[longTermIdx] = dpb[i];
+			longTermIdx++;
+		}
+	}
+}
+
+
+
+
+void DPB::Decoding_process_for_reference_picture_lists_construction(ParseSlice* slice)
+{
+	const SliceHeader& sHeader = slice->sHeader;
+	//图像序号的计算
+	Decoding_process_for_picture_numbers(sHeader);
+
+	//参考图像是通过 8.4.2.1 节中定义的参考索引来定位的
+	//参考图像列表的初始化过程
+	Initialisation_process_for_reference_picture_lists(sHeader);
 }
 
 void DPB::Decoded_reference_picture_marking_process(Picture* pic, const SliceHeader& sHeader)

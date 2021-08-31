@@ -1,5 +1,5 @@
 #pragma once
-#include "NaluType.h"
+#include "Common.h"
 class ParseSlice;
 class SliceHeader;
 
@@ -9,8 +9,8 @@ class Picture
 public:
 	//解码POC需要用到的
 	int			FrameNumOffset;
-	int			pic_order_cnt_lsb;
-	int			frame_num;
+	uint16_t	pic_order_cnt_lsb;
+	uint16_t	frame_num;
 
 	int         PicOrderCntMsb;
 	int         PicOrderCntLsb;
@@ -18,9 +18,10 @@ public:
 	int         BottomFieldOrderCnt;
 
 
-	//PICTURE_MARKING  reference_marked_type; //I,P作为参考帧的mark状态
 public:
-	int			FrameNumWrap;
+	uint16_t					 MaxFrameNum;
+	uint16_t			FrameNum;				//短期参考帧
+	uint16_t			FrameNumWrap;					//短期参考帧
 	int			PicNum;  //使用图像序号 PicNum 标记一个短期参考图像
 	int			LongTermPicNum;//使用长期图像序号 LongTermPicNum 标记 一个长期参考图像
 	int			MaxLongTermFrameIdx; //长期参考帧的最大数目

@@ -11,13 +11,19 @@ Picture::Picture(ParseSlice* slice, const SliceHeader& sHeader)
 
 
 
-	reference_marked_type = PICTURE_MARKING::UNKOWN;
-
 	PicOrderCntMsb = slice->PicOrderCntMsb;
 	PicOrderCntLsb = slice->PicOrderCntLsb;
 	TopFieldOrderCnt = slice->TopFieldOrderCnt;
 	BottomFieldOrderCnt = slice->BottomFieldOrderCnt;
 
+
+
+
+	reference_marked_type = PICTURE_MARKING::UNKOWN;
+
+	//存储每个相应的frame_num
+	FrameNum = sHeader.frame_num;
+	MaxFrameNum = sHeader.sps.MaxFrameNum;
 
 	MaxLongTermFrameIdx = NA;
 	FrameNumWrap = 0;

@@ -29,11 +29,11 @@ public:
 
 	uint32_t     pic_parameter_set_id; // 2 ue(v)
 	uint32_t     colour_plane_id; // 2 u(2)
-	uint32_t     frame_num; // 2 u(v)
+	uint16_t     frame_num; // 2 u(v)
 	bool		field_pic_flag; // 2 u(1)
 	bool		bottom_field_flag; // 2 u(1)
-	uint32_t     idr_pic_id; // 2 ue(v)
-	uint32_t     pic_order_cnt_lsb; // 2 u(v)
+	uint16_t     idr_pic_id; // 0 - 65535
+	uint16_t     pic_order_cnt_lsb; // 2 - 2^12-1 
 	int32_t     delta_pic_order_cnt_bottom; // 2 se(v)
 	int32_t     delta_pic_order_cnt[2]; // 2 se(v)
 	uint32_t     redundant_pic_cnt; // 2 ue(v)

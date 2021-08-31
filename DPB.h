@@ -7,7 +7,12 @@ class DPB
 {
 public:
 	Array<Picture*> dpb;
+	//帧编码下 最多16
+	Array<Picture*> RefPicList0;
+	Array<Picture*> RefPicList1; //用于B条带
 	Picture* previous;
+
+
 
 	/*Picture* dpb[16];*/
 	//Picture* fs_ref[16];  //短期参考图像列表(当然，在这里是未经排序的)
@@ -25,5 +30,12 @@ public:
 	void Adaptive_memory_control_decoded_reference_picture_marking_process(const SliceHeader& sHeader, Picture* pic);
 
 	void Sliding_window_decoded_reference_picture_marking_process(uint8_t max_num_ref_frames);
+
+
+	void Decoding_process_for_reference_picture_lists_construction(ParseSlice* slice);
+private:
+	void Decoding_process_for_picture_numbers(const SliceHeader& sHeader);
+	void Initialisation_process_for_reference_picture_lists(const SliceHeader& sHeader);
+	void Initialisation_process_for_the_reference_picture_list_for_P_and_SP_slices_in_frames();
 };
 

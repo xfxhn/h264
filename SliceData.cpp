@@ -31,7 +31,7 @@ int SliceData::NextMbAddress(const SliceHeader& sHeader, uint32_t n)
 	return i;
 }
 
-bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice, DPB& bpb)
+bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice, DPB& dpb)
 {
 	Cabac cabac;
 
@@ -70,7 +70,7 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice, DPB& bpb)
 
 	if (Slice->sliceCount == 0)
 	{
-		Slice->Decoding_process_for_picture_order_count(bpb);
+		Slice->Decoding_process_for_picture_order_count(dpb);
 
 		//参考图像列表  在解码每一个P,SP或B条带开始时
 		if ((SLIECETYPE)sHeader.slice_type == SLIECETYPE::H264_SLIECE_TYPE_P
@@ -78,6 +78,7 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice, DPB& bpb)
 			|| (SLIECETYPE)sHeader.slice_type == SLIECETYPE::H264_SLIECE_TYPE_B
 			)
 		{
+			dpb.Decoding_process_for_reference_picture_lists_construction(Slice);
 			//Decoding_process_for_reference_picture_lists_construction
 		}
 	}
