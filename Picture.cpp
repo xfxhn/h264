@@ -1,11 +1,13 @@
 #include "Picture.h"
 #include "ParseSlice.h"
+#include "SliceHeader.h"
 
 
 Picture::Picture(ParseSlice* slice, const SliceHeader& sHeader)
 {
 	pic_order_cnt_lsb = sHeader.pic_order_cnt_lsb;
 	frame_num = sHeader.frame_num;
+	FrameNumOffset = slice->FrameNumOffset;
 
 
 

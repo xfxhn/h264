@@ -1,13 +1,16 @@
 #pragma once
 #include "NaluType.h"
 class ParseSlice;
+class SliceHeader;
+
 class Picture
 {
 
 public:
 	//解码POC需要用到的
-	uint32_t	pic_order_cnt_lsb;
-	uint32_t	frame_num;
+	int			FrameNumOffset;
+	int			pic_order_cnt_lsb;
+	int			frame_num;
 
 	int         PicOrderCntMsb;
 	int         PicOrderCntLsb;

@@ -6,6 +6,7 @@
 ResidualBlockCavlc::ResidualBlockCavlc(ParseSlice* slice)
 {
 	sliceBase = slice;
+	trailing_ones_sign_flag = 0;
 	/*level_suffix = 0;
 	memset(&levelVal, 0, sizeof(int32_t) * 16);*/
 	//memset(&runVal, 0, sizeof(int32_t) * 16);

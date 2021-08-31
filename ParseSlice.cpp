@@ -36,10 +36,8 @@ ParseSlice::ParseSlice(SliceHeader& sHeader) :sHeader(sHeader)
 	TopFieldOrderCnt = 0;
 	BottomFieldOrderCnt = 0;
 
-	/*LongTermFrameIdx = 0;
-	MaxLongTermFrameIdx = NA;
-	reference_marked_type = PICTURE_MARKING::UNKOWN;
-	memory_management_control_operation_5_flag = false;*/
+	FrameNumOffset = 0;
+	PicOrderCnt = 0;
 }
 
 bool ParseSlice::parse()
@@ -3176,23 +3174,25 @@ void ParseSlice::Inter_prediction_process()
 }
 
 //POC图像顺序解码过程
-void ParseSlice::Decoding_process_for_picture_order_count(DPB& bpb)
+void ParseSlice::Decoding_process_for_picture_order_count(DPB& dpb)
 {
 	//把POC的低位编进码流内
 	if (sHeader.sps.pic_order_cnt_type == 0)
 	{
-		Decoding_process_for_picture_order_count_type_0(bpb);
+		Decoding_process_for_picture_order_count_type_0(dpb);
 	}
 	else if (sHeader.sps.pic_order_cnt_type == 1)
 	{
-		Decoding_process_for_picture_order_count_type_1(bpb);
+		Decoding_process_for_picture_order_count_type_1(dpb);
 	}
 	else if (sHeader.sps.pic_order_cnt_type == 2)
 	{
-		/*ret = Decoding_process_for_picture_order_count_type_2(m_parent->m_picture_previous);
-		RETURN_IF_FAILED(ret != 0, ret);*/
+		Decoding_process_for_picture_order_count_type_2(dpb);
 	}
 	//依赖frame_num求解POC
+	//如果是帧或者场对(帧场自适应) PicOrderCnt( picX ) =  Min( TopFieldOrderCnt, BottomFieldOrderCnt )
+	//不支持场编码
+	PicOrderCnt = std::min(TopFieldOrderCnt, BottomFieldOrderCnt);
 }
 
 void ParseSlice::Decoding_process_for_picture_order_count_type_0(DPB& dpb)
@@ -3272,7 +3272,7 @@ void ParseSlice::Decoding_process_for_picture_order_count_type_1(DPB& dpb)
 		FrameNumOffset = prevFrameNumOffset;
 	}
 
-
+	int absFrameNum = 0;
 	if (sHeader.sps.num_ref_frames_in_pic_order_cnt_cycle != 0)
 	{
 		absFrameNum = FrameNumOffset + sHeader.frame_num;
@@ -3286,7 +3286,8 @@ void ParseSlice::Decoding_process_for_picture_order_count_type_1(DPB& dpb)
 	{
 		absFrameNum = absFrameNum - 1;
 	}
-
+	int picOrderCntCycleCnt = 0;
+	int frameNumInPicOrderCntCycle = 0;
 	if (absFrameNum > 0)
 	{
 		picOrderCntCycleCnt = (absFrameNum - 1) / sHeader.sps.num_ref_frames_in_pic_order_cnt_cycle;
@@ -3329,6 +3330,68 @@ void ParseSlice::Decoding_process_for_picture_order_count_type_1(DPB& dpb)
 		BottomFieldOrderCnt = expectedPicOrderCnt + sHeader.sps.offset_for_top_to_bottom_field + sHeader.delta_pic_order_cnt[0];
 	}
 }
+
+void ParseSlice::Decoding_process_for_picture_order_count_type_2(DPB& dpb)
+{
+	//	prevFrameNum
+	int prevFrameNumOffset = 0;
+	if (!sHeader.nalu.IdrPicFlag)
+	{
+		if (dpb.previous->memory_management_control_operation_5_flag)
+		{
+			prevFrameNumOffset = 0;
+		}
+		else
+		{
+			prevFrameNumOffset = dpb.previous->FrameNumOffset;
+		}
+	}
+
+	if (sHeader.nalu.IdrPicFlag)
+	{
+		FrameNumOffset = 0;
+	}
+	else if (dpb.previous->frame_num > sHeader.frame_num)
+	{
+		FrameNumOffset = prevFrameNumOffset + sHeader.sps.MaxFrameNum;
+	}
+	else
+	{
+		FrameNumOffset = prevFrameNumOffset;
+	}
+
+	int tempPicOrderCnt = 0;
+	if (sHeader.nalu.IdrPicFlag)
+	{
+		tempPicOrderCnt = 0;
+	}
+	else if (sHeader.nalu.nal_ref_idc == 0)
+	{
+		tempPicOrderCnt = 2 * (FrameNumOffset + sHeader.frame_num) - 1;
+	}
+	else
+	{
+		tempPicOrderCnt = 2 * (FrameNumOffset + sHeader.frame_num);
+	}
+
+	if (!sHeader.field_pic_flag) //当前图像为帧
+	{
+		TopFieldOrderCnt = tempPicOrderCnt;
+		BottomFieldOrderCnt = tempPicOrderCnt;
+	}
+	else if (sHeader.bottom_field_flag) //当前图像为底场
+	{
+		BottomFieldOrderCnt = tempPicOrderCnt;
+	}
+	else //当前图像为顶场
+	{
+		TopFieldOrderCnt = tempPicOrderCnt;
+	}
+
+
+}
+
+
 
 
 

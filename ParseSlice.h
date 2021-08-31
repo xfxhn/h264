@@ -80,24 +80,15 @@ public:
 
 
 
-
+	//-2^31 到 2^31-1
 	int         PicOrderCntMsb;
 	int         PicOrderCntLsb;
 	int         TopFieldOrderCnt;
 	int         BottomFieldOrderCnt;
 
 	int			FrameNumOffset;
-	int			absFrameNum;
-	int			picOrderCntCycleCnt;
-	int			frameNumInPicOrderCntCycle;
-	int			expectedDeltaPerPicOrderCntCycle;
+	int			PicOrderCnt;
 
-	//int			MaxLongTermFrameIdx; //长期参考帧的最大数目
-	//int			LongTermFrameIdx; //长期参考帧
-	//PICTURE_MARKING reference_marked_type;
-	//bool memory_management_control_operation_5_flag; //所有图像标记为不用作参考
-	//已经解码完成的数据
-	Picture* pic;
 
 public:
 	ParseSlice(SliceHeader& sHeader);
@@ -128,7 +119,7 @@ public:
 
 	void Decoding_process_for_picture_order_count_type_0(DPB& dpb);
 	void Decoding_process_for_picture_order_count_type_1(DPB& dpb);
-
+	void Decoding_process_for_picture_order_count_type_2(DPB& dpb);
 
 
 	void getMbAddrNAndLuma4x4BlkIdxN(int& mbAddrN, const int xN, const int yN, const int maxW, const int maxH, int& xW, int& yW);
