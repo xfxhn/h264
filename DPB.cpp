@@ -1,6 +1,8 @@
 #include "DPB.h"
 #include "ParseSlice.h"
 
+
+//短期参考和长期参考，因为DPB容量不可能无限存储下去，所以要标记某些帧为长期还是短期，长期除非遇到特定指令才会移除，短期当容量满的时候移除，或者特定指令
 DPB::DPB() :dpb(16), RefPicList0(16), RefPicList1(16)
 {
 	previous = nullptr;
@@ -47,11 +49,30 @@ void DPB::Decoding_process_for_picture_numbers(const SliceHeader& sHeader)
 
 }
 
-void DPB::Initialisation_process_for_reference_picture_lists(const SliceHeader& sHeader)
+void DPB::Initialisation_process_for_reference_picture_lists(const ParseSlice* slice)
 {
-	if ((SLIECETYPE)sHeader.slice_type == SLIECETYPE::H264_SLIECE_TYPE_P || (SLIECETYPE)sHeader.slice_type == SLIECETYPE::H264_SLIECE_TYPE_SP)
+	SliceHeader& sHeader = slice->sHeader;
+	SLIECETYPE slice_type = (SLIECETYPE)sHeader.slice_type;
+
+	if (slice_type == SLIECETYPE::H264_SLIECE_TYPE_P || slice_type == SLIECETYPE::H264_SLIECE_TYPE_SP)
 	{
 		Initialisation_process_for_the_reference_picture_list_for_P_and_SP_slices_in_frames();
+	}
+	else if (slice_type == SLIECETYPE::H264_SLIECE_TYPE_B)
+	{
+		Initialisation_process_for_reference_picture_lists_for_B_slices_in_frames(slice->PicOrderCnt);
+	}
+
+
+	//num_ref_idx_l0_active_minus1是前向参考的最大参考索引
+	if (RefPicList0.length > sHeader.num_ref_idx_l0_active_minus1 + 1)
+	{
+		RefPicList0.splice(sHeader.num_ref_idx_l0_active_minus1 + 1, RefPicList0.length);
+	}
+
+	if (RefPicList1.length > sHeader.num_ref_idx_l1_active_minus1 + 1)
+	{
+		RefPicList1.splice(sHeader.num_ref_idx_l1_active_minus1 + 1, RefPicList1.length);
 	}
 }
 
@@ -75,6 +96,10 @@ void DPB::Initialisation_process_for_the_reference_picture_list_for_P_and_SP_sli
 		{
 			longTerm[longTermLength] = dpb[i];
 			longTermLength++;
+		}
+		else //不用做参考的
+		{
+
 		}
 	}
 
@@ -123,7 +148,240 @@ void DPB::Initialisation_process_for_the_reference_picture_list_for_P_and_SP_sli
 
 }
 
+void DPB::Initialisation_process_for_reference_picture_lists_for_B_slices_in_frames(int POC)
+{
+	size_t shortTermLeftLength = 0;
+	Picture* shortTermLeft[16] = { 0 };
+	size_t shortTermRightLength = 0;
+	Picture* shortTermRight[16] = { 0 };
 
+
+	size_t longTermLength = 0;
+	Picture* longTerm[16] = { 0 };
+
+	//把所有的短期参考帧放前面，长期参考放后面
+	for (size_t i = 0; i < dpb.length; i++)
+	{
+		if (dpb[i]->reference_marked_type == PICTURE_MARKING::SHORT_TERM_REFERENCE)
+		{
+			if (dpb[i]->PicOrderCnt < POC)
+			{
+				shortTermLeft[shortTermLeftLength] = dpb[i];
+				shortTermLeftLength++;
+			}
+			else //if (dpb[i]->PicOrderCnt >= POC)
+			{
+				shortTermRight[shortTermRightLength] = dpb[i];
+				shortTermRightLength++;
+			}
+		}
+		else if (dpb[i]->reference_marked_type == PICTURE_MARKING::LONG_TERM_REFERENCE)
+		{
+			longTerm[longTermLength] = dpb[i];
+			longTermLength++;
+		}
+		else
+		{
+			//不用做参考
+		}
+	}
+
+	if (shortTermLeftLength > 0)
+	{
+		for (size_t i = 0; i < shortTermLeftLength - 1; i++)
+		{
+			for (size_t j = 0; j < shortTermLeftLength - i - 1; j++)
+			{
+				if (shortTermLeft[j]->PicOrderCnt < shortTermLeft[j + 1]->PicOrderCnt)//降序排列
+				{
+					Picture* temp = shortTermLeft[j];
+					shortTermLeft[j] = shortTermLeft[j + 1];
+					shortTermLeft[j + 1] = temp;
+				}
+			}
+		}
+	}
+
+	if (shortTermRightLength > 0)
+	{
+		for (size_t i = 0; i < shortTermRightLength - 1; i++)
+		{
+			for (size_t j = 0; j < shortTermRightLength - i - 1; j++)
+			{
+				if (shortTermRight[j]->PicOrderCnt > shortTermRight[j + 1]->PicOrderCnt)//升序排列
+				{
+					Picture* temp = shortTermRight[j];
+					shortTermRight[j] = shortTermRight[j + 1];
+					shortTermRight[j + 1] = temp;
+				}
+			}
+		}
+	}
+
+	if (longTermLength > 0)
+	{
+		for (size_t i = 0; i < longTermLength - 1; i++)
+		{
+			for (size_t j = 0; j < longTermLength - i - 1; j++)
+			{
+				if (longTerm[j]->LongTermPicNum > longTerm[j + 1]->LongTermPicNum)//升序排列
+				{
+					Picture* temp = longTerm[j];
+					longTerm[j] = longTerm[j + 1];
+					longTerm[j + 1] = temp;
+				}
+			}
+		}
+	}
+
+
+	for (size_t i = 0; i < shortTermLeftLength; i++)
+	{
+		RefPicList0.push(shortTermLeft[i]);
+	}
+
+	for (size_t i = 0; i < shortTermRightLength; i++)
+	{
+		RefPicList0.push(shortTermRight[i]);
+	}
+
+	for (size_t i = 0; i < longTermLength; i++)
+	{
+		RefPicList0.push(longTerm[i]);
+	}
+
+
+	shortTermLeftLength = 0;
+	memset(shortTermLeft, NULL, sizeof(Picture*) * 16);
+	shortTermRightLength = 0;
+	memset(shortTermRight, NULL, sizeof(Picture*) * 16);
+
+	longTermLength = 0;
+	memset(longTerm, NULL, sizeof(Picture*) * 16);
+
+
+	for (size_t i = 0; i < dpb.length; i++)
+	{
+		if (dpb[i]->reference_marked_type == PICTURE_MARKING::SHORT_TERM_REFERENCE)
+		{
+			if (dpb[i]->PicOrderCnt > POC)
+			{
+				shortTermLeft[shortTermLeftLength] = dpb[i];
+				shortTermLeftLength++;
+			}
+			else //if (dpb[i]->PicOrderCnt <= POC)
+			{
+				shortTermRight[shortTermRightLength] = dpb[i];
+				shortTermRightLength++;
+			}
+		}
+		else if (dpb[i]->reference_marked_type == PICTURE_MARKING::LONG_TERM_REFERENCE)
+		{
+			longTerm[longTermLength] = dpb[i];
+			longTermLength++;
+		}
+		else
+		{
+			//不用做参考
+		}
+	}
+
+
+	if (shortTermLeftLength > 0)
+	{
+		for (size_t i = 0; i < shortTermLeftLength - 1; i++)
+		{
+			for (size_t j = 0; j < shortTermLeftLength - i - 1; j++)
+			{
+				if (shortTermLeft[j]->PicOrderCnt > shortTermLeft[j + 1]->PicOrderCnt)//升序排列
+				{
+					Picture* temp = shortTermLeft[j];
+					shortTermLeft[j] = shortTermLeft[j + 1];
+					shortTermLeft[j + 1] = temp;
+				}
+			}
+		}
+	}
+
+
+	if (shortTermRightLength > 0)
+	{
+		for (size_t i = 0; i < shortTermRightLength - 1; i++)
+		{
+			for (size_t j = 0; j < shortTermRightLength - i - 1; j++)
+			{
+				if (shortTermRight[j]->PicOrderCnt < shortTermRight[j + 1]->PicOrderCnt)//降序排列
+				{
+					Picture* temp = shortTermRight[j];
+					shortTermRight[j] = shortTermRight[j + 1];
+					shortTermRight[j + 1] = temp;
+				}
+			}
+		}
+	}
+
+
+	if (longTermLength > 0)
+	{
+		for (size_t i = 0; i < longTermLength - 1; i++)
+		{
+			for (size_t j = 0; j < longTermLength - i - 1; j++)
+			{
+				if (longTerm[j]->LongTermPicNum > longTerm[j + 1]->LongTermPicNum)//升序排列
+				{
+					Picture* temp = longTerm[j];
+					longTerm[j] = longTerm[j + 1];
+					longTerm[j + 1] = temp;
+				}
+			}
+		}
+	}
+
+
+	for (size_t i = 0; i < shortTermLeftLength; i++)
+	{
+		RefPicList1.push(shortTermLeft[i]);
+	}
+
+	for (size_t i = 0; i < shortTermRightLength; i++)
+	{
+		RefPicList1.push(shortTermRight[i]);
+	}
+
+	for (size_t i = 0; i < longTermLength; i++)
+	{
+		RefPicList1.push(longTerm[i]);
+	}
+
+
+	bool flag = false;
+
+	if (RefPicList1.length > 1 && RefPicList1.length == RefPicList0.length)
+	{
+		const size_t length = RefPicList1.length;
+
+		for (size_t i = 0; i < length; i++)
+		{
+			if (RefPicList1[i] == RefPicList0[i])
+			{
+				flag = true;
+			}
+			else
+			{
+				flag = false;
+				break;
+			}
+		}
+	}
+
+
+	if (flag)
+	{
+		Picture* tmp = RefPicList1[0];
+		RefPicList1[0] = RefPicList1[1];
+		RefPicList1[1] = tmp;
+	}
+}
 
 
 void DPB::Decoding_process_for_reference_picture_lists_construction(ParseSlice* slice)
@@ -134,7 +392,7 @@ void DPB::Decoding_process_for_reference_picture_lists_construction(ParseSlice* 
 
 	//参考图像是通过 8.4.2.1 节中定义的参考索引来定位的
 	//参考图像列表的初始化过程
-	Initialisation_process_for_reference_picture_lists(sHeader);
+	Initialisation_process_for_reference_picture_lists(slice);
 }
 
 void DPB::Decoded_reference_picture_marking_process(Picture* pic, const SliceHeader& sHeader)

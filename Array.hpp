@@ -10,6 +10,7 @@ public:
 public:
 	Array(size_t capacity);
 	void push(T data);
+	void splice(size_t idx, size_t count = 0);
 	T& operator[](int idx);
 	~Array();
 };
@@ -38,6 +39,16 @@ void Array<T>::push(T data)
 		arr[length] = data;
 		length++;
 	}
+}
+
+template<class T>
+void Array<T>::splice(size_t idx, size_t count)
+{
+	for (size_t i = idx; i < count; i++)
+	{
+		arr[i] = nullptr;
+	}
+	length = idx;
 }
 
 template<class T>

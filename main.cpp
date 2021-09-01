@@ -33,14 +33,11 @@
 
 
 
-void callback()
-{
-
-}
-
 
 int main()
 {
+
+
 
 	AnnexBReader reader;
 	bool isOpen = reader.open("./data/cabac.h264");

@@ -35,7 +35,10 @@ public:
 	void Decoding_process_for_reference_picture_lists_construction(ParseSlice* slice);
 private:
 	void Decoding_process_for_picture_numbers(const SliceHeader& sHeader);
-	void Initialisation_process_for_reference_picture_lists(const SliceHeader& sHeader);
+	void Initialisation_process_for_reference_picture_lists(const ParseSlice* slice);
+
 	void Initialisation_process_for_the_reference_picture_list_for_P_and_SP_slices_in_frames();
+
+	void Initialisation_process_for_reference_picture_lists_for_B_slices_in_frames(int POC);
 };
 

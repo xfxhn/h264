@@ -5,6 +5,8 @@
 
 Picture::Picture(ParseSlice* slice, const SliceHeader& sHeader)
 {
+
+
 	pic_order_cnt_lsb = sHeader.pic_order_cnt_lsb;
 	frame_num = sHeader.frame_num;
 	FrameNumOffset = slice->FrameNumOffset;
@@ -21,6 +23,8 @@ Picture::Picture(ParseSlice* slice, const SliceHeader& sHeader)
 
 	reference_marked_type = PICTURE_MARKING::UNKOWN;
 
+
+	PicOrderCnt = slice->PicOrderCnt;
 	//存储每个相应的frame_num
 	FrameNum = sHeader.frame_num;
 	MaxFrameNum = sHeader.sps.MaxFrameNum;

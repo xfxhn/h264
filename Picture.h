@@ -19,9 +19,11 @@ public:
 
 
 public:
-	uint16_t					 MaxFrameNum;
+	int					PicOrderCnt;
+
+	uint16_t			MaxFrameNum;
 	uint16_t			FrameNum;				//短期参考帧
-	uint16_t			FrameNumWrap;					//短期参考帧
+	uint16_t			FrameNumWrap;			//短期参考帧
 	int			PicNum;  //使用图像序号 PicNum 标记一个短期参考图像
 	int			LongTermPicNum;//使用长期图像序号 LongTermPicNum 标记 一个长期参考图像
 	int			MaxLongTermFrameIdx; //长期参考帧的最大数目
