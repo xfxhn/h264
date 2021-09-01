@@ -57,24 +57,70 @@ void DPB::Initialisation_process_for_reference_picture_lists(const SliceHeader& 
 
 void DPB::Initialisation_process_for_the_reference_picture_list_for_P_and_SP_slices_in_frames()
 {
-	size_t shortTermIdx = 0;
+	size_t shortTermlength = 0;
 	Picture* shortTerm[16] = { 0 };
-	size_t longTermIdx = 0;
+
+	size_t longTermLength = 0;
 	Picture* longTerm[16] = { 0 };
+
 	//把所有的短期参考帧放前面，长期参考放后面
 	for (size_t i = 0; i < dpb.length; i++)
 	{
 		if (dpb[i]->reference_marked_type == PICTURE_MARKING::SHORT_TERM_REFERENCE)
 		{
-			shortTerm[shortTermIdx] = dpb[i];
-			shortTermIdx++;
+			shortTerm[shortTermlength] = dpb[i];
+			shortTermlength++;
 		}
 		else if (dpb[i]->reference_marked_type == PICTURE_MARKING::LONG_TERM_REFERENCE)
 		{
-			longTerm[longTermIdx] = dpb[i];
-			longTermIdx++;
+			longTerm[longTermLength] = dpb[i];
+			longTermLength++;
 		}
 	}
+
+
+	if (shortTermlength > 0)
+	{
+		for (size_t i = 0; i < shortTermlength - 1; i++)
+		{
+			for (size_t j = 0; j < shortTermlength - i - 1; j++)
+			{
+				if (shortTerm[j]->PicNum < shortTerm[j + 1]->PicNum)//降序排列
+				{
+					Picture* temp = shortTerm[j];
+					shortTerm[j] = shortTerm[j + 1];
+					shortTerm[j + 1] = temp;
+				}
+			}
+		}
+	}
+
+	if (longTermLength > 0)
+	{
+		for (size_t i = 0; i < longTermLength - 1; i++)
+		{
+			for (size_t j = 0; j < longTermLength - i - 1; j++)
+			{
+				if (longTerm[j]->LongTermPicNum > longTerm[j + 1]->LongTermPicNum)//升序排列
+				{
+					Picture* temp = longTerm[j];
+					longTerm[j] = longTerm[j + 1];
+					longTerm[j + 1] = temp;
+				}
+			}
+		}
+	}
+
+	for (size_t i = 0; i < shortTermlength; i++)
+	{
+		RefPicList0.push(shortTerm[i]);
+	}
+
+	for (size_t i = 0; i < longTermLength; i++)
+	{
+		RefPicList0.push(longTerm[i]);
+	}
+
 }
 
 

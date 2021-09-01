@@ -57,6 +57,7 @@ Array<T>::~Array()
 			arr[i] = nullptr;
 		}
 		delete[] arr;
+		arr = nullptr;
 	}
 }
 

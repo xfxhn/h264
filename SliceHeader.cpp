@@ -302,7 +302,7 @@ bool SliceHeader::slice_header(BitStream& bs, const ParsePPS ppsCache[256], cons
 
 		//如果field_pic_flag 等于0，num_ref_idx_l0_active_minus1的值将在0到15的范围内（包括0和15）
 		//当MbaffFrameFlag等于1时，num_ref_idx_l0_active_minus1 就是解码帧宏块的最大序号值，而 2 * num_ref_idx_l0_active_minus1 + 1是解码场宏块的最大序号值。
-		//否则（field_pic_flag 等于1），num_ref_idx_l0_active_minus1 的值 应该 在0到 31的范围内（包括0和31）。
+		//否则（field_pic_flag 等于1），num_ref_idx_l0_active_minus1 的值应该在0到 31的范围内（包括0和31）。
 		num_ref_idx_l0_active_minus1 = pps.num_ref_idx_l0_default_active_minus1;
 		num_ref_idx_l1_active_minus1 = pps.num_ref_idx_l1_default_active_minus1;
 
