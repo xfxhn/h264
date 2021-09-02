@@ -254,7 +254,7 @@ bool ParseSPS::seq_parameter_set_data(BitStream& bs)
 	//这个句法元素主要是为读取另一个句法元素 frame_num 服务的，frame_num 是最重要的句法元素之一，它标识所属图像的解码顺序 。
 	//这个句法元素同时也指明了frame_num 的所能达到的最大值:MaxFrameNum = 2*exp( log2_max_frame_num_minus4 + 4 )
 	//最大帧率
-	log2_max_frame_num_minus4 = bs.readUE();
+	log2_max_frame_num_minus4 = bs.readUE();//0 - 12
 	MaxFrameNum = std::pow(2, log2_max_frame_num_minus4 + 4);
 	//指明了 poc  (picture  order  count)  的编码方法，poc 标识图像的播放顺序。
 	//由poc 可以由 frame-num 通过映射关系计算得来，也可以索性由编码器显式地传送。

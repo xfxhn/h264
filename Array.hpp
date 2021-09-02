@@ -1,4 +1,5 @@
 #pragma once
+#include "Common.h"
 
 template<class T>
 class Array
@@ -11,6 +12,9 @@ public:
 	Array(size_t capacity);
 	void push(T data);
 	void splice(size_t idx, size_t count = 0);
+
+	int findIndex(size_t size, Find& func);
+
 	T& operator[](int idx);
 	~Array();
 };
@@ -49,6 +53,22 @@ void Array<T>::splice(size_t idx, size_t count)
 		arr[i] = nullptr;
 	}
 	length = idx;
+}
+
+template<class T>
+int Array<T>::findIndex(size_t size, Find& func)
+{
+	int idx = -1;
+	for (size_t i = 0; i < size; i++)
+	{
+		if (func(arr[i]))
+		{
+			idx = i;
+			break;
+		}
+	}
+
+	return idx;
 }
 
 template<class T>

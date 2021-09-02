@@ -66,8 +66,8 @@ public:
 
 	// ref_pic_list_modification//帧间参考作用的 参考帧列表
 	bool     ref_pic_list_modification_flag_l0; // 2 u(1)
-	uint32_t     modification_of_pic_nums_idc[2][32]; // 2 ue(v)
-	uint32_t     abs_diff_pic_num_minus1[2][32]; // 2 ue(v)
+	uint8_t     modification_of_pic_nums_idc[2][32]; // 2 ue(v)
+	uint16_t     abs_diff_pic_num_minus1[2][32]; // 0 到 MaxPicNum – 1
 	uint32_t     long_term_pic_num[2][32]; // 2 ue(v)
 	bool     ref_pic_list_modification_flag_l1; // 2 u(1)
 	uint32_t     ref_pic_list_modification_count_l0; //modification_of_pic_nums_idc[0]数组大小
@@ -101,8 +101,8 @@ public:
 
 	uint32_t  PicHeightInMbs;
 	uint32_t  PicSizeInMbs;
-	int8_t         MaxPicNum; //MaxPicNum = (field_pic_flag == 0) ? MaxFrameNum : (2 * MaxFrameNum);
-	int8_t         CurrPicNum; //CurrPicNum = (field_pic_flag == 0) ? frame_num : (2 * frame_num + 1);
+	int16_t         MaxPicNum; //MaxPicNum = (field_pic_flag == 0) ? MaxFrameNum : (2 * MaxFrameNum);
+	int16_t         CurrPicNum; //CurrPicNum = (field_pic_flag == 0) ? frame_num : (2 * frame_num + 1);
 
 	/*图像中每个“mapUnit(映射单元)”属于哪个组号，需要一个数组来记录，将这个数据定义为mapUnitToSliceGroupMap[]，
 	数组中的第i个元素表示以光栅顺序扫描时，第i个“mapUnit(映射单元)”对应哪个组（组号）。*/

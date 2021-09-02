@@ -618,7 +618,7 @@ bool SliceHeader::pred_weight_table(BitStream& bs)
 
 bool SliceHeader::ref_pic_list_modification(BitStream& bs)
 {
-	if (slice_type % 5 != 2 && slice_type % 5 != 4) //H264_SLIECE_TYPE_I = 2; H264_SLIECE_TYPE_SI = 4;
+	if (slice_type != 2 && slice_type != 4) //H264_SLIECE_TYPE_I = 2; H264_SLIECE_TYPE_SI = 4;
 	{
 		ref_pic_list_modification_flag_l0 = bs.readBit(); //2 u(1)
 		if (ref_pic_list_modification_flag_l0)

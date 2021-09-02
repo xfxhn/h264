@@ -2,6 +2,9 @@
 #include "SliceHeader.h"
 #include "Picture.h"
 #include "Array.hpp"
+
+
+
 class ParseSlice;
 class DPB
 {
@@ -40,5 +43,12 @@ private:
 	void Initialisation_process_for_the_reference_picture_list_for_P_and_SP_slices_in_frames();
 
 	void Initialisation_process_for_reference_picture_lists_for_B_slices_in_frames(int POC);
+
+	void Modification_process_for_reference_picture_lists(const SliceHeader& sHeader);
+
+
+	void Modification_process_of_reference_picture_lists_for_short_term_reference_pictures(int& refIdxLX, int& picNumL0Pred, uint16_t abs_diff_pic_num_minus1,
+		uint16_t modification_of_pic_nums_idc, uint8_t num_ref_idx_lX_active_minus1, Array<Picture*>& RefPicListX, const SliceHeader& sHeader);
+	void Modification_process_of_reference_picture_lists_for_long_term_reference_pictures(int& refIdxLX, int& picNumL0Pred, uint16_t long_term_pic_num, uint8_t num_ref_idx_lX_active_minus1, Array<Picture*>& RefPicListX, const SliceHeader& sHeader);
 };
 

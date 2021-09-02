@@ -1,8 +1,8 @@
-#include "DPB.h"
+ï»¿#include "DPB.h"
 #include "ParseSlice.h"
 
 
-//¶ÌÆÚ²Î¿¼ºÍ³¤ÆÚ²Î¿¼£¬ÒòÎªDPBÈİÁ¿²»¿ÉÄÜÎŞÏŞ´æ´¢ÏÂÈ¥£¬ËùÒÔÒª±ê¼ÇÄ³Ğ©Ö¡Îª³¤ÆÚ»¹ÊÇ¶ÌÆÚ£¬³¤ÆÚ³ı·ÇÓöµ½ÌØ¶¨Ö¸Áî²Å»áÒÆ³ı£¬¶ÌÆÚµ±ÈİÁ¿ÂúµÄÊ±ºòÒÆ³ı£¬»òÕßÌØ¶¨Ö¸Áî
+//çŸ­æœŸå‚è€ƒå’Œé•¿æœŸå‚è€ƒï¼Œå› ä¸ºDPBå®¹é‡ä¸å¯èƒ½æ— é™å­˜å‚¨ä¸‹å»ï¼Œæ‰€ä»¥è¦æ ‡è®°æŸäº›å¸§ä¸ºé•¿æœŸè¿˜æ˜¯çŸ­æœŸï¼Œé•¿æœŸé™¤éé‡åˆ°ç‰¹å®šæŒ‡ä»¤æ‰ä¼šç§»é™¤ï¼ŒçŸ­æœŸå½“å®¹é‡æ»¡çš„æ—¶å€™ç§»é™¤ï¼Œæˆ–è€…ç‰¹å®šæŒ‡ä»¤
 DPB::DPB() :dpb(16), RefPicList0(16), RefPicList1(16)
 {
 	previous = nullptr;
@@ -13,10 +13,10 @@ void DPB::Decoding_process_for_picture_numbers(const SliceHeader& sHeader)
 
 	for (size_t i = 0; i < dpb.length; i++)
 	{
-		//¶ÔÃ¿Ò»¸ö¶ÌÆÚ²Î¿¼Í¼Ïñ
+		//å¯¹æ¯ä¸€ä¸ªçŸ­æœŸå‚è€ƒå›¾åƒ
 		if (dpb[i]->reference_marked_type == PICTURE_MARKING::SHORT_TERM_REFERENCE)
 		{
-			//FrameNum ÉèÖÃ³ÉÏàÓ¦¶ÌÆÚ²Î¿¼Í¼ÏñµÄÆ¬Í·ÖĞ½âÂëËùµÃµÃÓï·¨ÔªËØframe_num  
+			//FrameNum è®¾ç½®æˆç›¸åº”çŸ­æœŸå‚è€ƒå›¾åƒçš„ç‰‡å¤´ä¸­è§£ç æ‰€å¾—å¾—è¯­æ³•å…ƒç´ frame_num  
 			if (dpb[i]->FrameNum > sHeader.frame_num)
 			{
 				dpb[i]->FrameNumWrap = dpb[i]->FrameNum - dpb[i]->MaxFrameNum;
@@ -27,22 +27,22 @@ void DPB::Decoding_process_for_picture_numbers(const SliceHeader& sHeader)
 			}
 		}
 
-		//LongTermFrameIdx  ³¤ÆÚ²Î¿¼Í¼ÏñÒÑ¾­ÔÚÍ¼Ïñ½âÂëÍê³ÉµÄÊ±ºòÖ¸¶¨
+		//LongTermFrameIdx  é•¿æœŸå‚è€ƒå›¾åƒå·²ç»åœ¨å›¾åƒè§£ç å®Œæˆçš„æ—¶å€™æŒ‡å®š
 	}
 
 
-	//field_pic_flag==0 ²Î¿¼Ö¡»ò»¥²¹²Î¿¼³¡¶Ô
+	//field_pic_flag==0 å‚è€ƒå¸§æˆ–äº’è¡¥å‚è€ƒåœºå¯¹
 	for (size_t i = 0; i < dpb.length; i++)
 	{
 		if (dpb[i]->reference_marked_type == PICTURE_MARKING::SHORT_TERM_REFERENCE)
 		{
-			//½âÂëÆ÷Ê¹ÓÃÍ¼ÏñĞòºÅ PicNum ±ê¼ÇÒ»¸ö¶ÌÆÚ²Î¿¼Í¼Ïñ
+			//è§£ç å™¨ä½¿ç”¨å›¾åƒåºå· PicNum æ ‡è®°ä¸€ä¸ªçŸ­æœŸå‚è€ƒå›¾åƒ
 			dpb[i]->PicNum = dpb[i]->FrameNumWrap;
 		}
 
 		if (dpb[i]->reference_marked_type == PICTURE_MARKING::LONG_TERM_REFERENCE)
 		{
-			//Ê¹ÓÃ³¤ÆÚÍ¼ÏñĞòºÅ LongTermPicNum ±ê¼ÇÒ»¸ö³¤ÆÚ²Î¿¼Í¼Ïñ
+			//ä½¿ç”¨é•¿æœŸå›¾åƒåºå· LongTermPicNum æ ‡è®°ä¸€ä¸ªé•¿æœŸå‚è€ƒå›¾åƒ
 			dpb[i]->LongTermPicNum = dpb[i]->LongTermFrameIdx;
 		}
 	}
@@ -64,7 +64,7 @@ void DPB::Initialisation_process_for_reference_picture_lists(const ParseSlice* s
 	}
 
 
-	//num_ref_idx_l0_active_minus1ÊÇÇ°Ïò²Î¿¼µÄ×î´ó²Î¿¼Ë÷Òı
+	//num_ref_idx_l0_active_minus1æ˜¯å‰å‘å‚è€ƒçš„æœ€å¤§å‚è€ƒç´¢å¼•
 	if (RefPicList0.length > sHeader.num_ref_idx_l0_active_minus1 + 1)
 	{
 		RefPicList0.splice(sHeader.num_ref_idx_l0_active_minus1 + 1, RefPicList0.length);
@@ -84,7 +84,7 @@ void DPB::Initialisation_process_for_the_reference_picture_list_for_P_and_SP_sli
 	size_t longTermLength = 0;
 	Picture* longTerm[16] = { 0 };
 
-	//°ÑËùÓĞµÄ¶ÌÆÚ²Î¿¼Ö¡·ÅÇ°Ãæ£¬³¤ÆÚ²Î¿¼·ÅºóÃæ
+	//æŠŠæ‰€æœ‰çš„çŸ­æœŸå‚è€ƒå¸§æ”¾å‰é¢ï¼Œé•¿æœŸå‚è€ƒæ”¾åé¢
 	for (size_t i = 0; i < dpb.length; i++)
 	{
 		if (dpb[i]->reference_marked_type == PICTURE_MARKING::SHORT_TERM_REFERENCE)
@@ -97,7 +97,7 @@ void DPB::Initialisation_process_for_the_reference_picture_list_for_P_and_SP_sli
 			longTerm[longTermLength] = dpb[i];
 			longTermLength++;
 		}
-		else //²»ÓÃ×ö²Î¿¼µÄ
+		else //ä¸ç”¨åšå‚è€ƒçš„
 		{
 
 		}
@@ -110,7 +110,7 @@ void DPB::Initialisation_process_for_the_reference_picture_list_for_P_and_SP_sli
 		{
 			for (size_t j = 0; j < shortTermlength - i - 1; j++)
 			{
-				if (shortTerm[j]->PicNum < shortTerm[j + 1]->PicNum)//½µĞòÅÅÁĞ
+				if (shortTerm[j]->PicNum < shortTerm[j + 1]->PicNum)//é™åºæ’åˆ—
 				{
 					Picture* temp = shortTerm[j];
 					shortTerm[j] = shortTerm[j + 1];
@@ -126,7 +126,7 @@ void DPB::Initialisation_process_for_the_reference_picture_list_for_P_and_SP_sli
 		{
 			for (size_t j = 0; j < longTermLength - i - 1; j++)
 			{
-				if (longTerm[j]->LongTermPicNum > longTerm[j + 1]->LongTermPicNum)//ÉıĞòÅÅÁĞ
+				if (longTerm[j]->LongTermPicNum > longTerm[j + 1]->LongTermPicNum)//å‡åºæ’åˆ—
 				{
 					Picture* temp = longTerm[j];
 					longTerm[j] = longTerm[j + 1];
@@ -159,7 +159,7 @@ void DPB::Initialisation_process_for_reference_picture_lists_for_B_slices_in_fra
 	size_t longTermLength = 0;
 	Picture* longTerm[16] = { 0 };
 
-	//°ÑËùÓĞµÄ¶ÌÆÚ²Î¿¼Ö¡·ÅÇ°Ãæ£¬³¤ÆÚ²Î¿¼·ÅºóÃæ
+	//æŠŠæ‰€æœ‰çš„çŸ­æœŸå‚è€ƒå¸§æ”¾å‰é¢ï¼Œé•¿æœŸå‚è€ƒæ”¾åé¢
 	for (size_t i = 0; i < dpb.length; i++)
 	{
 		if (dpb[i]->reference_marked_type == PICTURE_MARKING::SHORT_TERM_REFERENCE)
@@ -182,7 +182,7 @@ void DPB::Initialisation_process_for_reference_picture_lists_for_B_slices_in_fra
 		}
 		else
 		{
-			//²»ÓÃ×ö²Î¿¼
+			//ä¸ç”¨åšå‚è€ƒ
 		}
 	}
 
@@ -192,7 +192,7 @@ void DPB::Initialisation_process_for_reference_picture_lists_for_B_slices_in_fra
 		{
 			for (size_t j = 0; j < shortTermLeftLength - i - 1; j++)
 			{
-				if (shortTermLeft[j]->PicOrderCnt < shortTermLeft[j + 1]->PicOrderCnt)//½µĞòÅÅÁĞ
+				if (shortTermLeft[j]->PicOrderCnt < shortTermLeft[j + 1]->PicOrderCnt)//é™åºæ’åˆ—
 				{
 					Picture* temp = shortTermLeft[j];
 					shortTermLeft[j] = shortTermLeft[j + 1];
@@ -208,7 +208,7 @@ void DPB::Initialisation_process_for_reference_picture_lists_for_B_slices_in_fra
 		{
 			for (size_t j = 0; j < shortTermRightLength - i - 1; j++)
 			{
-				if (shortTermRight[j]->PicOrderCnt > shortTermRight[j + 1]->PicOrderCnt)//ÉıĞòÅÅÁĞ
+				if (shortTermRight[j]->PicOrderCnt > shortTermRight[j + 1]->PicOrderCnt)//å‡åºæ’åˆ—
 				{
 					Picture* temp = shortTermRight[j];
 					shortTermRight[j] = shortTermRight[j + 1];
@@ -224,7 +224,7 @@ void DPB::Initialisation_process_for_reference_picture_lists_for_B_slices_in_fra
 		{
 			for (size_t j = 0; j < longTermLength - i - 1; j++)
 			{
-				if (longTerm[j]->LongTermPicNum > longTerm[j + 1]->LongTermPicNum)//ÉıĞòÅÅÁĞ
+				if (longTerm[j]->LongTermPicNum > longTerm[j + 1]->LongTermPicNum)//å‡åºæ’åˆ—
 				{
 					Picture* temp = longTerm[j];
 					longTerm[j] = longTerm[j + 1];
@@ -282,7 +282,7 @@ void DPB::Initialisation_process_for_reference_picture_lists_for_B_slices_in_fra
 		}
 		else
 		{
-			//²»ÓÃ×ö²Î¿¼
+			//ä¸ç”¨åšå‚è€ƒ
 		}
 	}
 
@@ -293,7 +293,7 @@ void DPB::Initialisation_process_for_reference_picture_lists_for_B_slices_in_fra
 		{
 			for (size_t j = 0; j < shortTermLeftLength - i - 1; j++)
 			{
-				if (shortTermLeft[j]->PicOrderCnt > shortTermLeft[j + 1]->PicOrderCnt)//ÉıĞòÅÅÁĞ
+				if (shortTermLeft[j]->PicOrderCnt > shortTermLeft[j + 1]->PicOrderCnt)//å‡åºæ’åˆ—
 				{
 					Picture* temp = shortTermLeft[j];
 					shortTermLeft[j] = shortTermLeft[j + 1];
@@ -310,7 +310,7 @@ void DPB::Initialisation_process_for_reference_picture_lists_for_B_slices_in_fra
 		{
 			for (size_t j = 0; j < shortTermRightLength - i - 1; j++)
 			{
-				if (shortTermRight[j]->PicOrderCnt < shortTermRight[j + 1]->PicOrderCnt)//½µĞòÅÅÁĞ
+				if (shortTermRight[j]->PicOrderCnt < shortTermRight[j + 1]->PicOrderCnt)//é™åºæ’åˆ—
 				{
 					Picture* temp = shortTermRight[j];
 					shortTermRight[j] = shortTermRight[j + 1];
@@ -327,7 +327,7 @@ void DPB::Initialisation_process_for_reference_picture_lists_for_B_slices_in_fra
 		{
 			for (size_t j = 0; j < longTermLength - i - 1; j++)
 			{
-				if (longTerm[j]->LongTermPicNum > longTerm[j + 1]->LongTermPicNum)//ÉıĞòÅÅÁĞ
+				if (longTerm[j]->LongTermPicNum > longTerm[j + 1]->LongTermPicNum)//å‡åºæ’åˆ—
 				{
 					Picture* temp = longTerm[j];
 					longTerm[j] = longTerm[j + 1];
@@ -384,15 +384,167 @@ void DPB::Initialisation_process_for_reference_picture_lists_for_B_slices_in_fra
 }
 
 
+void DPB::Modification_process_for_reference_picture_lists(const SliceHeader& sHeader)
+{
+	if (sHeader.ref_pic_list_modification_flag_l0)
+	{
+		int refIdxL0 = 0;
+		int picNumL0Pred = sHeader.CurrPicNum;
+		//è¯»å–å¯¹åº”çš„modification_of_pic_nums_idc
+		for (size_t i = 0; i < sHeader.ref_pic_list_modification_count_l0; i++)
+		{
+			if (sHeader.modification_of_pic_nums_idc[0][i] == 0 || sHeader.modification_of_pic_nums_idc[0][i] == 1)
+			{
+				//çŸ­æœŸå‚è€ƒå¸§çš„é‡æ’åº
+				Modification_process_of_reference_picture_lists_for_short_term_reference_pictures(refIdxL0, picNumL0Pred,
+					sHeader.abs_diff_pic_num_minus1[0][i], sHeader.modification_of_pic_nums_idc[0][i], sHeader.num_ref_idx_l0_active_minus1, RefPicList0, sHeader);
+			}
+			else if (sHeader.modification_of_pic_nums_idc[0][i] == 2)
+			{
+				Modification_process_of_reference_picture_lists_for_long_term_reference_pictures(refIdxL0, picNumL0Pred,
+					sHeader.long_term_pic_num[0][i], sHeader.num_ref_idx_l0_active_minus1, RefPicList0, sHeader);
+			}
+			else // ==3
+			{
+				break;
+			}
+		}
+	}
+}
+
+void DPB::Modification_process_of_reference_picture_lists_for_short_term_reference_pictures(int& refIdxLX, int& picNumLXPred,
+	uint16_t abs_diff_pic_num_minus1, uint16_t modification_of_pic_nums_idc, uint8_t num_ref_idx_lX_active_minus1, Array<Picture*>& RefPicListX, const SliceHeader& sHeader)
+{
+	int picNumLXNoWrap = 0;
+	// picNumLXPred æ˜¯å˜é‡ picNumLXNoWrap çš„é¢„æµ‹å€¼
+
+
+	if (modification_of_pic_nums_idc == 0)
+	{
+		//é¢„æµ‹å€¼å°äºå®é™…å€¼
+		if (picNumLXPred - (abs_diff_pic_num_minus1 + 1) < 0)
+		{
+			picNumLXNoWrap = picNumLXPred - (abs_diff_pic_num_minus1 + 1) + sHeader.MaxPicNum;
+		}
+		else
+		{
+			picNumLXNoWrap = picNumLXPred - (abs_diff_pic_num_minus1 + 1);
+		}
+	}
+	else//modification_of_pic_nums_idc == 1
+	{
+		//é¢„æµ‹å€¼ä¸å®é™…å€¼ä¹‹å’Œ å¤§äºMaxPicNum 
+		if (picNumLXPred + (abs_diff_pic_num_minus1 + 1) >= sHeader.MaxPicNum)
+		{
+			picNumLXNoWrap = picNumLXPred + (abs_diff_pic_num_minus1 + 1) - sHeader.MaxPicNum;
+		}
+		else
+		{
+			picNumLXNoWrap = picNumLXPred + (abs_diff_pic_num_minus1 + 1);
+		}
+	}
+
+	picNumLXPred = picNumLXNoWrap;
+
+	int picNumLX = 0;
+	if (picNumLXNoWrap > sHeader.CurrPicNum)
+	{
+		picNumLX = picNumLXNoWrap - sHeader.MaxPicNum;
+	}
+	else
+	{
+		picNumLX = picNumLXNoWrap;
+	}
+
+
+	//å°†çŸ­æœŸå›¾åƒåºå·ä¸º picNumLX çš„å›¾åƒæ”¾å…¥ refIdxLX ç´¢å¼•æŒ‡å®šçš„ä½ç½®ï¼Œå¹¶å°†åé¢çš„å…¶å®ƒå›¾åƒå‘åç§»ä½ï¼Œå¢åŠ  refIdxLX çš„å€¼ã€‚
+	for (size_t cIdx = num_ref_idx_lX_active_minus1 + 1; cIdx > refIdxLX; cIdx--)
+	{
+		RefPicListX[cIdx] = RefPicListX[cIdx - 1];
+	}
+
+	Find find(picNumLX);
+
+	int idx = RefPicListX.findIndex(num_ref_idx_lX_active_minus1 + 1, find);
+	if (idx != -1)
+	{
+		RefPicListX[refIdxLX++] = RefPicListX[idx];
+	}
+	int nIdx = refIdxLX;
+
+	for (size_t cIdx = refIdxLX; cIdx <= num_ref_idx_lX_active_minus1 + 1; cIdx++)
+	{
+		if (RefPicListX[cIdx] != NULL)
+		{
+			int32_t PicNumF = (RefPicListX[cIdx]->reference_marked_type == PICTURE_MARKING::SHORT_TERM_REFERENCE)
+				? RefPicListX[cIdx]->PicNum : sHeader.MaxPicNum;
+			if (PicNumF != picNumLX) //if ( PicNumF( RefPicListX[ cIdx ] ) != picNumLX )
+			{
+				RefPicListX[nIdx++] = RefPicListX[cIdx];
+			}
+		}
+	}
+
+	RefPicListX[num_ref_idx_lX_active_minus1 + 1] = NULL;
+}
+
+void DPB::Modification_process_of_reference_picture_lists_for_long_term_reference_pictures(int& refIdxLX, int& picNumL0Pred, uint16_t long_term_pic_num,
+	uint8_t num_ref_idx_lX_active_minus1, Array<Picture*>& RefPicListX, const SliceHeader& sHeader)
+{
+	for (size_t cIdx = num_ref_idx_lX_active_minus1 + 1; cIdx > refIdxLX; cIdx--)
+	{
+		RefPicListX[cIdx] = RefPicListX[cIdx - 1];
+	}
+
+	size_t idx = 0;
+	for (; idx < num_ref_idx_lX_active_minus1 + 1; idx++)
+	{
+		if (RefPicListX[idx]->LongTermPicNum == long_term_pic_num)
+		{
+			break;
+		}
+	}
+	RefPicListX[refIdxLX++] = RefPicListX[idx];
+
+	int nIdx = refIdxLX;
+
+	for (size_t cIdx = refIdxLX; cIdx <= num_ref_idx_lX_active_minus1 + 1; cIdx++)
+	{
+		int32_t LongTermPicNumF = (RefPicListX[cIdx]->reference_marked_type == PICTURE_MARKING::LONG_TERM_REFERENCE)
+			? RefPicListX[cIdx]->LongTermPicNum : (2 * (MaxLongTermFrameIdx + 1));
+
+
+		if (LongTermPicNumF != long_term_pic_num)
+		{
+			RefPicListX[nIdx++] = RefPicListX[cIdx];
+		}
+	}
+
+	RefPicListX[num_ref_idx_lX_active_minus1 + 1] = NULL;
+}
+
 void DPB::Decoding_process_for_reference_picture_lists_construction(ParseSlice* slice)
 {
 	const SliceHeader& sHeader = slice->sHeader;
-	//Í¼ÏñĞòºÅµÄ¼ÆËã
+	//å›¾åƒåºå·çš„è®¡ç®—
 	Decoding_process_for_picture_numbers(sHeader);
 
-	//²Î¿¼Í¼ÏñÊÇÍ¨¹ı 8.4.2.1 ½ÚÖĞ¶¨ÒåµÄ²Î¿¼Ë÷ÒıÀ´¶¨Î»µÄ
-	//²Î¿¼Í¼ÏñÁĞ±íµÄ³õÊ¼»¯¹ı³Ì
+	//å‚è€ƒå›¾åƒæ˜¯é€šè¿‡ 8.4.2.1 èŠ‚ä¸­å®šä¹‰çš„å‚è€ƒç´¢å¼•æ¥å®šä½çš„
+	//å‚è€ƒå›¾åƒåˆ—è¡¨çš„åˆå§‹åŒ–è¿‡ç¨‹
 	Initialisation_process_for_reference_picture_lists(slice);
+
+
+	//å‚è€ƒå¸§åˆ—è¡¨é‡æ’åº
+
+	//ç”±äºåœ¨è§£ç æ¯ä¸ªï¼ˆP/Bï¼‰MBæ—¶ï¼Œéƒ½è¦ç”¨åˆ°å‚è€ƒå¸§çš„ç´¢å¼•ref_idx_l0 æˆ– ref_idx_l1ã€‚
+	//å‡å¦‚æœ‰ä¸ªå‚è€ƒå¸§ï¼ˆçŸ­æœŸå‚è€ƒå¸§æˆ–è€…é•¿æœŸå‚è€ƒå¸§ï¼‰å¯¹äºè§£ç ä¸€ä¸ªå›¾åƒç‰¹åˆ«æœ‰ç”¨ï¼Œä½†æ˜¯è¿™ä¸ªå‚è€ƒå¸§åœ¨ç¼ºçœçš„é˜Ÿåˆ—ä¸­å¹¶ä¸ä½äºç´¢å¼•å€¼ä¸º0çš„ä½ç½®ï¼Œæ‰€ä»¥ç¼–ç æ•°å€¼è¾ƒå¤§çš„ç´¢å¼•å€¼éœ€è¦èŠ±è´¹æ›´å¤šæ¯”ç‰¹ã€‚
+	//å‚è€ƒå¸§çš„é‡æ’åºå¯ä»¥ä½¿è¿™ä¸ªå‚è€ƒå¸§ä½äºç´¢å¼•å€¼æ¯”è¾ƒå°çš„ä½ç½®ï¼Œä»¥èŠ‚çœç¼–ç æ¯”ç‰¹æ•°ã€‚
+
+	//é‡æ’åºè¿‡ç¨‹å¯ä»¥è¿™ä¹ˆç†è§£ï¼šä¸è¯¥è§£ç sliceå…³è”è¾ƒå¤§çš„å‡ ä¸ªå‚è€ƒå¸§ä¸åœ¨çŸ­æœŸã€é•¿æœŸå‚è€ƒå¸§é˜Ÿåˆ—åºå·é å‰ä½ç½®ï¼Œ
+	//æˆ–è€…æ–°å¢å‚è€ƒå¸§æ—¶ï¼Œæ ¹æ®ref_pic_list_modificationå¾—åˆ°æƒ³è¦æ”¾åœ¨é˜Ÿåˆ—å‰çš„å‚è€ƒå¸§frameNumï¼Œç„¶åæŠŠè¯¥å‚è€ƒå¸§æ”¾åœ¨é˜Ÿåˆ—å¤´ï¼ŒåŒæ—¶é˜Ÿåˆ—ä¸­çš„åç»­å‚è€ƒå¸§é€ä¸€åç§»ã€‚
+	//å‚è€ƒèµ„æ–™   https://blog.csdn.net/qq_42139383/article/details/109489999
+
+	Modification_process_for_reference_picture_lists(sHeader);
 }
 
 void DPB::Decoded_reference_picture_marking_process(Picture* pic, const SliceHeader& sHeader)
@@ -400,7 +552,7 @@ void DPB::Decoded_reference_picture_marking_process(Picture* pic, const SliceHea
 
 	if (sHeader.nalu.IdrPicFlag)
 	{
-		//ËùÓĞ²Î¿¼Í¼ÏñĞèÒª±»±ê¼ÇÎª"²»ÓÃÓÚ²Î¿¼" 
+		//æ‰€æœ‰å‚è€ƒå›¾åƒéœ€è¦è¢«æ ‡è®°ä¸º"ä¸ç”¨äºå‚è€ƒ" 
 		for (size_t i = 0; i < dpb.length; i++)
 		{
 			dpb[i]->reference_marked_type = PICTURE_MARKING::UNUSED_FOR_REFERENCE;
@@ -408,7 +560,7 @@ void DPB::Decoded_reference_picture_marking_process(Picture* pic, const SliceHea
 
 		if (sHeader.long_term_reference_flag)
 		{
-			//¸ÃIDRÍ¼ÏñĞèÒª ±»±ê¼ÇÎª"ÓÃÓÚ³¤ÆÚ²Î¿¼"
+			//è¯¥IDRå›¾åƒéœ€è¦ è¢«æ ‡è®°ä¸º"ç”¨äºé•¿æœŸå‚è€ƒ"
 			pic->reference_marked_type = PICTURE_MARKING::LONG_TERM_REFERENCE;
 			pic->LongTermFrameIdx = 0;
 			pic->MaxLongTermFrameIdx = 0;
@@ -416,23 +568,23 @@ void DPB::Decoded_reference_picture_marking_process(Picture* pic, const SliceHea
 		}
 		else//sHeader.long_term_reference_flag=0
 		{
-			//¸ÃIDRÍ¼Ïñ½«±»±ê¼ÇÎª"ÓÃÓÚ¶ÌÆÚ²Î¿¼"
+			//è¯¥IDRå›¾åƒå°†è¢«æ ‡è®°ä¸º"ç”¨äºçŸ­æœŸå‚è€ƒ"
 			pic->reference_marked_type = PICTURE_MARKING::SHORT_TERM_REFERENCE;
-			pic->MaxLongTermFrameIdx = NA; //ÉèÖÃÎªÃ»ÓĞ³¤ÆÚË÷Òı
+			pic->MaxLongTermFrameIdx = NA; //è®¾ç½®ä¸ºæ²¡æœ‰é•¿æœŸç´¢å¼•
 		}
 	}
 	else
 	{
-		// =0 ÏÈÈëÏÈ³ö£¨FIFO£©£ºÊ¹ÓÃ»¬¶¯´°µÄ»úÖÆ£¬ÏÈÈëÏÈ³ö£¬ÔÚÕâÖÖÄ£Ê½ÏÂÃ»ÓĞ°ì·¨¶Ô³¤ÆÚ²Î¿¼Ö¡½øĞĞ²Ù×÷¡£
-		// =1 ×ÔÊÊÓ¦±ê¼Ç£¨marking£©£ººóĞøÂëÁ÷ÖĞ»áÓĞÒ»ÏµÁĞ¾ä·¨ÔªËØÏÔÊ½Ö¸Ã÷²Ù×÷µÄ²½Öè¡£×ÔÊÊÓ¦ÊÇÖ¸±àÂëÆ÷¿É¸ù¾İÇé¿öËæ»úÁé»îµØ×÷³ö¾ö²ß¡£
+		// =0 å…ˆå…¥å…ˆå‡ºï¼ˆFIFOï¼‰ï¼šä½¿ç”¨æ»‘åŠ¨çª—çš„æœºåˆ¶ï¼Œå…ˆå…¥å…ˆå‡ºï¼Œåœ¨è¿™ç§æ¨¡å¼ä¸‹æ²¡æœ‰åŠæ³•å¯¹é•¿æœŸå‚è€ƒå¸§è¿›è¡Œæ“ä½œã€‚
+		// =1 è‡ªé€‚åº”æ ‡è®°ï¼ˆmarkingï¼‰ï¼šåç»­ç æµä¸­ä¼šæœ‰ä¸€ç³»åˆ—å¥æ³•å…ƒç´ æ˜¾å¼æŒ‡æ˜æ“ä½œçš„æ­¥éª¤ã€‚è‡ªé€‚åº”æ˜¯æŒ‡ç¼–ç å™¨å¯æ ¹æ®æƒ…å†µéšæœºçµæ´»åœ°ä½œå‡ºå†³ç­–ã€‚
 		if (sHeader.adaptive_ref_pic_marking_mode_flag)
 		{
-			//×ÔÊÊÓ¦±ê¼Ç¹ı³Ì
+			//è‡ªé€‚åº”æ ‡è®°è¿‡ç¨‹
 			Adaptive_memory_control_decoded_reference_picture_marking_process(sHeader, pic);
 		}
 		else
 		{
-			//»¬¶¯´°¿Ú½âÂë²Î¿¼Í¼ÏñµÄ±êÊ¶¹ı³Ì
+			//æ»‘åŠ¨çª—å£è§£ç å‚è€ƒå›¾åƒçš„æ ‡è¯†è¿‡ç¨‹
 			Sliding_window_decoded_reference_picture_marking_process(sHeader.sps.max_num_ref_frames);
 		}
 	}
@@ -446,7 +598,7 @@ void DPB::Decoding_to_complete(ParseSlice* slice, const  SliceHeader& sHeader)
 
 	if (sHeader.nalu.nal_ref_idc != 0)
 	{
-		//±ê¼Çµ±Ç°½âÂëÍê³ÉµÄÖ¡ÊÇÊ²Ã´ÀàĞÍ£¬È»ºó·Åµ½DBPÀïÈ¥¹ÜÀí
+		//æ ‡è®°å½“å‰è§£ç å®Œæˆçš„å¸§æ˜¯ä»€ä¹ˆç±»å‹ï¼Œç„¶åæ”¾åˆ°DBPé‡Œå»ç®¡ç†
 		Decoded_reference_picture_marking_process(pic, sHeader);
 	}
 	previous = pic;
@@ -458,7 +610,7 @@ void DPB::Decoding_to_complete(ParseSlice* slice, const  SliceHeader& sHeader)
 
 void DPB::Sliding_window_decoded_reference_picture_marking_process(uint8_t max_num_ref_frames)
 {
-	//Èç¹ûµ±Ç°±àÂë³¡ÊÇÒ»¸ö»¥²¹²Î¿¼³¡¶ÔµÄµÚ¶ş¸ö³¡£¬²¢ÇÒµÚÒ»¸ö³¡ÒÑ¾­±»±ê¼ÇÎª¡°ÓÃÓÚ¶ÌÆÚ²Î¿¼¡±Ê±£¬µ±Ç°Í¼ÏñÒ²Ó¦¸Ã±»±ê¼ÇÎª¡°ÓÃÓÚ¶ÌÆÚ²Î¿¼¡±
+	//å¦‚æœå½“å‰ç¼–ç åœºæ˜¯ä¸€ä¸ªäº’è¡¥å‚è€ƒåœºå¯¹çš„ç¬¬äºŒä¸ªåœºï¼Œå¹¶ä¸”ç¬¬ä¸€ä¸ªåœºå·²ç»è¢«æ ‡è®°ä¸ºâ€œç”¨äºçŸ­æœŸå‚è€ƒâ€æ—¶ï¼Œå½“å‰å›¾åƒä¹Ÿåº”è¯¥è¢«æ ‡è®°ä¸ºâ€œç”¨äºçŸ­æœŸå‚è€ƒâ€
 
 	int numShortTerm = 0;
 	int numLongTerm = 0;
@@ -478,7 +630,7 @@ void DPB::Sliding_window_decoded_reference_picture_marking_process(uint8_t max_n
 
 	if (numShortTerm + numLongTerm == std::max(max_num_ref_frames, (uint8_t)1) && numShortTerm > 0)
 	{
-		//ÓĞ×Å×îĞ¡ FrameNumWrap ÖµµÄ¶ÌÆÚ²Î¿¼Ö¡±ØĞë±ê¼ÇÎª¡°²»ÓÃÓÚ²Î¿¼¡±
+		//æœ‰ç€æœ€å° FrameNumWrap å€¼çš„çŸ­æœŸå‚è€ƒå¸§å¿…é¡»æ ‡è®°ä¸ºâ€œä¸ç”¨äºå‚è€ƒâ€
 		int FrameNumWrap = -1;
 		Picture* pic = nullptr;
 		for (size_t i = 0; i < dpb.length; i++)
@@ -503,7 +655,7 @@ void DPB::Sliding_window_decoded_reference_picture_marking_process(uint8_t max_n
 		{
 			pic->reference_marked_type = PICTURE_MARKING::UNUSED_FOR_REFERENCE;
 		}
-		//ÈçËüÊÇÒ»¸öÖ¡»ò³¡¶Ô£¬ÄÇÃ´ËüµÄÁ½¸ö³¡±ØĞë¾ù±ê¼ÇÎª¡°²»ÓÃÓÚ²Î¿¼¡±¡£
+		//å¦‚å®ƒæ˜¯ä¸€ä¸ªå¸§æˆ–åœºå¯¹ï¼Œé‚£ä¹ˆå®ƒçš„ä¸¤ä¸ªåœºå¿…é¡»å‡æ ‡è®°ä¸ºâ€œä¸ç”¨äºå‚è€ƒâ€ã€‚
 	}
 }
 
@@ -512,11 +664,11 @@ void DPB::Adaptive_memory_control_decoded_reference_picture_marking_process(cons
 
 	for (size_t i = 0; i < sHeader.dec_ref_pic_markings_size; i++)
 	{
-		//½«Ò»¸ö¶ÌÆÚ²Î¿¼Í¼Ïñ±ê¼ÇÎª·Ç²Î¿¼Í¼Ïñ£¬Ò² ¼´½«Ò»¸ö¶ÌÆÚ²Î¿¼Í¼ÏñÒÆ³ö²Î¿¼Ö¡¶ÓÁĞ
+		//å°†ä¸€ä¸ªçŸ­æœŸå‚è€ƒå›¾åƒæ ‡è®°ä¸ºéå‚è€ƒå›¾åƒï¼Œä¹Ÿ å³å°†ä¸€ä¸ªçŸ­æœŸå‚è€ƒå›¾åƒç§»å‡ºå‚è€ƒå¸§é˜Ÿåˆ—
 		if (sHeader.dec_ref_pic_markings[i].memory_management_control_operation == 1)
 		{
 			int picNumX = sHeader.CurrPicNum - (sHeader.dec_ref_pic_markings[i].difference_of_pic_nums_minus1 + 1);
-			//Èç¹ûfield_pic_flagµÈÓÚ0, ÔòpicNumXÖ¸¶¨µÄ¶ÌÆÚ²Î¿¼Ö¡±»±ê¼ÇÎª¡°unused for reference¡±¡£
+			//å¦‚æœfield_pic_flagç­‰äº0, åˆ™picNumXæŒ‡å®šçš„çŸ­æœŸå‚è€ƒå¸§è¢«æ ‡è®°ä¸ºâ€œunused for referenceâ€ã€‚
 
 			for (size_t j = 0; j < dpb.length; j++)
 			{
@@ -527,10 +679,10 @@ void DPB::Adaptive_memory_control_decoded_reference_picture_marking_process(cons
 			}
 		}
 
-		//½«Ò»¸ö³¤ÆÚ²Î¿¼Í¼Ïñ±ê¼ÇÎª·Ç²Î¿¼Í¼Ïñ£¬Ò² ¼´½«Ò»¸ö³¤ÆÚ²Î¿¼Í¼ÏñÒÆ³ö²Î¿¼Ö¡¶ÓÁĞ
+		//å°†ä¸€ä¸ªé•¿æœŸå‚è€ƒå›¾åƒæ ‡è®°ä¸ºéå‚è€ƒå›¾åƒï¼Œä¹Ÿ å³å°†ä¸€ä¸ªé•¿æœŸå‚è€ƒå›¾åƒç§»å‡ºå‚è€ƒå¸§é˜Ÿåˆ—
 		if (sHeader.dec_ref_pic_markings[i].memory_management_control_operation == 2)
 		{
-			//Èç¹ûfield_pic_flagÎª0£¬ÔòLongTermPicNumµÈÓÚlong_term_pic_numµÄ³¤ÆÚ²Î¿¼Ö¡±»±ê¼ÇÎª¡°²»ÓÃÓÚ²Î¿¼¡±
+			//å¦‚æœfield_pic_flagä¸º0ï¼Œåˆ™LongTermPicNumç­‰äºlong_term_pic_numçš„é•¿æœŸå‚è€ƒå¸§è¢«æ ‡è®°ä¸ºâ€œä¸ç”¨äºå‚è€ƒâ€
 			for (size_t j = 0; j < dpb.length; j++)
 			{
 				if (dpb[j]->reference_marked_type == PICTURE_MARKING::LONG_TERM_REFERENCE && dpb[j]->LongTermPicNum == sHeader.dec_ref_pic_markings[i].long_term_pic_num)
@@ -540,11 +692,11 @@ void DPB::Adaptive_memory_control_decoded_reference_picture_marking_process(cons
 			}
 		}
 
-		//½«Ò»¸ö¶ÌÆÚ²Î¿¼Í¼Ïñ×ªÎª³¤ÆÚ²Î¿¼Í¼Ïñ
+		//å°†ä¸€ä¸ªçŸ­æœŸå‚è€ƒå›¾åƒè½¬ä¸ºé•¿æœŸå‚è€ƒå›¾åƒ
 		if (sHeader.dec_ref_pic_markings[i].memory_management_control_operation == 3)
 		{
 			int picNumX = sHeader.CurrPicNum - (sHeader.dec_ref_pic_markings[i].difference_of_pic_nums_minus1 + 1);
-			//µ±LongTermFrameIdxµÈÓÚlong_term_frame_idxÒÑ¾­±»·ÖÅä¸øÒ»¸ö³¤ÆÚ²Î¿¼Ö¡,¸ÃÖ¡±»±ê¼ÇÎª¡°Î´Ê¹ÓÃµÄ²Î¿¼¡±
+			//å½“LongTermFrameIdxç­‰äºlong_term_frame_idxå·²ç»è¢«åˆ†é…ç»™ä¸€ä¸ªé•¿æœŸå‚è€ƒå¸§,è¯¥å¸§è¢«æ ‡è®°ä¸ºâ€œæœªä½¿ç”¨çš„å‚è€ƒâ€
 			for (size_t j = 0; j < dpb.length; j++)
 			{
 				if (dpb[j]->reference_marked_type == PICTURE_MARKING::LONG_TERM_REFERENCE && dpb[j]->LongTermFrameIdx == sHeader.dec_ref_pic_markings[i].long_term_frame_idx)
@@ -553,7 +705,7 @@ void DPB::Adaptive_memory_control_decoded_reference_picture_marking_process(cons
 				}
 			}
 
-			//Èç¹ûfield_pic_flagµÈÓÚ0£¬ÔòPicNumXËùÈ·¶¨µÄ¶ÌÆÚ²Î¿¼Ö¡½«´Ó¡°ÓÃÓÚ¶ÌÆÚ²Î¿¼¡±×ª»¯Îª¡°ÓÃÓÚ³¤ÆÚ²Î¿¼¡±
+			//å¦‚æœfield_pic_flagç­‰äº0ï¼Œåˆ™PicNumXæ‰€ç¡®å®šçš„çŸ­æœŸå‚è€ƒå¸§å°†ä»â€œç”¨äºçŸ­æœŸå‚è€ƒâ€è½¬åŒ–ä¸ºâ€œç”¨äºé•¿æœŸå‚è€ƒâ€
 			for (size_t j = 0; j < dpb.length; j++)
 			{
 				if (dpb[j]->reference_marked_type == PICTURE_MARKING::SHORT_TERM_REFERENCE && dpb[j]->PicNum == picNumX)
@@ -564,7 +716,7 @@ void DPB::Adaptive_memory_control_decoded_reference_picture_marking_process(cons
 
 		}
 
-		//Ö¸Ã÷³¤ÆÚ²Î¿¼Ö¡µÄ×î´óÊıÄ¿¡£
+		//æŒ‡æ˜é•¿æœŸå‚è€ƒå¸§çš„æœ€å¤§æ•°ç›®ã€‚
 		if (sHeader.dec_ref_pic_markings[i].memory_management_control_operation == 4)
 		{
 			for (size_t j = 0; j < dpb.length; j++)
@@ -576,7 +728,7 @@ void DPB::Adaptive_memory_control_decoded_reference_picture_marking_process(cons
 			}
 			if (sHeader.dec_ref_pic_markings[i].max_long_term_frame_idx_plus1 == 0)
 			{
-				pic->MaxLongTermFrameIdx = NA;//·Ç³¤ÆÚÖ¡Ë÷Òı
+				pic->MaxLongTermFrameIdx = NA;//éé•¿æœŸå¸§ç´¢å¼•
 			}
 			else
 			{
@@ -584,7 +736,7 @@ void DPB::Adaptive_memory_control_decoded_reference_picture_marking_process(cons
 			}
 		}
 
-		//Çå¿Õ²Î¿¼Ö¡¶ÓÁĞ£¬½«ËùÓĞ²Î¿¼Í¼ÏñÒÆ³ö²Î¿¼Ö¡¶ÓÁĞ£¬²¢½ûÓÃ³¤ÆÚ²Î¿¼»úÖÆ
+		//æ¸…ç©ºå‚è€ƒå¸§é˜Ÿåˆ—ï¼Œå°†æ‰€æœ‰å‚è€ƒå›¾åƒç§»å‡ºå‚è€ƒå¸§é˜Ÿåˆ—ï¼Œå¹¶ç¦ç”¨é•¿æœŸå‚è€ƒæœºåˆ¶
 		if (sHeader.dec_ref_pic_markings[i].memory_management_control_operation == 5)
 		{
 			for (size_t j = 0; j < dpb.length; j++)
@@ -595,7 +747,7 @@ void DPB::Adaptive_memory_control_decoded_reference_picture_marking_process(cons
 			pic->memory_management_control_operation_5_flag = true;
 		}
 
-		//½«µ±Ç°Í¼Ïñ´æÎªÒ»¸ö³¤ÆÚ²Î¿¼Ö¡
+		//å°†å½“å‰å›¾åƒå­˜ä¸ºä¸€ä¸ªé•¿æœŸå‚è€ƒå¸§
 		if (sHeader.dec_ref_pic_markings[i].memory_management_control_operation == 6)
 		{
 			for (size_t j = 0; j < dpb.length; j++)
