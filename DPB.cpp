@@ -464,13 +464,15 @@ void DPB::Modification_process_of_reference_picture_lists_for_short_term_referen
 		RefPicListX[cIdx] = RefPicListX[cIdx - 1];
 	}
 
-	Find find(picNumLX);
-
-	int idx = RefPicListX.findIndex(num_ref_idx_lX_active_minus1 + 1, find);
-	if (idx != -1)
+	size_t idx = 0;
+	for (; idx < num_ref_idx_lX_active_minus1 + 1; idx++)
 	{
-		RefPicListX[refIdxLX++] = RefPicListX[idx];
+		if (RefPicListX[idx]->PicNum == picNumLX && RefPicListX[idx]->reference_marked_type == PICTURE_MARKING::SHORT_TERM_REFERENCE)
+		{
+			break;
+		}
 	}
+
 	int nIdx = refIdxLX;
 
 	for (size_t cIdx = refIdxLX; cIdx <= num_ref_idx_lX_active_minus1 + 1; cIdx++)

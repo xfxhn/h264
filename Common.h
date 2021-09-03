@@ -8,32 +8,8 @@
 
 
 
-#include "Picture.h"
 
 
-
-
-
-
-class Find {
-public:
-	int picNumLX;
-
-	explicit Find(int val) {
-		picNumLX = val;
-	}
-
-	bool operator()(Picture* val) const {
-		if (val->PicNum == picNumLX && val->reference_marked_type == PICTURE_MARKING::SHORT_TERM_REFERENCE)
-		{
-			return true;
-		}
-		else
-		{
-			return false;
-		}
-	}
-};
 //无效的值用”na”表示
 constexpr auto NA = -1;
 

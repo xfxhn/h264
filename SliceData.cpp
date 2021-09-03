@@ -202,7 +202,7 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice, DPB& dpb)
 			}
 			else  //÷°º‰‘§≤‚
 			{
-
+				int a = 1;
 			}
 
 		}
