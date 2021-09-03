@@ -1174,6 +1174,8 @@ void ParseSlice::Filtering_process_for_edges_for_bS_equal_to_4(const int p[4], c
 
 
 
+
+
 int ParseSlice::Derivation_process_for_4x4_luma_block_indices(int x, int y)
 {
 	return 8 * (y / 8) + 4 * (x / 8) + 2 * ((y % 8) / 4) + ((x % 8) / 4);
@@ -3154,23 +3156,292 @@ void ParseSlice::transformDecodeChromaResidualProcess(bool isChromaCb)
 void ParseSlice::Inter_prediction_process()
 {
 
-	/*if (sHeader.sps.pic_order_cnt_type == 0)
+	Macroblock* mb = macroblock[CurrMbAddr];
+	int NumMbPart = 0;
+	if (mb->mbType == H264_MB_TYPE::B_Skip || mb->mbType == H264_MB_TYPE::B_Direct_16x16)
 	{
-		ret = Decoding_process_for_picture_order_count_type_0(m_parent->m_picture_previous_ref);
-		RETURN_IF_FAILED(ret != 0, ret);
+		NumMbPart = 4;//mbPartIdx在0…3之间取值
 	}
-	else if (sHeader.sps.pic_order_cnt_type == 1)
+	else
 	{
-		ret = Decoding_process_for_picture_order_count_type_1(m_parent->m_picture_previous);
-		RETURN_IF_FAILED(ret != 0, ret);
+		NumMbPart = mb->NumMbPart; //mbPartIdx在0…NumMbPart( mb_type ) − 1
 	}
-	else if (sHeader.sps.pic_order_cnt_type == 2)
+
+	for (size_t mbPartIdx = 0; mbPartIdx < NumMbPart; mbPartIdx++)
 	{
-		ret = Decoding_process_for_picture_order_count_type_2(m_parent->m_picture_previous);
-		RETURN_IF_FAILED(ret != 0, ret);
-	}*/
+		int partWidth = 0;
+		int partHeight = 0;
+
+		int partWidthC = 0;
+		int partHeightC = 0;
+
+		int NumSubMbPart = 0;
+
+		if (mb->mbType != H264_MB_TYPE::P_8x8
+			&& mb->mbType != H264_MB_TYPE::P_8x8ref0
+			&& mb->mbType != H264_MB_TYPE::B_Skip
+			&& mb->mbType != H264_MB_TYPE::B_Direct_16x16
+			&& mb->mbType != H264_MB_TYPE::B_8x8
+			)
+		{
+			NumSubMbPart = 1;
+			partWidth = mb->MbPartWidth;
+			partHeight = mb->MbPartHeight;
+		}
+		else if ((mb->mbType == H264_MB_TYPE::P_8x8
+			|| mb->mbType == H264_MB_TYPE::P_8x8ref0
+			|| mb->mbType != H264_MB_TYPE::B_8x8)
+			&& mb->subMbType[mbPartIdx] != H264_MB_TYPE::B_Direct_8x8
+			)
+		{
+			NumSubMbPart = mb->NumSubMbPart[mbPartIdx]; //subMbPartIdx在0…NumSubMbPart( sub_mb_type ) − 1之间取值
+
+			partWidth = mb->SubMbPartWidth[mbPartIdx];
+			partHeight = mb->SubMbPartHeight[mbPartIdx];
+		}
+		else //B_Skip,B_Direct_16x16,B_Direct_8x8
+		{
+			NumSubMbPart = 4; //subMbPartIdx在0…3之间取值
+
+			partWidth = 4;
+			partHeight = 4;
+		}
 
 
+		if (sHeader.sps.ChromaArrayType != 0)
+		{
+			partWidthC = partWidth / sHeader.sps.SubWidthC;
+			partHeightC = partHeight / sHeader.sps.SubHeightC;
+		}
+
+		for (size_t subMbPartIdx = 0; subMbPartIdx < NumSubMbPart; subMbPartIdx++)
+		{
+
+		}
+
+
+		int MvCnt = 0;
+	}
+
+
+}
+
+
+void ParseSlice::Derivation_process_for_motion_vector_components_and_reference_indices(int mbPartIdx, int subMbPartIdx,
+	int& refIdxL0, int& refIdxL1)
+{
+	if (macroblock[CurrMbAddr]->mbType == H264_MB_TYPE::P_Skip)
+	{
+		//P和SP条带中跳过宏块的亮度运动矢量推导过程
+
+		//跳过的宏块的引用索引=0
+		subMbPartIdx = 0;
+	}
+}
+//8.4.1.3.2相邻分区运动数据的推导过程  
+void ParseSlice::Derivation_process_for_motion_data_of_neighbouring_partitions(int mbPartIdx, int subMbPartIdx, H264_MB_TYPE currSubMbType, int32_t listSuffixFlag)
+{
+
+	int mbAddrA = NA;
+	int mbAddrB = NA;
+	int mbAddrC = NA;
+	int mbAddrD = NA;
+
+	int mbPartIdxA = 0;
+	int mbPartIdxB = 0;
+	int mbPartIdxC = 0;
+	int mbPartIdxD = 0;
+
+	int subMbPartIdxA = 0;
+	int subMbPartIdxB = 0;
+	int subMbPartIdxC = 0;
+	int subMbPartIdxD = 0;
+
+
+	Derivation_process_for_neighbouring_partitions(mbPartIdx, subMbPartIdx, currSubMbType,
+		mbAddrA, mbAddrB, mbAddrC, mbAddrD,
+		mbPartIdxA, mbPartIdxB, mbPartIdxC, mbPartIdxD,
+		subMbPartIdxA, subMbPartIdxB, subMbPartIdxC, subMbPartIdxD
+	);
+	if (mbAddrC == NA && mbPartIdxC == NA && subMbPartIdxC == NA)
+	{
+		mbAddrC = mbAddrD;
+		mbPartIdxC = mbPartIdxD;
+		subMbPartIdxC = subMbPartIdxD;
+	}
+}
+
+//相邻分割块的推导过程
+void ParseSlice::Derivation_process_for_neighbouring_partitions(int mbPartIdx, int subMbPartIdx, H264_MB_TYPE currSubMbType,
+	int& mbAddrA, int& mbAddrB, int& mbAddrC, int& mbAddrD, int& mbPartIdxA, int& mbPartIdxB, int& mbPartIdxC, int& mbPartIdxD,
+	int& subMbPartIdxA, int& subMbPartIdxB, int& subMbPartIdxC, int& subMbPartIdxD)
+{
+
+
+	int MbPartWidth = macroblock[CurrMbAddr]->MbPartWidth;
+	int MbPartHeight = macroblock[CurrMbAddr]->MbPartHeight;
+	int SubMbPartWidth = macroblock[CurrMbAddr]->SubMbPartWidth[mbPartIdx];
+	int SubMbPartHeight = macroblock[CurrMbAddr]->SubMbPartHeight[mbPartIdx];
+
+	//宏块分区mbPartIdx的左上luma样本相对于宏块左上样本的位置(x, y)
+	int x = InverseRasterScan(mbPartIdx, MbPartWidth, MbPartHeight, 16, 0);
+	int y = InverseRasterScan(mbPartIdx, MbPartWidth, MbPartHeight, 16, 1);
+
+	int xS = 0;
+	int yS = 0;
+	if (macroblock[CurrMbAddr]->mbType == H264_MB_TYPE::P_8x8 || macroblock[CurrMbAddr]->mbType == H264_MB_TYPE::P_8x8ref0 || macroblock[CurrMbAddr]->mbType == H264_MB_TYPE::B_8x8)
+	{
+		//子宏块分区subMbPartIdx的左上luma样本相对于子宏块左上样本的位置(x, y)。
+		xS = InverseRasterScan(subMbPartIdx, SubMbPartWidth, SubMbPartHeight, 8, 0);
+		yS = InverseRasterScan(subMbPartIdx, SubMbPartWidth, SubMbPartHeight, 8, 1);
+	}
+	else
+	{
+		xS = 0;
+		yS = 0;
+	}
+
+	int predPartWidth = 0;
+	if (macroblock[CurrMbAddr]->mbType == H264_MB_TYPE::P_Skip || macroblock[CurrMbAddr]->mbType == H264_MB_TYPE::B_Skip || macroblock[CurrMbAddr]->mbType == H264_MB_TYPE::B_Direct_16x16)
+	{
+		predPartWidth = 16;
+	}
+	else if (macroblock[CurrMbAddr]->mbType == H264_MB_TYPE::B_8x8)
+	{
+		//当currSubMbType等于B_Direct_8x8，并且direct_spatial_mv_pred_flag等于1时，预测的运动矢量为整个宏块的预测运动矢量。
+		if (currSubMbType == H264_MB_TYPE::B_Direct_8x8)
+		{
+			predPartWidth = 16;
+		}
+		else
+		{
+			predPartWidth = SubMbPartWidth;
+		}
+	}
+	else if (macroblock[CurrMbAddr]->mbType == H264_MB_TYPE::P_8x8 || macroblock[CurrMbAddr]->mbType == H264_MB_TYPE::P_8x8ref0)
+	{
+		predPartWidth = SubMbPartWidth;
+	}
+	else
+	{
+		predPartWidth = MbPartWidth;
+	}
+
+
+	int xW = 0;
+	int yW = 0;
+
+	getMbAddrNAndLuma4x4BlkIdxN(mbAddrA, x + xS - 1, y + yS + 0, 16, 16, xW, yW);
+	if (mbAddrA == NA)
+	{
+		mbAddrA = NA;
+		mbPartIdxA = NA;
+		subMbPartIdxA = NA;
+	}
+	else
+	{
+		ParseSlice::Derivation_process_for_macroblock_and_sub_macroblock_partition_indices(macroblock[mbAddrA], xW, yW, mbPartIdxA, subMbPartIdxA);
+	}
+
+	getMbAddrNAndLuma4x4BlkIdxN(mbAddrB, x + xS + 0, y + yS - 1, 16, 16, xW, yW);
+	if (mbAddrB == NA)
+	{
+		mbAddrB = NA;
+		mbPartIdxB = NA;
+		subMbPartIdxB = NA;
+	}
+	else
+	{
+		ParseSlice::Derivation_process_for_macroblock_and_sub_macroblock_partition_indices(macroblock[mbAddrB], xW, yW, mbPartIdxB, subMbPartIdxB);
+	}
+
+	getMbAddrNAndLuma4x4BlkIdxN(mbAddrC, x + xS + predPartWidth, y + yS - 1, 16, 16, xW, yW);
+	if (mbAddrC == NA)
+	{
+		mbAddrC = NA;
+		mbPartIdxC = NA;
+		subMbPartIdxC = NA;
+	}
+	else
+	{
+		ParseSlice::Derivation_process_for_macroblock_and_sub_macroblock_partition_indices(macroblock[mbAddrC], xW, yW, mbPartIdxC, subMbPartIdxC);
+	}
+
+	getMbAddrNAndLuma4x4BlkIdxN(mbAddrD, x + xS - 1, y + yS - 1, 16, 16, xW, yW);
+	if (mbAddrD == NA)
+	{
+		mbAddrD = NA;
+		mbPartIdxD = NA;
+		subMbPartIdxD = NA;
+	}
+	else
+	{
+		ParseSlice::Derivation_process_for_macroblock_and_sub_macroblock_partition_indices(macroblock[mbAddrD], xW, yW, mbPartIdxD, subMbPartIdxD);
+	}
+}
+
+
+void ParseSlice::Derivation_process_for_macroblock_and_sub_macroblock_partition_indices(Macroblock* mb, int xP, int yP, int& mbPartIdxN, int& subMbPartIdxN)
+{
+	const H264_MB_TYPE mbType = mb->mbType;
+
+	if (mbType == H264_MB_TYPE::I_NxN
+		|| mbType == H264_MB_TYPE::I_16x16_0_0_0
+		|| mbType == H264_MB_TYPE::I_16x16_1_0_0
+		|| mbType == H264_MB_TYPE::I_16x16_2_0_0
+		|| mbType == H264_MB_TYPE::I_16x16_3_0_0
+		|| mbType == H264_MB_TYPE::I_16x16_0_1_0
+		|| mbType == H264_MB_TYPE::I_16x16_1_1_0
+		|| mbType == H264_MB_TYPE::I_16x16_2_1_0
+		|| mbType == H264_MB_TYPE::I_16x16_3_1_0
+		|| mbType == H264_MB_TYPE::I_16x16_0_2_0
+		|| mbType == H264_MB_TYPE::I_16x16_1_2_0
+		|| mbType == H264_MB_TYPE::I_16x16_2_2_0
+		|| mbType == H264_MB_TYPE::I_16x16_3_2_0
+		|| mbType == H264_MB_TYPE::I_16x16_0_0_1
+		|| mbType == H264_MB_TYPE::I_16x16_1_0_1
+		|| mbType == H264_MB_TYPE::I_16x16_2_0_1
+		|| mbType == H264_MB_TYPE::I_16x16_3_0_1
+		|| mbType == H264_MB_TYPE::I_16x16_0_1_1
+		|| mbType == H264_MB_TYPE::I_16x16_1_1_1
+		|| mbType == H264_MB_TYPE::I_16x16_2_1_1
+		|| mbType == H264_MB_TYPE::I_16x16_3_1_1
+		|| mbType == H264_MB_TYPE::I_16x16_0_2_1
+		|| mbType == H264_MB_TYPE::I_16x16_1_2_1
+		|| mbType == H264_MB_TYPE::I_16x16_2_2_1
+		|| mbType == H264_MB_TYPE::I_16x16_3_2_1
+		|| mbType == H264_MB_TYPE::I_PCM
+		)
+	{
+		mbPartIdxN = 0;
+	}
+	else
+	{
+		const uint8_t MbPartWidth = mb->MbPartWidth;
+		const uint8_t MbPartHeight = mb->MbPartHeight;
+		mbPartIdxN = (16 / MbPartWidth) * (yP / MbPartHeight) + (xP / MbPartWidth);
+	}
+
+	if (mbType != H264_MB_TYPE::P_8x8
+		&& mbType != H264_MB_TYPE::P_8x8ref0
+		&& mbType != H264_MB_TYPE::B_8x8
+		&& mbType != H264_MB_TYPE::B_Skip
+		&& mbType != H264_MB_TYPE::B_Direct_16x16
+		)
+	{
+		subMbPartIdxN = 0;
+	}
+	else if (mbType == H264_MB_TYPE::B_Skip || mbType == H264_MB_TYPE::B_Direct_16x16)
+	{
+		subMbPartIdxN = 2 * ((yP % 8) / 4) + ((xP % 8) / 4);
+	}
+	else//mbType is equal to P_8x8, P_8x8ref0, or B_8x8
+	{
+		//std::pair<int, int> info = Macroblock::getMbPartWidthAndHeight(subMbType[mbPartIdxN]);
+		const uint8_t MbPartWidth = mb->SubMbPartWidth[mbPartIdxN];
+		const uint8_t MbPartHeight = mb->SubMbPartHeight[mbPartIdxN];
+		subMbPartIdxN = (8 / MbPartWidth) * ((yP % 8) / MbPartHeight) + ((xP % 8) / MbPartWidth);
+	}
 }
 
 //POC图像顺序解码过程

@@ -174,5 +174,16 @@ private:
 	void Filtering_process_for_edges_for_bS_equal_to_4(const int p[4], const int q[4], int pp[3], int qq[3], int alpha, int beta, bool chromaStyleFilteringFlag);
 
 
+
+	void Derivation_process_for_motion_vector_components_and_reference_indices(int mbPartIdx, int subMbPartIdx,
+		int& refIdxL0, int& refIdxL1);
+	void Derivation_process_for_motion_data_of_neighbouring_partitions(int mbPartIdx, int subMbPartIdx, H264_MB_TYPE currSubMbType, int32_t listSuffixFlag);
+	void Derivation_process_for_neighbouring_partitions(int mbPartIdx, int subMbPartIdx, H264_MB_TYPE currSubMbType,
+		int& mbAddrA, int& mbAddrB, int& mbAddrC, int& mbAddrD,
+		int& mbPartIdxA, int& mbPartIdxB, int& mbPartIdxC, int& mbPartIdxD,
+		int& subMbPartIdxA, int& subMbPartIdxB, int& subMbPartIdxC, int& subMbPartIdxD);
+
+
+	static void Derivation_process_for_macroblock_and_sub_macroblock_partition_indices(Macroblock* mb, int xP, int yP, int& mbPartIdxN, int& subMbPartIdxN);
 };
 

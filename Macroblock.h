@@ -84,7 +84,7 @@ public:
 	H264_MB_PART_PRED_MODE mode;//当前宏块的预测模式
 	H264_MB_PART_PRED_MODE subMode[4];//子宏块的预测模式
 
-
+	uint8_t			NumMbPart;
 	uint8_t         NumSubMbPart[4];
 	uint8_t			MbPartWidth;
 	uint8_t			MbPartHeight;
@@ -200,11 +200,10 @@ private:
 
 	int fixed_mb_type(uint32_t slice_type, uint8_t& fix_mb_type, SLIECETYPE& fix_slice_type);
 
-	bool mb_pred(BitStream& bs, uint32_t numMbPart, Cabac& cabac);
+	bool mb_pred(BitStream& bs, Cabac& cabac);
 
 	bool residual(BitStream& bs, int startIdx, int endIdx, Cabac& cabac);
 	bool sub_mb_pred(BitStream& bs, Cabac& cabac);
-	uint8_t NumMbPart(uint32_t mb_type, SLIECETYPE slice_type);
 
 
 	int residual_luma(BitStream& bs, int i16x16DClevel[16], int i16x16AClevel[16][16], int level4x4[16][16],
