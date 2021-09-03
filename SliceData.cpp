@@ -79,7 +79,6 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice, DPB& dpb)
 			)
 		{
 			dpb.Decoding_process_for_reference_picture_lists_construction(Slice);
-			//Decoding_process_for_reference_picture_lists_construction
 		}
 	}
 

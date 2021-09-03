@@ -401,6 +401,7 @@ void DPB::Modification_process_for_reference_picture_lists(const SliceHeader& sH
 			}
 			else if (sHeader.modification_of_pic_nums_idc[0][i] == 2)
 			{
+				////长期参考帧的重排序
 				Modification_process_of_reference_picture_lists_for_long_term_reference_pictures(refIdxL0, picNumL0Pred,
 					sHeader.long_term_pic_num[0][i], sHeader.num_ref_idx_l0_active_minus1, RefPicList0, sHeader);
 			}
@@ -510,8 +511,8 @@ void DPB::Modification_process_of_reference_picture_lists_for_long_term_referenc
 
 	for (size_t cIdx = refIdxLX; cIdx <= num_ref_idx_lX_active_minus1 + 1; cIdx++)
 	{
-		int32_t LongTermPicNumF = (RefPicListX[cIdx]->reference_marked_type == PICTURE_MARKING::LONG_TERM_REFERENCE)
-			? RefPicListX[cIdx]->LongTermPicNum : (2 * (MaxLongTermFrameIdx + 1));
+		int LongTermPicNumF = (RefPicListX[cIdx]->reference_marked_type == PICTURE_MARKING::LONG_TERM_REFERENCE)
+			? RefPicListX[cIdx]->LongTermPicNum : 0;//(2 * (MaxLongTermFrameIdx + 1));
 
 
 		if (LongTermPicNumF != long_term_pic_num)
@@ -545,6 +546,10 @@ void DPB::Decoding_process_for_reference_picture_lists_construction(ParseSlice* 
 	//参考资料   https://blog.csdn.net/qq_42139383/article/details/109489999
 
 	Modification_process_for_reference_picture_lists(sHeader);
+
+
+	//修改过的参考图像列表 RefPicList0 中条目总数目为 num_ref_idx_l0_active_minus1 + 1，
+	//对 B 条带来说，修改 过的参考图像列表RefPicList1 中条目总数目为num_ref_idx_l1_active_minus1 + 1。
 }
 
 void DPB::Decoded_reference_picture_marking_process(Picture* pic, const SliceHeader& sHeader)
