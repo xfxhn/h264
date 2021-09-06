@@ -2841,7 +2841,7 @@ int Cabac::Derivation_process_of_ctxIdxInc_for_the_syntax_elements_ref_idx_l0_an
 	Slice->getMbAddrNAndLuma4x4BlkIdxN(mbAddrA, x + xS + (-1), y + yS + (0), 16, 16, xW, yW);
 	if (mbAddrA != NA)
 	{
-		Derivation_process_for_macroblock_and_sub_macroblock_partition_indices(Slice->macroblock[mbAddrA], xW, yW, mbPartIdxA, subMbPartIdxA);
+		ParseSlice::Derivation_process_for_macroblock_and_sub_macroblock_partition_indices(Slice->macroblock[mbAddrA], xW, yW, mbPartIdxA, subMbPartIdxA);
 
 		if (is_ref_idx_l0)
 		{
@@ -2897,7 +2897,7 @@ int Cabac::Derivation_process_of_ctxIdxInc_for_the_syntax_elements_ref_idx_l0_an
 
 	if (mbAddrB != NA)
 	{
-		Derivation_process_for_macroblock_and_sub_macroblock_partition_indices(Slice->macroblock[mbAddrB], xW, yW, mbPartIdxB, subMbPartIdxB);
+		ParseSlice::Derivation_process_for_macroblock_and_sub_macroblock_partition_indices(Slice->macroblock[mbAddrB], xW, yW, mbPartIdxB, subMbPartIdxB);
 
 		if (is_ref_idx_l0)
 		{
@@ -2982,71 +2982,6 @@ int Cabac::Derivation_process_of_ctxIdxInc_for_the_syntax_elements_ref_idx_l0_an
 	return condTermFlagA + 2 * condTermFlagB;
 }
 
-int Cabac::Derivation_process_for_macroblock_and_sub_macroblock_partition_indices(Macroblock* mb, int xP, int yP, int& mbPartIdxN, int& subMbPartIdxN)
-{
-	const H264_MB_TYPE mbType = mb->mbType;
-
-	if (mbType == H264_MB_TYPE::I_NxN
-		|| mbType == H264_MB_TYPE::I_16x16_0_0_0
-		|| mbType == H264_MB_TYPE::I_16x16_1_0_0
-		|| mbType == H264_MB_TYPE::I_16x16_2_0_0
-		|| mbType == H264_MB_TYPE::I_16x16_3_0_0
-		|| mbType == H264_MB_TYPE::I_16x16_0_1_0
-		|| mbType == H264_MB_TYPE::I_16x16_1_1_0
-		|| mbType == H264_MB_TYPE::I_16x16_2_1_0
-		|| mbType == H264_MB_TYPE::I_16x16_3_1_0
-		|| mbType == H264_MB_TYPE::I_16x16_0_2_0
-		|| mbType == H264_MB_TYPE::I_16x16_1_2_0
-		|| mbType == H264_MB_TYPE::I_16x16_2_2_0
-		|| mbType == H264_MB_TYPE::I_16x16_3_2_0
-		|| mbType == H264_MB_TYPE::I_16x16_0_0_1
-		|| mbType == H264_MB_TYPE::I_16x16_1_0_1
-		|| mbType == H264_MB_TYPE::I_16x16_2_0_1
-		|| mbType == H264_MB_TYPE::I_16x16_3_0_1
-		|| mbType == H264_MB_TYPE::I_16x16_0_1_1
-		|| mbType == H264_MB_TYPE::I_16x16_1_1_1
-		|| mbType == H264_MB_TYPE::I_16x16_2_1_1
-		|| mbType == H264_MB_TYPE::I_16x16_3_1_1
-		|| mbType == H264_MB_TYPE::I_16x16_0_2_1
-		|| mbType == H264_MB_TYPE::I_16x16_1_2_1
-		|| mbType == H264_MB_TYPE::I_16x16_2_2_1
-		|| mbType == H264_MB_TYPE::I_16x16_3_2_1
-		|| mbType == H264_MB_TYPE::I_PCM
-		)
-	{
-		mbPartIdxN = 0;
-	}
-	else
-	{
-		//std::pair<int, int> info = Macroblock::getMbPartWidthAndHeight(mbType);
-		const uint8_t MbPartWidth = mb->MbPartWidth;
-		const uint8_t MbPartHeight = mb->MbPartHeight;
-		mbPartIdxN = (16 / MbPartWidth) * (yP / MbPartHeight) + (xP / MbPartWidth);
-	}
-
-	if (mbType != H264_MB_TYPE::P_8x8
-		&& mbType != H264_MB_TYPE::P_8x8ref0
-		&& mbType != H264_MB_TYPE::B_8x8
-		&& mbType != H264_MB_TYPE::B_Skip
-		&& mbType != H264_MB_TYPE::B_Direct_16x16
-		)
-	{
-		subMbPartIdxN = 0;
-	}
-	else if (mbType == H264_MB_TYPE::B_Skip || mbType == H264_MB_TYPE::B_Direct_16x16)
-	{
-		subMbPartIdxN = 2 * ((yP % 8) / 4) + ((xP % 8) / 4);
-	}
-	else//mbType is equal to P_8x8, P_8x8ref0, or B_8x8
-	{
-		//std::pair<int, int> info = Macroblock::getMbPartWidthAndHeight(subMbType[mbPartIdxN]);
-		const uint8_t MbPartWidth = mb->SubMbPartWidth[mbPartIdxN];
-		const uint8_t MbPartHeight = mb->SubMbPartHeight[mbPartIdxN];
-		subMbPartIdxN = (8 / MbPartWidth) * ((yP % 8) / MbPartHeight) + ((xP % 8) / MbPartWidth);
-	}
-	return 0;
-}
-
 int Cabac::Derivation_process_of_ctxIdxInc_for_the_syntax_elements_mvd_l0_and_mvd_l1(ParseSlice* Slice, int mbPartIdx, int subMbPartIdx, int ctxIdxOffset, bool is_mvd_10)
 {
 
@@ -3091,7 +3026,7 @@ int Cabac::Derivation_process_of_ctxIdxInc_for_the_syntax_elements_mvd_l0_and_mv
 
 	if (mbAddrA != NA)
 	{
-		Derivation_process_for_macroblock_and_sub_macroblock_partition_indices(Slice->macroblock[mbAddrA], xW, yW, mbPartIdxA, subMbPartIdxA);
+		ParseSlice::Derivation_process_for_macroblock_and_sub_macroblock_partition_indices(Slice->macroblock[mbAddrA], xW, yW, mbPartIdxA, subMbPartIdxA);
 
 		if (Slice->macroblock[mbAddrA]->mbType == H264_MB_TYPE::B_Direct_16x16 || Slice->macroblock[mbAddrA]->mbType == H264_MB_TYPE::B_Skip)
 		{
@@ -3135,7 +3070,7 @@ int Cabac::Derivation_process_of_ctxIdxInc_for_the_syntax_elements_mvd_l0_and_mv
 	Slice->getMbAddrNAndLuma4x4BlkIdxN(mbAddrB, x + xS + (0), y + yS + (-1), 16, 16, xW, yW);
 	if (mbAddrB != NA)
 	{
-		Derivation_process_for_macroblock_and_sub_macroblock_partition_indices(Slice->macroblock[mbAddrB], xW, yW, mbPartIdxB, subMbPartIdxB);
+		ParseSlice::Derivation_process_for_macroblock_and_sub_macroblock_partition_indices(Slice->macroblock[mbAddrB], xW, yW, mbPartIdxB, subMbPartIdxB);
 		if (Slice->macroblock[mbAddrB]->mbType == H264_MB_TYPE::B_Direct_16x16 || Slice->macroblock[mbAddrB]->mbType == H264_MB_TYPE::B_Skip)
 		{
 			predModeEqualFlagB = 0;

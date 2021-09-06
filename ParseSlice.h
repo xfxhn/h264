@@ -125,6 +125,8 @@ public:
 
 	void getMbAddrNAndLuma4x4BlkIdxN(int& mbAddrN, const int xN, const int yN, const int maxW, const int maxH, int& xW, int& yW);
 
+	static void Derivation_process_for_macroblock_and_sub_macroblock_partition_indices(Macroblock* mb, int xP, int yP, int& mbPartIdxN, int& subMbPartIdxN);
+
 private:
 	void convertYuv420(uint8_t* buffer, size_t widthBytes);
 
@@ -176,14 +178,18 @@ private:
 
 
 	void Derivation_process_for_motion_vector_components_and_reference_indices(int mbPartIdx, int subMbPartIdx,
-		int& refIdxL0, int& refIdxL1);
-	void Derivation_process_for_motion_data_of_neighbouring_partitions(int mbPartIdx, int subMbPartIdx, H264_MB_TYPE currSubMbType, int32_t listSuffixFlag);
+		int mvL0[2], int mvL1[2], int& refIdxL0, int& refIdxL1);
+
+	void Derivation_process_for_luma_motion_vector_prediction(int mbPartIdx, int subMbPartIdx, H264_MB_TYPE currSubMbType, bool listSuffixFlag, int refIdxL0, int mvpLX[2]);
+
+	void Derivation_process_for_motion_data_of_neighbouring_partitions(int mbPartIdx, int subMbPartIdx, H264_MB_TYPE currSubMbType, bool listSuffixFlag,
+		int& mbAddrA, int& mbAddrB, int& mbAddrC, int mvLXA[2], int mvLXB[2], int mvLXC[2], int& refIdxLXA, int& refIdxLXB, int& refIdxLXC);
 	void Derivation_process_for_neighbouring_partitions(int mbPartIdx, int subMbPartIdx, H264_MB_TYPE currSubMbType,
 		int& mbAddrA, int& mbAddrB, int& mbAddrC, int& mbAddrD,
 		int& mbPartIdxA, int& mbPartIdxB, int& mbPartIdxC, int& mbPartIdxD,
 		int& subMbPartIdxA, int& subMbPartIdxB, int& subMbPartIdxC, int& subMbPartIdxD);
 
 
-	static void Derivation_process_for_macroblock_and_sub_macroblock_partition_indices(Macroblock* mb, int xP, int yP, int& mbPartIdxN, int& subMbPartIdxN);
+
 };
 

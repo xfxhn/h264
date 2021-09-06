@@ -185,7 +185,12 @@ public:
 
 	uint8_t     coded_block_flag_DC_pattern; //3个bit位表示CABAC残差相应4x4子宏块中的DC直流系数block的coded_block_flag值，(b7,...,b2,b1,b0)=(x,...,cr,cb,luma)
 	uint16_t    coded_block_flag_AC_pattern[3]; //16个bit位表示CABAC残差相应4x4子宏块中的AC交流系数block的coded_block_flag值(0或1)(全部默认为1)，[0]-luma,[1]-cb,[2]-cr
-
+	int                  predFlagL0[4];//predFlagL0和predFlagL1分别代表两个方向的refIdx是否为非负值
+	int                  predFlagL1[4];//最多4种宏块分割，子宏块也是
+	int                  mvL0[4][4][2];//两个方向的运动矢量mvL0和mvL1
+	int                  mvL1[4][4][2];
+	int                  refIdxL0[4];
+	int                  refIdxL1[4];
 public:
 	Macroblock();
 	bool macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* slice_data, Cabac& cabac);

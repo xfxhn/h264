@@ -58,7 +58,6 @@ private:
 	int Derivation_process_of_ctxIdxInc_for_the_syntax_element_intra_chroma_pred_mode(ParseSlice* Slice);
 	int Derivation_process_of_ctxIdxInc_for_the_syntax_element_coded_block_flag(ParseSlice* Slice, int ctxBlockCat, int BlkIdx, int iCbCr);
 	int Derivation_process_of_ctxIdxInc_for_the_syntax_elements_ref_idx_l0_and_ref_idx_l1(ParseSlice* Slice, int mbPartIdx, bool is_ref_idx_l0);
-	int Derivation_process_for_macroblock_and_sub_macroblock_partition_indices(Macroblock* mb, int xP, int yP, int& mbPartIdxN, int& subMbPartIdxN);
 
 	int Derivation_process_of_ctxIdxInc_for_the_syntax_elements_mvd_l0_and_mvd_l1(ParseSlice* Slice, int  mbPartIdx, int subMbPartIdx, int ctxIdxOffset, bool is_mvd_10);
 

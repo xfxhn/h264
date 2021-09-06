@@ -3228,23 +3228,120 @@ void ParseSlice::Inter_prediction_process()
 
 
 void ParseSlice::Derivation_process_for_motion_vector_components_and_reference_indices(int mbPartIdx, int subMbPartIdx,
-	int& refIdxL0, int& refIdxL1)
+	int mvL0[2], int mvL1[2], int& refIdxL0, int& refIdxL1)
 {
+	int mbAddrA = NA;
+	int mbAddrB = NA;
+	int mbAddrC = NA;
+
+	int mvL0A[2] = { 0 };
+	int mvL0B[2] = { 0 };
+	int mvL0C[2] = { 0 };
+	int refIdxL0A = 0;
+	int refIdxL0B = 0;
+	int refIdxL0C = 0;
+
+	H264_MB_TYPE currSubMbType = H264_MB_TYPE::NA;
+
 	if (macroblock[CurrMbAddr]->mbType == H264_MB_TYPE::P_Skip)
 	{
+
+		refIdxL0 = 0;
 		//P和SP条带中跳过宏块的亮度运动矢量推导过程
 
-		//跳过的宏块的引用索引=0
-		subMbPartIdx = 0;
+		Derivation_process_for_motion_data_of_neighbouring_partitions(mbPartIdx, subMbPartIdx, currSubMbType, false,
+			mbAddrA, mbAddrB, mbAddrC, mvL0A, mvL0B, mvL0C, refIdxL0A, refIdxL0B, refIdxL0C);
+
+		//亮度运动矢量mvL0和参考索引refIdxL0
+		if (mbAddrA == NA
+			|| mbAddrB == NA
+			|| (refIdxL0A == 0 && mvL0A[0] == 0 && mvL0A[1] == 0)
+			|| (refIdxL0B == 0 && mvL0B[0] == 0 && mvL0B[1] == 0)
+			)
+		{
+			mvL0[0] = 0;
+			mvL0[1] = 0;
+		}
+		else
+		{
+
+			//mbPartIdx = 0, subMbPartIdx = 0, refIdxL0和currSubMbType = "na" 作为输入
+			Derivation_process_for_luma_motion_vector_prediction(mbPartIdx, subMbPartIdx, currSubMbType, false, refIdxL0, mvL0);
+		}
 	}
 }
-//8.4.1.3.2相邻分区运动数据的推导过程  
-void ParseSlice::Derivation_process_for_motion_data_of_neighbouring_partitions(int mbPartIdx, int subMbPartIdx, H264_MB_TYPE currSubMbType, int32_t listSuffixFlag)
+
+//亮度运动矢量预测值的推导过程
+
+//对于一个帧间编码宏块，最多可以分割成16个4×4像素大小的子块来进行运动估计。
+//每一个子块都按照实际的运动矢量进行编码和传输需要较多的比特数。为了提升编码的效率，H.264中定义了运动矢量预测的方法。
+//每一个子块的运动矢量MV由计算得到的预测矢量MVP和运动矢量残差MVD得到。其中，MVD从码流中相应的语法元素解析得到，MVP由相邻像素块的信息计算得到
+void ParseSlice::Derivation_process_for_luma_motion_vector_prediction(int mbPartIdx, int subMbPartIdx, H264_MB_TYPE currSubMbType, bool listSuffixFlag, int refIdxLX, int mvpLX[2])
 {
 
 	int mbAddrA = NA;
 	int mbAddrB = NA;
 	int mbAddrC = NA;
+
+	int mvLXA[2] = { 0 };
+	int mvLXB[2] = { 0 };
+	int mvLXC[2] = { 0 };
+	int refIdxLXA = 0;
+	int refIdxLXB = 0;
+	int refIdxLXC = 0;
+
+
+	Derivation_process_for_motion_data_of_neighbouring_partitions(mbPartIdx, subMbPartIdx, currSubMbType, listSuffixFlag,
+		mbAddrA, mbAddrB, mbAddrC, mvLXA, mvLXB, mvLXC, refIdxLXA, refIdxLXB, refIdxLXC);
+
+
+	int MbPartWidth = macroblock[CurrMbAddr]->MbPartWidth;
+	int MbPartHeight = macroblock[CurrMbAddr]->MbPartHeight;
+
+	if (MbPartWidth == 16 && MbPartHeight == 8 && mbPartIdx == 0 && refIdxLXB == refIdxLX)
+	{
+		mvpLX[0] = mvLXB[0];
+		mvpLX[1] = mvLXB[1];
+	}
+	else if (MbPartWidth == 16 && MbPartHeight == 8 && mbPartIdx == 1 && refIdxLXA == refIdxLX)
+	{
+		mvpLX[0] = mvLXA[0];
+		mvpLX[1] = mvLXA[1];
+	}
+	else if (MbPartWidth == 8 && MbPartHeight == 16 && mbPartIdx == 0 && refIdxLXA == refIdxLX)
+	{
+		mvpLX[0] = mvLXA[0];
+		mvpLX[1] = mvLXA[1];
+	}
+	else if (MbPartWidth == 8 && MbPartHeight == 16 && mbPartIdx == 1 && refIdxLXC == refIdxLX)
+	{
+		mvpLX[0] = mvLXC[0];
+		mvpLX[1] = mvLXC[1];
+	}
+	else
+	{
+
+	}
+
+
+}
+//8.4.1.3.2相邻分区运动数据的推导过程  
+void ParseSlice::Derivation_process_for_motion_data_of_neighbouring_partitions(int mbPartIdx, int subMbPartIdx, H264_MB_TYPE currSubMbType, bool listSuffixFlag,
+	int& mbAddrA, int& mbAddrB, int& mbAddrC, int mvLXA[2], int mvLXB[2], int mvLXC[2], int& refIdxLXA, int& refIdxLXB, int& refIdxLXC)
+{
+
+	/*
+	   |		|
+	 D |  B		| C
+	---|--------|---
+	   |当前宏块	|
+	 A |或分割块	|
+	   |		|
+
+	*/
+	/*int mbAddrA = NA;
+	int mbAddrB = NA;
+	int mbAddrC = NA;*/
 	int mbAddrD = NA;
 
 	int mbPartIdxA = 0;
@@ -3269,6 +3366,108 @@ void ParseSlice::Derivation_process_for_motion_data_of_neighbouring_partitions(i
 		mbPartIdxC = mbPartIdxD;
 		subMbPartIdxC = subMbPartIdxD;
 	}
+
+	if (mbAddrA == NA
+		|| isInterMode(macroblock[mbAddrA]->mode)
+		|| (listSuffixFlag == false && macroblock[mbAddrA]->predFlagL0[mbPartIdxA] == 0)
+		|| (listSuffixFlag == true && macroblock[mbAddrA]->predFlagL1[mbPartIdxA] == 0)
+		)
+	{
+		mvLXA[0] = 0;
+		mvLXA[1] = 0;
+		refIdxLXA = -1;
+	}
+	else
+	{
+
+		if (listSuffixFlag)
+		{
+			mvLXA[0] = macroblock[mbAddrA]->mvL1[mbPartIdxA][subMbPartIdxA][0];
+			mvLXA[1] = macroblock[mbAddrA]->mvL1[mbPartIdxA][subMbPartIdxA][1];
+			refIdxLXA = macroblock[mbAddrA]->refIdxL1[mbPartIdxA];
+		}
+		else
+		{
+			mvLXA[0] = macroblock[mbAddrA]->mvL0[mbPartIdxA][subMbPartIdxA][0];
+			mvLXA[1] = macroblock[mbAddrA]->mvL0[mbPartIdxA][subMbPartIdxA][1];
+			refIdxLXA = macroblock[mbAddrA]->refIdxL0[mbPartIdxA];
+		}
+
+
+		//变量mvLXN[ 1 ]和refIdxLXN进一步处理如下
+		//如果当前宏块为场宏块，且宏块mbAddrN为帧宏块.mvLXN[ 1 ] = mvLXN[ 1 ] / 2 ,refIdxLXN = refIdxLXN * 2 
+		//如果当前宏块为帧宏块且宏块mbAddrN为场宏块.mvLXN[ 1 ] = mvLXN[ 1 ] * 2,refIdxLXN = refIdxLXN / 2
+	}
+
+
+
+
+	if (mbAddrB == NA
+		|| isInterMode(macroblock[mbAddrB]->mode)
+		|| (listSuffixFlag == false && macroblock[mbAddrB]->predFlagL0[mbPartIdxB] == 0)
+		|| (listSuffixFlag == true && macroblock[mbAddrB]->predFlagL1[mbPartIdxB] == 0)
+		)
+	{
+		mvLXB[0] = 0;
+		mvLXB[1] = 0;
+		refIdxLXB = -1;
+	}
+	else
+	{
+
+		if (listSuffixFlag)
+		{
+			mvLXB[0] = macroblock[mbAddrB]->mvL1[mbPartIdxB][subMbPartIdxB][0];
+			mvLXB[1] = macroblock[mbAddrB]->mvL1[mbPartIdxB][subMbPartIdxB][1];
+			refIdxLXB = macroblock[mbAddrB]->refIdxL1[mbPartIdxB];
+		}
+		else
+		{
+			mvLXB[0] = macroblock[mbAddrB]->mvL0[mbPartIdxB][subMbPartIdxB][0];
+			mvLXB[1] = macroblock[mbAddrB]->mvL0[mbPartIdxB][subMbPartIdxB][1];
+			refIdxLXB = macroblock[mbAddrB]->refIdxL0[mbPartIdxB];
+		}
+
+
+		//变量mvLXN[ 1 ]和refIdxLXN进一步处理如下
+		//如果当前宏块为场宏块，且宏块mbAddrN为帧宏块.mvLXN[ 1 ] = mvLXN[ 1 ] / 2 ,refIdxLXN = refIdxLXN * 2 
+		//如果当前宏块为帧宏块且宏块mbAddrN为场宏块.mvLXN[ 1 ] = mvLXN[ 1 ] * 2,refIdxLXN = refIdxLXN / 2
+	}
+
+
+
+	if (mbAddrC == NA
+		|| isInterMode(macroblock[mbAddrC]->mode)
+		|| (listSuffixFlag == false && macroblock[mbAddrC]->predFlagL0[mbPartIdxC] == 0)
+		|| (listSuffixFlag == true && macroblock[mbAddrC]->predFlagL1[mbPartIdxC] == 0)
+		)
+	{
+		mvLXC[0] = 0;
+		mvLXC[1] = 0;
+		refIdxLXC = -1;
+	}
+	else
+	{
+
+		if (listSuffixFlag)
+		{
+			mvLXC[0] = macroblock[mbAddrC]->mvL1[mbPartIdxC][subMbPartIdxC][0];
+			mvLXC[1] = macroblock[mbAddrC]->mvL1[mbPartIdxC][subMbPartIdxC][1];
+			refIdxLXC = macroblock[mbAddrC]->refIdxL1[mbPartIdxC];
+		}
+		else
+		{
+			mvLXC[0] = macroblock[mbAddrC]->mvL0[mbPartIdxC][subMbPartIdxC][0];
+			mvLXC[1] = macroblock[mbAddrC]->mvL0[mbPartIdxC][subMbPartIdxC][1];
+			refIdxLXC = macroblock[mbAddrC]->refIdxL0[mbPartIdxC];
+		}
+
+
+		//变量mvLXN[ 1 ]和refIdxLXN进一步处理如下
+		//如果当前宏块为场宏块，且宏块mbAddrN为帧宏块.mvLXN[ 1 ] = mvLXN[ 1 ] / 2 ,refIdxLXN = refIdxLXN * 2 
+		//如果当前宏块为帧宏块且宏块mbAddrN为场宏块.mvLXN[ 1 ] = mvLXN[ 1 ] * 2,refIdxLXN = refIdxLXN / 2
+	}
+
 }
 
 //相邻分割块的推导过程
