@@ -1,5 +1,9 @@
 #pragma once
 #include "Common.h"
+#include "ParsePPS.h"
+#include "ParseSPS.h"
+#include "Macroblock.h"
+
 class ParseSlice;
 class SliceHeader;
 
@@ -7,10 +11,15 @@ class Picture
 {
 
 public:
+	ParsePPS pps;
+	ParseSPS sps;
+	Macroblock** macroblock;
+
 	//解码POC需要用到的
 	int			FrameNumOffset;
 	uint16_t	pic_order_cnt_lsb;
 	uint16_t	frame_num;
+	bool		field_pic_flag;
 
 	int         PicOrderCntMsb;
 	int         PicOrderCntLsb;

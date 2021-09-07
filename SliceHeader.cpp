@@ -32,8 +32,8 @@ SliceHeader::SliceHeader(const ParseNalu& nalu)
 	slice_group_change_cycle = 0;
 
 	ref_pic_list_modification_flag_l0 = 0;
-	memset(modification_of_pic_nums_idc, 0, sizeof(uint32_t) * 32 * 2);
-	memset(abs_diff_pic_num_minus1, 0, sizeof(uint32_t) * 32 * 2);
+	memset(modification_of_pic_nums_idc, 0, sizeof(uint8_t) * 32 * 2);
+	memset(abs_diff_pic_num_minus1, 0, sizeof(uint16_t) * 32 * 2);
 	memset(long_term_pic_num, 0, sizeof(uint32_t) * 32 * 2);
 	ref_pic_list_modification_flag_l1 = 0;
 	ref_pic_list_modification_count_l0 = 0;
@@ -92,6 +92,9 @@ SliceHeader& SliceHeader::operator=(const SliceHeader& src)
 	if (this == &src) return *this;
 
 	this->nalu = src.nalu;
+	pps = src.pps;
+	sps = src.sps;
+
 	first_mb_in_slice = src.first_mb_in_slice;
 	slice_type = src.slice_type;
 	pic_parameter_set_id = src.pic_parameter_set_id;
@@ -121,8 +124,8 @@ SliceHeader& SliceHeader::operator=(const SliceHeader& src)
 	slice_group_change_cycle = src.slice_group_change_cycle;
 	ref_pic_list_modification_flag_l0 = src.ref_pic_list_modification_flag_l0;
 
-	memcpy(modification_of_pic_nums_idc, src.modification_of_pic_nums_idc, sizeof(uint32_t) * 2 * 32);
-	memcpy(abs_diff_pic_num_minus1, src.abs_diff_pic_num_minus1, sizeof(uint32_t) * 2 * 32);
+	memcpy(modification_of_pic_nums_idc, src.modification_of_pic_nums_idc, sizeof(uint8_t) * 2 * 32);
+	memcpy(abs_diff_pic_num_minus1, src.abs_diff_pic_num_minus1, sizeof(uint16_t) * 2 * 32);
 	memcpy(long_term_pic_num, src.long_term_pic_num, sizeof(uint32_t) * 2 * 32);
 
 
@@ -204,7 +207,7 @@ bool SliceHeader::isFinishPicture()
 	return false;
 }
 
-bool SliceHeader::slice_header(BitStream& bs, const ParsePPS ppsCache[256], const ParseSPS spsCache[32])
+bool SliceHeader::slice_header(BitStream& bs, const ParsePPS* ppsCache, const ParseSPS* spsCache)
 {
 
 	//这个属性表示的是在这个 Slice 中第一个宏块的序号
@@ -293,6 +296,7 @@ bool SliceHeader::slice_header(BitStream& bs, const ParsePPS ppsCache[256], cons
 
 	if ((SLIECETYPE)slice_type == SLIECETYPE::H264_SLIECE_TYPE_B)
 	{
+		//指出在B图像的直接预测的模式下，用时间预测还是用空间预测。1： 空间预测；0：时间预测。
 		direct_spatial_mv_pred_flag = bs.readBit(); //2 u(1)
 	}
 

@@ -34,7 +34,7 @@ ParsePPS::ParsePPS()
 	redundant_pic_cnt_present_flag = false;
 	transform_8x8_mode_flag = 0;
 	pic_scaling_matrix_present_flag = false;
-	memset(pic_scaling_list_present_flag, 0, sizeof(int32_t) * 12);
+	memset(pic_scaling_list_present_flag, 0, sizeof(bool) * 12);
 	second_chroma_qp_index_offset = 0;
 	memset(ScalingList4x4, 0, sizeof(int32_t) * 6 * 16);
 	memset(ScalingList8x8, 0, sizeof(int32_t) * 6 * 64);
@@ -157,7 +157,7 @@ bool ParsePPS::pic_parameter_set_rbsp(BitStream& bs, const ParseSPS spsCache[32]
 
 	//当second_chroma_qp_index_offset 不存在时，默认其值等于 chroma_qp_index_offset
 	second_chroma_qp_index_offset = chroma_qp_index_offset;
-	
+
 	if (bs.more_rbsp_data())
 	{
 		//等于1表示8x8变换解码过程可能正在使用（参见 8.5 节）。transform_8x8_mode_flag 等于 0 表示未使用 8x8 变换解码过程。

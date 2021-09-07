@@ -32,7 +32,10 @@ inline void printError(const char* err) {
 
 	std::cout << err << std::endl;
 }
-
+inline int Median(int x, int y, int z)
+{
+	return x + y + z - std::min(x, std::min(y, z)) - std::max(x, std::max(y, z));
+}
 inline int Clip3(int x, int y, int z)
 {
 	if (z < x)

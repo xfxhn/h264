@@ -55,7 +55,7 @@ ParseSPS::ParseSPS()
 	pic_width_in_mbs_minus1 = 0;
 	pic_height_in_map_units_minus1 = 0;
 	frame_mbs_only_flag = false;
-	mb_adaptive_frame_field_flag = 0;
+	mb_adaptive_frame_field_flag = false;
 	direct_8x8_inference_flag = 0;
 	frame_cropping_flag = 0;
 	frame_crop_left_offset = 0;
@@ -310,7 +310,6 @@ bool ParseSPS::seq_parameter_set_data(BitStream& bs)
 	}
 
 	//B_Skip、B_Direct_16x16 和 B_Direct_8x8 亮度运动矢量 的计算过程使用的方法
-
 	direct_8x8_inference_flag = bs.readBit();
 	//图片进行裁剪的偏移量 如果为0那么就不需要裁剪
 	frame_cropping_flag = bs.readBit();
