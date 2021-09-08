@@ -3226,7 +3226,7 @@ void ParseSlice::Inter_prediction_process(DPB& dpb)
 
 }
 
-
+//运动矢量分量和参考指标的推导过程
 void ParseSlice::Derivation_process_for_motion_vector_components_and_reference_indices(DPB& dpb, int mbPartIdx, int subMbPartIdx,
 	int mvL0[2], int mvL1[2], int& refIdxL0, int& refIdxL1, int& predFlagL0, int& predFlagL1, int& subMvCnt)
 {
@@ -3265,9 +3265,8 @@ void ParseSlice::Derivation_process_for_motion_vector_components_and_reference_i
 		}
 		else
 		{
-
 			//mbPartIdx = 0, subMbPartIdx = 0, refIdxL0和currSubMbType = "na" 作为输入
-			Derivation_process_for_luma_motion_vector_prediction(dpb, mbPartIdx, subMbPartIdx, currSubMbType, false, refIdxL0, mvL0);
+			Derivation_process_for_luma_motion_vector_prediction(mbPartIdx, subMbPartIdx, currSubMbType, false, refIdxL0, mvL0);
 		}
 
 		predFlagL0 = 1;
@@ -3279,7 +3278,56 @@ void ParseSlice::Derivation_process_for_motion_vector_components_and_reference_i
 	else if (mbType == H264_MB_TYPE::B_Skip || mbType == H264_MB_TYPE::B_Direct_16x16 || macroblock[CurrMbAddr]->subMbType[mbPartIdx] == H264_MB_TYPE::B_Direct_8x8)
 	{
 		//B条带中B_Skip, B_Direct_16x16和B_Direct_8x8宏块的亮度运动矢量导出过程
-		Derivation_process_for_luma_motion_vectors_for_B_Skip_or_B_Direct_16x16_or_B_Direct_8x8(dpb, mbPartIdx, subMbPartIdx);
+		Derivation_process_for_luma_motion_vectors_for_B_Skip_or_B_Direct_16x16_or_B_Direct_8x8(dpb, mbPartIdx, subMbPartIdx,
+			refIdxL0, refIdxL1, mvL0, mvL1, predFlagL0, predFlagL1, subMvCnt);
+	}
+	else
+	{
+		H264_MB_PART_PRED_MODE mode = Macroblock::getMbPartPredMode(macroblock[CurrMbAddr]->fix_slice_type, macroblock[CurrMbAddr]->fix_mb_type, macroblock[CurrMbAddr]->transform_size_8x8_flag, mbPartIdx);
+		H264_MB_PART_PRED_MODE subMode = macroblock[CurrMbAddr]->subMode[mbPartIdx];
+
+		if (mode == H264_MB_PART_PRED_MODE::Pred_L0 || mode == H264_MB_PART_PRED_MODE::BiPred
+			|| subMode == H264_MB_PART_PRED_MODE::Pred_L0 || subMode == H264_MB_PART_PRED_MODE::BiPred
+			)
+		{
+			refIdxL0 = macroblock[CurrMbAddr]->ref_idx_l0[mbPartIdx];
+			predFlagL0 = 1;
+		}
+		else
+		{
+			refIdxL0 = -1;
+			predFlagL0 = 0;
+		}
+
+		if (mode == H264_MB_PART_PRED_MODE::Pred_L1 || mode == H264_MB_PART_PRED_MODE::BiPred
+			|| subMode == H264_MB_PART_PRED_MODE::Pred_L1 || subMode == H264_MB_PART_PRED_MODE::BiPred
+			)
+		{
+			refIdxL1 = macroblock[CurrMbAddr]->ref_idx_l1[mbPartIdx];
+			predFlagL1 = 1;
+		}
+		else
+		{
+			refIdxL1 = -1;
+			predFlagL1 = 0;
+		}
+
+		subMvCnt = predFlagL0 + predFlagL1;
+
+
+		if (macroblock[CurrMbAddr]->mbType == H264_MB_TYPE::B_8x8)
+		{
+			currSubMbType = macroblock[CurrMbAddr]->subMbType[mbPartIdx];
+		}
+		else
+		{
+			currSubMbType = H264_MB_TYPE::NA;
+		}
+
+		if (predFlagL0 == 1)
+		{
+
+		}
 	}
 }
 
@@ -3288,7 +3336,7 @@ void ParseSlice::Derivation_process_for_motion_vector_components_and_reference_i
 //对于一个帧间编码宏块，最多可以分割成16个4×4像素大小的子块来进行运动估计。
 //每一个子块都按照实际的运动矢量进行编码和传输需要较多的比特数。为了提升编码的效率，H.264中定义了运动矢量预测的方法。
 //每一个子块的运动矢量MV由计算得到的预测矢量MVP和运动矢量残差MVD得到。其中，MVD从码流中相应的语法元素解析得到，MVP由相邻像素块的信息计算得到
-void ParseSlice::Derivation_process_for_luma_motion_vector_prediction(DPB& dpb, int mbPartIdx, int subMbPartIdx, H264_MB_TYPE currSubMbType, bool listSuffixFlag, int refIdxLX, int mvpLX[2])
+void ParseSlice::Derivation_process_for_luma_motion_vector_prediction(int mbPartIdx, int subMbPartIdx, H264_MB_TYPE currSubMbType, bool listSuffixFlag, int refIdxLX, int mvpLX[2])
 {
 
 	int mbAddrA = NA;
@@ -3366,14 +3414,38 @@ void ParseSlice::Derivation_process_for_luma_motion_vector_prediction(DPB& dpb, 
 	}
 }
 
-void ParseSlice::Derivation_process_for_luma_motion_vectors_for_B_Skip_or_B_Direct_16x16_or_B_Direct_8x8(DPB& dpb, int mbPartIdx, int subMbPartIdx)
+////B条带中B_Skip, B_Direct_16x16和B_Direct_8x8宏块的亮度运动矢量导出过程
+void ParseSlice::Derivation_process_for_luma_motion_vectors_for_B_Skip_or_B_Direct_16x16_or_B_Direct_8x8(DPB& dpb, int mbPartIdx, int subMbPartIdx,
+	int& refIdxL0, int& refIdxL1, int mvL0[2], int mvL1[2], int& predFlagL0, int& predFlagL1, int& subMvCnt)
 {
 	if (sHeader.direct_spatial_mv_pred_flag)
 	{
+
 		//空域直接模式下亮度运动矢量和参考索引的推导过程
+		Derivation_process_for_spatial_direct_luma_motion_vector_and_reference_index_prediction_mode(dpb, mbPartIdx, subMbPartIdx,
+			refIdxL0, refIdxL1, mvL0, mvL1, predFlagL0, predFlagL1, subMvCnt);
+	}
+	else
+	{
+		//时域直接亮度运动矢量的推导过程及参考指标预测模式  
+		Derivation_process_for_temporal_direct_luma_motion_vector_and_reference_index_prediction_mode(dpb, mbPartIdx, subMbPartIdx,
+			refIdxL0, refIdxL1, mvL0, mvL1, predFlagL0, predFlagL1);
+
+		if (subMbPartIdx == 0)
+		{
+			subMvCnt = 2;
+		}
+		else
+		{
+			subMvCnt = 0;
+		}
+
 	}
 }
-void ParseSlice::Derivation_process_for_spatial_direct_luma_motion_vector_and_reference_index_prediction_mode(DPB& dpb, int mbPartIdx, int subMbPartIdx, int& refIdxL0, int& refIdxL1)
+
+//空域直接模式下亮度运动矢量和参考索引的推导过程
+void ParseSlice::Derivation_process_for_spatial_direct_luma_motion_vector_and_reference_index_prediction_mode(DPB& dpb, int mbPartIdx, int subMbPartIdx,
+	int& refIdxL0, int& refIdxL1, int mvL0[2], int mvL1[2], int& predFlagL0, int& predFlagL1, int& subMvCnt)
 {
 	const H264_MB_TYPE currSubMbType = macroblock[CurrMbAddr]->subMbType[mbPartIdx];
 
@@ -3413,71 +3485,224 @@ void ParseSlice::Derivation_process_for_spatial_direct_luma_motion_vector_and_re
 
 #undef MinPositive
 
-	int directZeroPredictionFlag = 0;
+	bool directZeroPredictionFlag = false;
 	if (refIdxL0 < 0 && refIdxL1 < 0)
 	{
 		refIdxL0 = 0;
 		refIdxL1 = 0;
-		directZeroPredictionFlag = 1;
+		directZeroPredictionFlag = true;
+	}
+
+	int refIdxCol = 0;
+	int mvCol[2] = { 0 };
+	Picture* colPic = nullptr;
+	int mbAddrCol = 0;
+
+	Derivation_process_for_the_co_located_4x4_sub_macroblock_partitions(dpb, mbPartIdx, subMbPartIdx,
+		colPic, mbAddrCol, mvCol, refIdxCol);
+
+	bool colZeroFlag = false;
+	//mvCol[ 0 ]和mvCol[ 1 ]的单位等于1/4亮度帧样点的单位
+	if (dpb.RefPicList1[0]->reference_marked_type == PICTURE_MARKING::SHORT_TERM_REFERENCE
+		&& refIdxCol == 0
+		&& (mvCol[0] >= -1 && mvCol[0] <= 1) && (mvCol[1] >= -1 && mvCol[1] <= 1)
+		)
+	{
+		colZeroFlag = true;
+	}
+	else
+	{
+		colZeroFlag = false;
 	}
 
 
+	if (directZeroPredictionFlag || refIdxL0 < 0 || (refIdxL0 == 0 && colZeroFlag))
+	{
+		mvL0[0] = 0;
+		mvL0[1] = 0;
+	}
+	else
+	{
+		mbPartIdx = 0;
+		subMbPartIdx = 0;
+		Derivation_process_for_luma_motion_vector_prediction(mbPartIdx, subMbPartIdx, currSubMbType, false, refIdxL0, mvL0);
+	}
+
+	if (directZeroPredictionFlag || refIdxL1 < 0 || (refIdxL1 == 0 && colZeroFlag))
+	{
+		mvL1[0] = 0;
+		mvL1[1] = 0;
+	}
+	else
+	{
+		mbPartIdx = 0;
+		subMbPartIdx = 0;
+		Derivation_process_for_luma_motion_vector_prediction(mbPartIdx, subMbPartIdx, currSubMbType, true, refIdxL1, mvL1);
+	}
+
+
+	if (refIdxL0 >= 0 && refIdxL1 >= 0)
+	{
+		predFlagL0 = 1;
+		predFlagL1 = 1;
+	}
+	else if (refIdxL0 >= 0 && refIdxL1 < 0)
+	{
+		predFlagL0 = 1;
+		predFlagL1 = 0;
+	}
+	else if (refIdxL0 < 0 && refIdxL1 >= 0)
+	{
+		predFlagL0 = 0;
+		predFlagL1 = 1;
+	}
+
+	if (subMbPartIdx != 0)
+	{
+		subMvCnt = 0;
+	}
+	else
+	{
+		subMvCnt = predFlagL0 + predFlagL1;
+	}
+}
+
+//时域直接亮度运动矢量的推导过程及参考指标预测模式  
+void ParseSlice::Derivation_process_for_temporal_direct_luma_motion_vector_and_reference_index_prediction_mode(DPB& dpb, int mbPartIdx, int subMbPartIdx,
+	int& refIdxL0, int& refIdxL1, int mvL0[2], int mvL1[2], int& predFlagL0, int& predFlagL1)
+{
+	int refIdxCol = 0;
+	int mvCol[2] = { 0 };
+	Picture* colPic = nullptr;
+	int mbAddrCol = 0;
+	Derivation_process_for_the_co_located_4x4_sub_macroblock_partitions(dpb, mbPartIdx, subMbPartIdx,
+		colPic, mbAddrCol, mvCol, refIdxCol);
+
+	//MapColToList0( refIdxCol )
+
+	//令refIdxL0Frm为当前参考图像列表RefPicList0中的最小索引值
+	size_t refIdxL0Frm = 0;
+	for (size_t i = 0; i < dpb.RefPicList0.length; i++)
+	{
+		if (dpb.RefPicList0[i] == colPic)
+		{
+			refIdxL0Frm = i;
+			break;
+		}
+	}
+	refIdxL0 = ((refIdxCol < 0) ? 0 : refIdxL0Frm);
+	refIdxL1 = 0;
+
+	//vertMvScale 等于 One_To_One）， mvCol[ 1 ]保持不变
+
+	//field_pic_flag等于1，或者当前宏块为帧宏块
+	Picture* currPicOrField = new Picture(this, sHeader);
+	Picture* pic0 = dpb.RefPicList0[refIdxL0];
+	Picture* pic1 = dpb.RefPicList1[0];
+
+
+	//当前宏块中每个 4×4 子宏块分割块的两个运动矢量 mvL0 和 mvL1 推导过程
+
+	if (dpb.RefPicList0[refIdxL0]->reference_marked_type == PICTURE_MARKING::LONG_TERM_REFERENCE
+		|| DiffPicOrderCnt(pic1, pic0) == 0
+		)
+	{
+		mvL0[0] = mvCol[0];
+		mvL0[1] = mvCol[1];
+
+		mvL1[0] = 0;
+		mvL1[1] = 0;
+	}
+	else
+	{
+		int tb = Clip3(-128, 127, DiffPicOrderCnt(currPicOrField, pic0));
+		int td = Clip3(-128, 127, DiffPicOrderCnt(pic1, pic0));
+		int tx = (16384 + std::abs(td / 2)) / td;
+
+		int DistScaleFactor = Clip3(-1024, 1023, (tb * tx + 32) >> 6);
+
+		mvL0[0] = (DistScaleFactor * mvCol[0] + 128) >> 8;
+		mvL0[1] = (DistScaleFactor * mvCol[1] + 128) >> 8;
+		mvL1[0] = mvL0[0] - mvCol[0];
+		mvL1[1] = mvL0[1] - mvCol[1];
+	}
+
+	predFlagL0 = 1;
+	predFlagL1 = 1;
+
+	delete currPicOrField;
+	currPicOrField = nullptr;
 }
 
 //共同位置4x4子宏块分割块的推导过程
 void ParseSlice::Derivation_process_for_the_co_located_4x4_sub_macroblock_partitions(DPB& dpb, int mbPartIdx, int subMbPartIdx,
-	Picture*& colPic, int& mbAddrCol, int mvCol[2], int& refIdxCol, int& vertMvScale)
+	Picture*& colPic, int& mbAddrCol, int mvCol[2], int& refIdxCol)
 {
-	//当 RefPicList1[ 0 ]为一个帧或者一个互补 的场对时
 
+	//表 8-6－变量colPic的规范
 	colPic = dpb.RefPicList1[0];
-	int PicCodingStruct = 0;
-	if (colPic->field_pic_flag)
-	{
-		PicCodingStruct = FLD;
-	}
-	else
-	{
-		if (colPic->sps.mb_adaptive_frame_field_flag)
-		{
-			PicCodingStruct = AFRM;
-		}
-		else
-		{
-			PicCodingStruct = FRM;
-		}
-
-	}
-
 
 	int luma4x4BlkIdx = 0;
 
 	if (sHeader.sps.direct_8x8_inference_flag)
 	{
 		luma4x4BlkIdx = 5 * mbPartIdx;
-
 	}
-	else //if (slice_header.m_sps.direct_8x8_inference_flag == 0)
+	else
 	{
 		luma4x4BlkIdx = (4 * mbPartIdx + subMbPartIdx);
 	}
 
 	int xCol = InverseRasterScan(luma4x4BlkIdx / 4, 8, 8, 16, 0) + InverseRasterScan(luma4x4BlkIdx % 4, 4, 4, 8, 0);
 	int yCol = InverseRasterScan(luma4x4BlkIdx / 4, 8, 8, 16, 1) + InverseRasterScan(luma4x4BlkIdx % 4, 4, 4, 8, 1);
-	int yM = 0;
 
+	//根据表 8-7 表 8-8－mbAddrCol, yM和vertMvScale取值的规范
 	mbAddrCol = CurrMbAddr;
-	yM = yCol;
+	int yM = yCol;
 	//vertMvScale = H264_VERT_MV_SCALE_One_To_One;
 
 
-	H264_MB_TYPE mbTypeCol = macroblock[mbAddrCol]->mbType;
-	H264_MB_TYPE subMbTypeCol = H264_MB_TYPE::NA;
+	/*H264_MB_TYPE mbTypeCol = macroblock[mbAddrCol]->mbType;
+	H264_MB_TYPE subMbTypeCol[4] = { H264_MB_TYPE::NA, H264_MB_TYPE::NA, H264_MB_TYPE::NA, H264_MB_TYPE::NA };
 
 	if (mbTypeCol == H264_MB_TYPE::P_8x8 || mbTypeCol == H264_MB_TYPE::P_8x8ref0 || mbTypeCol == H264_MB_TYPE::B_8x8)
 	{
-		subMbTypeCol = colPic->macroblock[mbAddrCol]->subMbType[0];
+		subMbTypeCol[0] = colPic->macroblock[mbAddrCol]->subMbType[0];
+		subMbTypeCol[1] = colPic->macroblock[mbAddrCol]->subMbType[1];
+		subMbTypeCol[2] = colPic->macroblock[mbAddrCol]->subMbType[2];
+		subMbTypeCol[3] = colPic->macroblock[mbAddrCol]->subMbType[3];
+	}*/
+
+
+	int mbPartIdxCol = 0;
+	int subMbPartIdxCol = 0;
+	ParseSlice::Derivation_process_for_macroblock_and_sub_macroblock_partition_indices(macroblock[mbAddrCol], xCol, yM, mbPartIdxCol, subMbPartIdxCol);
+
+	if (isInterMode(macroblock[mbAddrCol]->mode))
+	{
+		mvCol[0] = 0;
+		mvCol[1] = 0;
+		refIdxCol = -1;
 	}
+	else
+	{
+		int predFlagL0Col = colPic->macroblock[mbAddrCol]->predFlagL0[mbPartIdxCol];
+		int predFlagL1Col = colPic->macroblock[mbAddrCol]->predFlagL1[mbPartIdxCol];
+
+		if (predFlagL0Col == 1)
+		{
+			mvCol[0] = colPic->macroblock[mbAddrCol]->mvL0[mbPartIdxCol][subMbPartIdxCol][0]; //MvL0[ mbPartIdxCol ][ subMbPartIdxCol ]
+			mvCol[1] = colPic->macroblock[mbAddrCol]->mvL0[mbPartIdxCol][subMbPartIdxCol][1];
+			refIdxCol = colPic->macroblock[mbAddrCol]->refIdxL0[mbPartIdxCol];
+		}
+		else//predFlagL0Col is equal to 0 and predFlagL1Col is equal to 1
+		{
+			mvCol[0] = colPic->macroblock[mbAddrCol]->mvL1[mbPartIdxCol][subMbPartIdxCol][0]; //MvL1[ mbPartIdxCol ][ subMbPartIdxCol ]
+			mvCol[1] = colPic->macroblock[mbAddrCol]->mvL1[mbPartIdxCol][subMbPartIdxCol][1];
+			refIdxCol = colPic->macroblock[mbAddrCol]->refIdxL1[mbPartIdxCol];
+		}
+	}
+
 }
 
 //8.4.1.3.2相邻分区运动数据的推导过程  
@@ -3734,6 +3959,17 @@ void ParseSlice::Derivation_process_for_neighbouring_partitions(int mbPartIdx, i
 	}
 }
 
+int ParseSlice::DiffPicOrderCnt(Picture* picA, Picture* picB)
+{
+#define PicOrderCnt(picX) std::min(picX->TopFieldOrderCnt, picX->BottomFieldOrderCnt)
+
+
+	return PicOrderCnt(picA) - PicOrderCnt(picB);
+
+
+#undef PicOrderCnt
+}
+
 
 void ParseSlice::Derivation_process_for_macroblock_and_sub_macroblock_partition_indices(Macroblock* mb, int xP, int yP, int& mbPartIdxN, int& subMbPartIdxN)
 {
@@ -3791,7 +4027,6 @@ void ParseSlice::Derivation_process_for_macroblock_and_sub_macroblock_partition_
 	}
 	else//mbType is equal to P_8x8, P_8x8ref0, or B_8x8
 	{
-		//std::pair<int, int> info = Macroblock::getMbPartWidthAndHeight(subMbType[mbPartIdxN]);
 		const uint8_t MbPartWidth = mb->SubMbPartWidth[mbPartIdxN];
 		const uint8_t MbPartHeight = mb->SubMbPartHeight[mbPartIdxN];
 		subMbPartIdxN = (8 / MbPartWidth) * ((yP % 8) / MbPartHeight) + ((xP % 8) / MbPartWidth);

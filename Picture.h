@@ -13,6 +13,7 @@ class Picture
 public:
 	ParsePPS pps;
 	ParseSPS sps;
+	uint32_t PicSizeInMbs;
 	Macroblock** macroblock;
 
 	//解码POC需要用到的
@@ -43,5 +44,6 @@ public:
 
 
 	Picture(ParseSlice* slice, const SliceHeader& sHeader);
+	~Picture();
 };
 

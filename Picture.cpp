@@ -8,10 +8,10 @@ Picture::Picture(ParseSlice* slice, const SliceHeader& sHeader)
 
 	sps = sHeader.sps;
 	pps = sHeader.pps;
+	PicSizeInMbs = sHeader.PicSizeInMbs;
 
-	macroblock = new Macroblock * [sHeader.PicSizeInMbs];
-
-	for (size_t i = 0; i < sHeader.PicSizeInMbs; i++)
+	macroblock = new Macroblock * [PicSizeInMbs];
+	for (size_t i = 0; i < PicSizeInMbs; i++)
 	{
 		macroblock[i] = new Macroblock;
 		memcpy(macroblock[i], slice->macroblock[i], sizeof(Macroblock));
@@ -47,4 +47,22 @@ Picture::Picture(ParseSlice* slice, const SliceHeader& sHeader)
 	LongTermPicNum = 0;
 	LongTermFrameIdx = 0;
 	memory_management_control_operation_5_flag = false;
+}
+
+Picture::~Picture()
+{
+	if (macroblock)
+	{
+		for (size_t i = 0; i < PicSizeInMbs; i++)
+		{
+			if (macroblock[i])
+			{
+				delete macroblock[i];
+				macroblock[i] = nullptr;
+			}
+
+		}
+		delete[] macroblock;
+	}
+
 }
