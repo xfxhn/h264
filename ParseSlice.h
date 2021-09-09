@@ -178,7 +178,13 @@ private:
 	void Filtering_process_for_edges_for_bS_equal_to_4(const int p[4], const int q[4], int pp[3], int qq[3], int alpha, int beta, bool chromaStyleFilteringFlag);
 
 
-	void Decoding_process_for_Inter_prediction_samples();
+	void Decoding_process_for_Inter_prediction_samples(DPB& dpb, int mbPartIdx, int subMbPartIdx,
+		int partWidth, int partHeight, int partWidthC, int partHeightC, int mvL0[2], int mvL1[2], int mvCL0[2], int mvCL1[2],
+		int refIdxL0, int refIdxL1, int predFlagL0, int predFlagL1);
+
+	void Fractional_sample_interpolation_process(int mbPartIdx, int subMbPartIdx,
+		int partWidth, int partHeight, int mvLX[2], int mvCLX[2], Picture* refPic);
+
 	void Derivation_process_for_motion_vector_components_and_reference_indices(DPB& dpb, int mbPartIdx, int subMbPartIdx,
 		int mvL0[2], int mvL1[2], int mvCL0[2], int mvCL1[2], int& refIdxL0, int& refIdxL1, int& predFlagL0, int& predFlagL1, int& subMvCnt);
 

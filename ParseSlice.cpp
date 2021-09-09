@@ -3188,10 +3188,9 @@ void ParseSlice::Inter_prediction_process(DPB& dpb)
 			partWidth = mb->MbPartWidth;
 			partHeight = mb->MbPartHeight;
 		}
-		else if ((mb->mbType == H264_MB_TYPE::P_8x8
+		else if (mb->mbType == H264_MB_TYPE::P_8x8
 			|| mb->mbType == H264_MB_TYPE::P_8x8ref0
-			|| mb->mbType != H264_MB_TYPE::B_8x8)
-			&& mb->subMbType[mbPartIdx] != H264_MB_TYPE::B_Direct_8x8
+			|| (mb->mbType == H264_MB_TYPE::B_8x8 && mb->subMbType[mbPartIdx] != H264_MB_TYPE::B_Direct_8x8)
 			)
 		{
 			NumSubMbPart = mb->NumSubMbPart[mbPartIdx]; //subMbPartIdx在0…NumSubMbPart( sub_mb_type ) − 1之间取值
@@ -3269,6 +3268,59 @@ void ParseSlice::Inter_prediction_process(DPB& dpb)
 
 
 }
+
+//帧间预测样点的解码过程
+void ParseSlice::Decoding_process_for_Inter_prediction_samples(DPB& dpb, int mbPartIdx, int subMbPartIdx,
+	int partWidth, int partHeight, int partWidthC, int partHeightC, int mvL0[2], int mvL1[2], int mvCL0[2], int mvCL1[2],
+	int refIdxL0, int refIdxL1, int predFlagL0, int predFlagL1)
+{
+	uint8_t* predPartL = new uint8_t[partWidth * partHeight]();
+	uint8_t* predPartCb = new uint8_t[partWidthC * partHeightC]();
+	uint8_t* predPartCr = new uint8_t[partWidthC * partHeightC]();
+
+
+
+	uint8_t* predPartL0L = new uint8_t[partWidth * partHeight]();
+	uint8_t* predPartL1L = new uint8_t[partWidth * partHeight]();
+
+	uint8_t* predPartL0Cb = new uint8_t[partWidthC * partHeightC]();
+	uint8_t* predPartL1Cb = new uint8_t[partWidthC * partHeightC]();
+	uint8_t* predPartL0Cr = new uint8_t[partWidthC * partHeightC]();
+	uint8_t* predPartL1Cr = new uint8_t[partWidthC * partHeightC]();
+
+
+	if (predFlagL0 == 1)
+	{
+		//参考图像选择过程
+		//如果当前宏块为帧宏块
+		Picture* refPic = dpb.RefPicList0[predFlagL0];
+
+	}
+
+
+}
+
+void ParseSlice::Fractional_sample_interpolation_process(int mbPartIdx, int subMbPartIdx, int partWidth,
+	int partHeight, int mvLX[2], int mvCLX[2], Picture* refPic)
+{
+	//这个过程的输出是子宏块分区subMbPartIdx的左上luma样本相对于子宏块左上样本的位置(x, y)。
+	int xAL = 0;
+	int yAL = 0;
+	if (macroblock[CurrMbAddr]->mbType == H264_MB_TYPE::P_8x8
+		|| macroblock[CurrMbAddr]->mbType == H264_MB_TYPE::P_8x8ref0
+		|| macroblock[CurrMbAddr]->mbType == H264_MB_TYPE::B_8x8
+		)
+	{
+		xAL = InverseRasterScan(subMbPartIdx, partWidth, partHeight, 8, 0);
+		yAL = InverseRasterScan(subMbPartIdx, partWidth, partHeight, 8, 1);
+	}
+	else
+	{
+		xAL = InverseRasterScan(subMbPartIdx, 4, 4, 8, 0);
+		yAL = InverseRasterScan(subMbPartIdx, 4, 4, 8, 1);
+	}
+}
+
 
 //加权预测的过程
 void ParseSlice::Derivation_process_for_prediction_weights(DPB& dpb, int refIdxL0, int refIdxL1, int predFlagL0, int predFlagL1, int& logWDL, int& w0L, int& w1L, int& o0L, int& o1L, int& logWDCb, int& w0Cb, int& w1Cb, int& o0Cb, int& o1Cb, int& logWDCr, int& w0Cr, int& w1Cr, int& o0Cr, int& o1Cr)
