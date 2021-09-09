@@ -341,24 +341,20 @@ bool SliceHeader::slice_header(BitStream& bs, const ParsePPS* ppsCache, const Pa
 	else
 	{
 
-		bool ret = ref_pic_list_modification(bs);
-		/*printError("ref_pic_list_modification 错误");
-		return -1;*/
-		//RETURN_IF_FAILED(ret != 0, ret);
+		ref_pic_list_modification(bs);
 	}
 
 	if ((pps.weighted_pred_flag && ((SLIECETYPE)slice_type == SLIECETYPE::H264_SLIECE_TYPE_P || (SLIECETYPE)slice_type == SLIECETYPE::H264_SLIECE_TYPE_SP))
 		|| (pps.weighted_bipred_idc == 1 && (SLIECETYPE)slice_type == SLIECETYPE::H264_SLIECE_TYPE_B)
 		)
 	{
-		bool ret = pred_weight_table(bs);
-		//RETURN_IF_FAILED(ret != 0, ret);
+		//预测加权表格语法
+		pred_weight_table(bs);
 	}
 
 	if (nalu.nal_ref_idc != 0)
 	{
-		bool ret = dec_ref_pic_marking(bs);
-		//RETURN_IF_FAILED(ret != 0, ret);
+		dec_ref_pic_marking(bs);
 	}
 	//熵编码使用的方法，不同的语法元素在不同模式选择的方式不同的
 	//等于0，那么采用语法表中左边的描述符所指定的方法

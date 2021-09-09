@@ -178,13 +178,13 @@ private:
 	void Filtering_process_for_edges_for_bS_equal_to_4(const int p[4], const int q[4], int pp[3], int qq[3], int alpha, int beta, bool chromaStyleFilteringFlag);
 
 
-
+	void Decoding_process_for_Inter_prediction_samples();
 	void Derivation_process_for_motion_vector_components_and_reference_indices(DPB& dpb, int mbPartIdx, int subMbPartIdx,
-		int mvL0[2], int mvL1[2], int& refIdxL0, int& refIdxL1, int& predFlagL0, int& predFlagL1, int& subMvCnt);
+		int mvL0[2], int mvL1[2], int mvCL0[2], int mvCL1[2], int& refIdxL0, int& refIdxL1, int& predFlagL0, int& predFlagL1, int& subMvCnt);
 
 	void Derivation_process_for_luma_motion_vector_prediction(int mbPartIdx, int subMbPartIdx, H264_MB_TYPE currSubMbType, bool listSuffixFlag, int refIdxL0, int mvpLX[2]);
 
-
+	void Derivation_process_for_chroma_motion_vectors(int mvLX[2], int mvCLX[2]);
 	void Derivation_process_for_luma_motion_vectors_for_B_Skip_or_B_Direct_16x16_or_B_Direct_8x8(DPB& dpb, int mbPartIdx, int subMbPartIdx,
 		int& refIdxL0, int& refIdxL1, int mvL0[2], int mvL1[2], int& predFlagL0, int& predFlagL1, int& subMvCnt);
 
@@ -206,6 +206,10 @@ private:
 		int& subMbPartIdxA, int& subMbPartIdxB, int& subMbPartIdxC, int& subMbPartIdxD);
 
 	static int DiffPicOrderCnt(Picture* picA, Picture* picB);
+
+
+	void Derivation_process_for_prediction_weights(DPB& dpb, int refIdxL0, int refIdxL1, int predFlagL0, int predFlagL1,
+		int& logWDL, int& w0L, int& w1L, int& o0L, int& o1L, int& logWDCb, int& w0Cb, int& w1Cb, int& o0Cb, int& o1Cb, int& logWDCr, int& w0Cr, int& w1Cr, int& o0Cr, int& o1Cr);
 
 };
 

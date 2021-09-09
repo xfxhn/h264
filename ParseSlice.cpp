@@ -3216,19 +3216,210 @@ void ParseSlice::Inter_prediction_process(DPB& dpb)
 
 		for (size_t subMbPartIdx = 0; subMbPartIdx < NumSubMbPart; subMbPartIdx++)
 		{
+			int MvCnt = 0;
+
+			int mvL0[2] = { 0 };
+			int mvL1[2] = { 0 };
+			int mvCL0[2] = { 0 };
+			int mvCL1[2] = { 0 };
+			int refIdxL0 = 0;
+			int refIdxL1 = 0;
+			int predFlagL0 = 0;
+			int predFlagL1 = 0;
+			//子宏块分割块的运动矢量个数
+			int subMvCnt = 0;
+			Derivation_process_for_motion_vector_components_and_reference_indices(dpb, mbPartIdx, subMbPartIdx,
+				mvL0, mvL1, mvCL0, mvCL1, refIdxL0, refIdxL1, predFlagL0, predFlagL1, subMvCnt);
+
+
+			MvCnt += subMvCnt;
+
+			int logWDL = 0;
+			int w0L = 1;
+			int w1L = 1;
+			int o0L = 0;
+			int o1L = 0;
+			int logWDCb = 0;
+			int w0Cb = 1;
+			int w1Cb = 1;
+			int o0Cb = 0;
+			int o1Cb = 0;
+			int logWDCr = 0;
+			int w0Cr = 1;
+			int w1Cr = 1;
+			int o0Cr = 0;
+			int o1Cr = 0;
+			//加权预测的过程
+			if (sHeader.pps.weighted_pred_flag && ((sHeader.slice_type == 0) || (sHeader.slice_type == 3)) //H264_SLIECE_TYPE_P=0
+				|| (sHeader.pps.weighted_bipred_idc > 0 && sHeader.slice_type == 1) //H264_SLIECE_TYPE_B=1
+				)
+			{
+				Derivation_process_for_prediction_weights(dpb, refIdxL0, refIdxL1, predFlagL0, predFlagL1,
+					logWDL, w0L, w1L, o0L, o1L, logWDCb, w0Cb, w1Cb, o0Cb, o1Cb, logWDCr, w0Cr, w1Cr, o0Cr, o1Cr);
+			}
+
+			//帧间预测样点的解码过程
+
 
 		}
 
 
-		int MvCnt = 0;
+
 	}
 
 
 }
 
+//加权预测的过程
+void ParseSlice::Derivation_process_for_prediction_weights(DPB& dpb, int refIdxL0, int refIdxL1, int predFlagL0, int predFlagL1, int& logWDL, int& w0L, int& w1L, int& o0L, int& o1L, int& logWDCb, int& w0Cb, int& w1Cb, int& o0Cb, int& o1Cb, int& logWDCr, int& w0Cr, int& w1Cr, int& o0Cr, int& o1Cr)
+{
+	bool implicitModeFlag = false;
+	bool explicitModeFlag = false;
+
+	if (sHeader.pps.weighted_bipred_idc == 2 && sHeader.slice_type == 1 && predFlagL0 == 1 && predFlagL1 == 1)
+	{
+		implicitModeFlag = 1;
+		explicitModeFlag = 0;
+	}
+	else if (sHeader.pps.weighted_bipred_idc == 1 && sHeader.slice_type == 1 && (predFlagL0 + predFlagL1 == 1 || predFlagL0 + predFlagL1 == 2))
+	{
+		implicitModeFlag = 0;
+		explicitModeFlag = 1;
+	}
+	else if (sHeader.pps.weighted_pred_flag == 1 && (sHeader.slice_type == 0 || sHeader.slice_type == 3) && predFlagL0 == 1)
+	{
+		implicitModeFlag = 0;
+		explicitModeFlag = 1;
+	}
+	else
+	{
+		implicitModeFlag = 0;
+		explicitModeFlag = 0;
+	}
+
+
+	if (implicitModeFlag == 1)
+	{
+		//隐式模式加权预测
+		logWDL = 5;
+		o0L = 0;
+		o1L = 0;
+		if (sHeader.sps.ChromaArrayType != 0)
+		{
+			logWDCb = 5;
+			o0Cb = 0;
+			o1Cb = 0;
+
+			logWDCr = 5;
+			o0Cr = 0;
+			o1Cr = 0;
+		}
+
+		//field_pic_flag is equal to 1 or the current macroblock is a frame macroblock
+		Picture* currPicOrField = new Picture(this, sHeader);
+		Picture* pic0 = dpb.RefPicList1[refIdxL1];
+		Picture* pic1 = dpb.RefPicList0[refIdxL0];
+
+
+		int tb = Clip3(-128, 127, DiffPicOrderCnt(currPicOrField, pic0)); //(8-201)
+		int td = Clip3(-128, 127, DiffPicOrderCnt(pic1, pic0)); //(8-202)
+		int tx = (16384 + std::abs(td / 2)) / td; //(8-197)
+		int DistScaleFactor = Clip3(-1024, 1023, (tb * tx + 32) >> 6); //(8-198)
+
+		if (DiffPicOrderCnt(pic1, pic0) == 0
+			|| pic0->reference_marked_type == PICTURE_MARKING::LONG_TERM_REFERENCE
+			|| pic1->reference_marked_type == PICTURE_MARKING::LONG_TERM_REFERENCE
+			|| (DistScaleFactor >> 2) < -64
+			|| (DistScaleFactor >> 2) > 128)
+		{
+			w0L = 32;
+			w1L = 32;
+
+			if (sHeader.sps.ChromaArrayType != 0)
+			{
+				w0Cb = 32;
+				w1Cb = 32;
+				w0Cr = 32;
+				w1Cr = 32;
+			}
+		}
+		else
+		{
+			w0L = 64 - (DistScaleFactor >> 2);
+			w1L = DistScaleFactor >> 2;
+
+			if (sHeader.sps.ChromaArrayType != 0)
+			{
+				w0Cb = 64 - (DistScaleFactor >> 2);
+				w1Cb = DistScaleFactor >> 2;
+				w0Cr = 64 - (DistScaleFactor >> 2);
+				w1Cr = DistScaleFactor >> 2;
+			}
+		}
+
+		delete currPicOrField;
+		currPicOrField = nullptr;
+	}
+	else if (explicitModeFlag == 1)
+	{
+		//显式模式加权预测
+
+		//MbaffFrameFlag is equal to 0 or the current macroblock is a frame macroblock
+		int refIdxL0WP = refIdxL0;
+		int refIdxL1WP = refIdxL1;
+		//如果是亮度样点
+		logWDL = sHeader.luma_log2_weight_denom;
+		w0L = sHeader.luma_weight_l0[refIdxL0WP];
+		w1L = sHeader.luma_weight_l1[refIdxL1WP];
+		o0L = sHeader.luma_offset_l0[refIdxL0WP] * (1 << (sHeader.sps.BitDepthY - 8));
+		o1L = sHeader.luma_offset_l1[refIdxL1WP] * (1 << (sHeader.sps.BitDepthY - 8));
+
+		//色度
+		if (sHeader.sps.ChromaArrayType != 0)
+		{
+			logWDCb = sHeader.chroma_log2_weight_denom;
+			w0Cb = sHeader.chroma_weight_l0[refIdxL0WP][0];
+			w1Cb = sHeader.chroma_weight_l1[refIdxL1WP][0];
+			o0Cb = sHeader.chroma_offset_l0[refIdxL0WP][0] * (1 << (sHeader.sps.BitDepthC - 8));
+			o1Cb = sHeader.chroma_offset_l1[refIdxL1WP][0] * (1 << (sHeader.sps.BitDepthC - 8));
+
+			logWDCr = sHeader.chroma_log2_weight_denom;
+			w0Cr = sHeader.chroma_weight_l0[refIdxL0WP][1];
+			w1Cr = sHeader.chroma_weight_l1[refIdxL1WP][1];
+			o0Cr = sHeader.chroma_offset_l0[refIdxL0WP][1] * (1 << (sHeader.sps.BitDepthC - 8));
+			o1Cr = sHeader.chroma_offset_l1[refIdxL1WP][1] * (1 << (sHeader.sps.BitDepthC - 8));
+		}
+	}
+	else//implicitModeFlag is equal to 0 and explicitModeFlag is equal to 0
+	{
+		//变量logWDC, w0C, w1C, o0C, o1C不在当前宏块的重构过程中使用。  
+	}
+
+	if (explicitModeFlag == 1 && predFlagL0 == 1 && predFlagL1 == 1)
+	{
+		//−128 <= w0C + w1C <= ( ( logWDC == 7 ) ? 127 : 128 )
+		if (!(-128 <= w0L + w1L && w0L + w1L <= ((logWDL == 7) ? 127 : 128)))
+		{
+			printError("w0L + w1L必须大于等于-128，小于等于127，或者128");
+		}
+
+		if (sHeader.sps.ChromaArrayType != 0)
+		{
+			if (!(-128 <= w0Cb + w1Cb && w0Cb + w1Cb <= ((logWDCb == 7) ? 127 : 128)))
+			{
+				printError("w0L + w1L必须大于等于-128，小于等于127，或者128");
+			}
+			if (!(-128 <= w0Cr + w1Cr && w0Cb + w1Cr <= ((logWDCr == 7) ? 127 : 128)))
+			{
+				printError("w0L + w1L必须大于等于-128，小于等于127，或者128");
+			}
+		}
+	}
+}
+
 //运动矢量分量和参考指标的推导过程
 void ParseSlice::Derivation_process_for_motion_vector_components_and_reference_indices(DPB& dpb, int mbPartIdx, int subMbPartIdx,
-	int mvL0[2], int mvL1[2], int& refIdxL0, int& refIdxL1, int& predFlagL0, int& predFlagL1, int& subMvCnt)
+	int mvL0[2], int mvL1[2], int mvCL0[2], int mvCL1[2], int& refIdxL0, int& refIdxL1, int& predFlagL0, int& predFlagL1, int& subMvCnt)
 {
 	int mbAddrA = NA;
 	int mbAddrB = NA;
@@ -3283,9 +3474,13 @@ void ParseSlice::Derivation_process_for_motion_vector_components_and_reference_i
 	}
 	else
 	{
+		int mvpL0[2] = { 0 };
+		int mvpL1[2] = { 0 };
 		H264_MB_PART_PRED_MODE mode = Macroblock::getMbPartPredMode(macroblock[CurrMbAddr]->fix_slice_type, macroblock[CurrMbAddr]->fix_mb_type, macroblock[CurrMbAddr]->transform_size_8x8_flag, mbPartIdx);
 		H264_MB_PART_PRED_MODE subMode = macroblock[CurrMbAddr]->subMode[mbPartIdx];
 
+
+		//Pred_L0表示使用列表0预测调用帧间预测过程。Pred_L0是一种帧间宏块预测模式
 		if (mode == H264_MB_PART_PRED_MODE::Pred_L0 || mode == H264_MB_PART_PRED_MODE::BiPred
 			|| subMode == H264_MB_PART_PRED_MODE::Pred_L0 || subMode == H264_MB_PART_PRED_MODE::BiPred
 			)
@@ -3326,7 +3521,39 @@ void ParseSlice::Derivation_process_for_motion_vector_components_and_reference_i
 
 		if (predFlagL0 == 1)
 		{
+			//输出为运动矢量 mvLX（X 为0 或  1）的预测值  mvpLX。
+			Derivation_process_for_luma_motion_vector_prediction(mbPartIdx, subMbPartIdx, currSubMbType, false, refIdxL0, mvpL0);
 
+			mvL0[0] = mvpL0[0] + macroblock[CurrMbAddr]->mvd_l0[mbPartIdx][subMbPartIdx][0];
+			mvL0[1] = mvpL0[1] + macroblock[CurrMbAddr]->mvd_l0[mbPartIdx][subMbPartIdx][1];
+		}
+
+		if (predFlagL1 == 1)
+		{
+			//输出为运动矢量 mvLX（X 为0 或  1）的预测值  mvpLX。
+			Derivation_process_for_luma_motion_vector_prediction(mbPartIdx, subMbPartIdx, currSubMbType, true, refIdxL1, mvpL1);
+
+			mvL1[0] = mvpL1[0] + macroblock[CurrMbAddr]->mvd_l1[mbPartIdx][subMbPartIdx][0];
+			mvL1[1] = mvpL1[1] + macroblock[CurrMbAddr]->mvd_l1[mbPartIdx][subMbPartIdx][1];
+		}
+	}
+
+	if (sHeader.sps.ChromaArrayType != 0)
+	{
+		//色度运动矢量的推导过程
+		if (predFlagL0 == 1)
+		{
+			//如果ChromaArrayType不等于1，或者当前宏块为帧宏块
+			mvCL0[0] = mvL0[0];
+			mvCL0[1] = mvL0[1];
+
+		}
+
+		if (predFlagL1 == 1)
+		{
+			//如果ChromaArrayType不等于1，或者当前宏块为帧宏块
+			mvCL1[0] = mvL1[0];
+			mvCL1[1] = mvL1[1];
 		}
 	}
 }
@@ -3412,6 +3639,16 @@ void ParseSlice::Derivation_process_for_luma_motion_vector_prediction(int mbPart
 			mvpLX[1] = Median(mvLXA[1], mvLXB[1], mvLXC[1]);
 		}
 	}
+}
+
+//色度运动矢量的推导过程
+void ParseSlice::Derivation_process_for_chroma_motion_vectors(int mvLX[2], int mvCLX[2])
+{
+	//如果ChromaArrayType不等于1，或者当前宏块为帧宏块
+
+	mvCLX[0] = mvLX[0];
+	mvCLX[1] = mvLX[1];
+
 }
 
 ////B条带中B_Skip, B_Direct_16x16和B_Direct_8x8宏块的亮度运动矢量导出过程
@@ -3969,6 +4206,8 @@ int ParseSlice::DiffPicOrderCnt(Picture* picA, Picture* picB)
 
 #undef PicOrderCnt
 }
+
+
 
 
 void ParseSlice::Derivation_process_for_macroblock_and_sub_macroblock_partition_indices(Macroblock* mb, int xP, int yP, int& mbPartIdxN, int& subMbPartIdxN)

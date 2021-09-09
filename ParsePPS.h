@@ -28,7 +28,7 @@ public:
 	uint32_t     num_ref_idx_l0_default_active_minus1; // 1 ue(v)
 	uint32_t     num_ref_idx_l1_default_active_minus1; // 1 ue(v)
 	bool     weighted_pred_flag; // 1 u(1)
-	uint32_t     weighted_bipred_idc; // 1 u(2)
+	uint8_t     weighted_bipred_idc; // 1 u(2)
 	int     pic_init_qp_minus26; // /* relative to 26 */ 1 se(v)
 	int     pic_init_qs_minus26; // /* relative to 26 */ 1 se(v)
 	int     chroma_qp_index_offset; // 1 se(v) 

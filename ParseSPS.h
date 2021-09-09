@@ -36,10 +36,10 @@ public:
 	uint32_t reserved_zero_2bits; // /* equal to 0 */ 0 u(2)
 	uint32_t level_idc; // 0 u(8)
 	uint32_t seq_parameter_set_id; // 0 ue(v)
-	uint32_t chroma_format_idc;   // 0 ue(v)
+	uint8_t chroma_format_idc;   // 0 ue(v)
 	bool separate_colour_plane_flag;  // 0 u(1)
-	uint32_t bit_depth_luma_minus8;   // 0 ue(v)当bit_depth_luma_minus8不存在时，它将被推断为等于0。bit_depth_luma_minus8的取值范围为0到6(包括6)。
-	uint32_t bit_depth_chroma_minus8;   // 0 ue(v)
+	uint8_t bit_depth_luma_minus8;   // 0 ue(v)当bit_depth_luma_minus8不存在时，它将被推断为等于0。bit_depth_luma_minus8的取值范围为0到6(包括6)。
+	uint8_t bit_depth_chroma_minus8;   // 0 ue(v)
 	bool qpprime_y_zero_transform_bypass_flag;  // 0 u(1)
 	bool seq_scaling_matrix_present_flag;  // 0 u(1)
 	bool  seq_scaling_list_present_flag[12]; //seq_scaling_list_present_flag[ i ] 0 u(1)
@@ -99,15 +99,15 @@ public:
 	int32_t     FrameHeightInMbs; //FrameHeightInMbs = ( 2 - frame_mbs_only_flag ) * PicHeightInMapUnits;
 	int32_t     PicHeightInMapUnits; //PicHeightInMapUnits = pic_height_in_map_units_minus1 + 1;
 	int32_t     PicSizeInMapUnits; //PicSizeInMapUnits = PicWidthInMbs * PicHeightInMapUnits;
-	uint32_t     ChromaArrayType;
+	uint8_t     ChromaArrayType;
 
 
 	uint32_t   SubWidthC;
 	uint32_t   SubHeightC;
-	uint32_t   BitDepthY;
-	uint32_t   QpBdOffsetY;
-	uint32_t   BitDepthC;
-	uint32_t   QpBdOffsetC;
+	uint8_t   BitDepthY;
+	uint8_t   QpBdOffsetY;
+	uint8_t   BitDepthC;
+	uint8_t   QpBdOffsetC;
 	uint32_t   MbWidthC;
 	uint32_t   MbHeightC;
 

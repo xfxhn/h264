@@ -131,7 +131,11 @@ bool ParsePPS::pic_parameter_set_rbsp(BitStream& bs, const ParseSPS spsCache[32]
 
 	//是否开启加权预测
 	weighted_pred_flag = bs.readBit(); //1 u(1)
-	//加权预测的索引
+
+	//weighted_bipred_idc 等于 0 表示 B 条带应该采用默认的加权预测。
+	//weighted_bipred_idc 等于 1 表示 B 条带应该采用具体指明的加权预测。
+	//weighted_bipred_idc 等于 2 表示 B 条带应该采用隐含的加权预测。
+	//weighted_bipred_idc 的值应该在0 到 2 之间（包括0 和2）
 	weighted_bipred_idc = bs.readMultiBit(2); //1 u(2)
 
    /* 表示每个条带的SliceQPY 初始值减 26。
