@@ -17,6 +17,15 @@ Picture::Picture(ParseSlice* slice, const SliceHeader& sHeader)
 		memcpy(macroblock[i], slice->macroblock[i], sizeof(Macroblock));
 	}
 
+	PicWidthInSamplesL = slice->PicHeightInSamplesL;
+	PicHeightInSamplesL = slice->PicHeightInSamplesL;
+
+	lumaData = new uint8_t * [PicWidthInSamplesL];
+	for (size_t i = 0; i < PicWidthInSamplesL; i++)
+	{
+		lumaData[i] = new uint8_t[PicHeightInSamplesL]();
+		memcpy(lumaData[i], slice->lumaData[i], sizeof(uint8_t) * PicHeightInSamplesL);
+	}
 
 	pic_order_cnt_lsb = sHeader.pic_order_cnt_lsb;
 	frame_num = sHeader.frame_num;
@@ -63,6 +72,21 @@ Picture::~Picture()
 
 		}
 		delete[] macroblock;
+		macroblock = nullptr;
+	}
+
+	if (lumaData)
+	{
+		for (size_t i = 0; i < PicWidthInSamplesL; i++)
+		{
+			if (lumaData[i])
+			{
+				delete[] lumaData[i];
+				lumaData[i] = nullptr;
+			}
+		}
+		delete[] lumaData;
+		lumaData = nullptr;
 	}
 
 }

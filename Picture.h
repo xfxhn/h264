@@ -13,8 +13,13 @@ class Picture
 public:
 	ParsePPS pps;
 	ParseSPS sps;
+
 	uint32_t PicSizeInMbs;
+	uint32_t PicWidthInSamplesL;
+	uint32_t PicHeightInSamplesL;
+
 	Macroblock** macroblock;
+	uint8_t** lumaData;
 
 	//解码POC需要用到的
 	int			FrameNumOffset;

@@ -3157,6 +3157,8 @@ void ParseSlice::Inter_prediction_process(DPB& dpb)
 {
 
 	Macroblock* mb = macroblock[CurrMbAddr];
+
+
 	int NumMbPart = 0;
 	if (mb->mbType == H264_MB_TYPE::B_Skip || mb->mbType == H264_MB_TYPE::B_Direct_16x16)
 	{
@@ -3167,8 +3169,16 @@ void ParseSlice::Inter_prediction_process(DPB& dpb)
 		NumMbPart = mb->NumMbPart; //mbPartIdx在0…NumMbPart( mb_type ) − 1
 	}
 
+	//xM  yM mbAddrN宏块左上角样点位置到当前图像左上角的距离
+	int xM = InverseRasterScan(CurrMbAddr, 16, 16, sHeader.sps.PicWidthInSamplesL, 0);
+	int yM = InverseRasterScan(CurrMbAddr, 16, 16, sHeader.sps.PicWidthInSamplesL, 1);
+
 	for (size_t mbPartIdx = 0; mbPartIdx < NumMbPart; mbPartIdx++)
 	{
+		//宏块分区mbPartIdx的左上luma样本相对于宏块左上样本的位置(x, y)。  
+		int xP = InverseRasterScan(mbPartIdx, mb->MbPartWidth, mb->MbPartHeight, 16, 0);
+		int yP = InverseRasterScan(mbPartIdx, mb->MbPartWidth, mb->MbPartHeight, 16, 1);
+
 		int partWidth = 0;
 		int partHeight = 0;
 
@@ -3215,7 +3225,29 @@ void ParseSlice::Inter_prediction_process(DPB& dpb)
 
 		for (size_t subMbPartIdx = 0; subMbPartIdx < NumSubMbPart; subMbPartIdx++)
 		{
+			//宏块分区subMbPartIdx的左上luma样本相对于子宏块左上样本的位置(x, y)。
+			int xS = 0;
+			int yS = 0;
+			mb->SubMbPartWidth[mbPartIdx];
+			mb->SubMbPartHeight[mbPartIdx];
+			if (macroblock[CurrMbAddr]->mbType == H264_MB_TYPE::P_8x8
+				|| macroblock[CurrMbAddr]->mbType == H264_MB_TYPE::P_8x8ref0
+				|| macroblock[CurrMbAddr]->mbType == H264_MB_TYPE::B_8x8
+				)
+			{
+				xS = InverseRasterScan(subMbPartIdx, partWidth, partHeight, 8, 0);
+				yS = InverseRasterScan(subMbPartIdx, partWidth, partHeight, 8, 1);
+			}
+			else
+			{
+				xS = InverseRasterScan(subMbPartIdx, 4, 4, 8, 0);
+				yS = InverseRasterScan(subMbPartIdx, 4, 4, 8, 1);
+			}
+
+
+
 			int MvCnt = 0;
+
 
 			int mvL0[2] = { 0 };
 			int mvL1[2] = { 0 };
@@ -3259,6 +3291,9 @@ void ParseSlice::Inter_prediction_process(DPB& dpb)
 
 			//帧间预测样点的解码过程
 
+			//当前分割块左上角样点与图像左上角亮度样点的相对位置
+			const int xAL = xM + xP + xS;
+			const int yAL = yM + yP + yS;
 
 		}
 
@@ -3270,7 +3305,7 @@ void ParseSlice::Inter_prediction_process(DPB& dpb)
 }
 
 //帧间预测样点的解码过程
-void ParseSlice::Decoding_process_for_Inter_prediction_samples(DPB& dpb, int mbPartIdx, int subMbPartIdx,
+void ParseSlice::Decoding_process_for_Inter_prediction_samples(DPB& dpb, const int xAL, const int yAL, int mbPartIdx, int subMbPartIdx,
 	int partWidth, int partHeight, int partWidthC, int partHeightC, int mvL0[2], int mvL1[2], int mvCL0[2], int mvCL1[2],
 	int refIdxL0, int refIdxL1, int predFlagL0, int predFlagL1)
 {
@@ -3295,30 +3330,217 @@ void ParseSlice::Decoding_process_for_Inter_prediction_samples(DPB& dpb, int mbP
 		//如果当前宏块为帧宏块
 		Picture* refPic = dpb.RefPicList0[predFlagL0];
 
+
+		Fractional_sample_interpolation_process(xAL, yAL, mbPartIdx, subMbPartIdx,
+			partWidth, partHeight, partWidthC, partHeightC, mvL0, mvCL0, refPic, predPartL0L, predPartL0Cb, predPartL0Cr);
+
 	}
 
 
 }
 
-void ParseSlice::Fractional_sample_interpolation_process(int mbPartIdx, int subMbPartIdx, int partWidth,
-	int partHeight, int mvLX[2], int mvCLX[2], Picture* refPic)
+//分数样本插值过程
+void ParseSlice::Fractional_sample_interpolation_process(const int xAL, const int yAL, int mbPartIdx, int subMbPartIdx,
+	int partWidth, int partHeight, int partWidthC, int partHeightC, int mvLX[2], int mvCLX[2], Picture* refPic,
+	uint8_t* predPartLXL, uint8_t* predPartLXCb, uint8_t* predPartLXCr)
 {
-	//这个过程的输出是子宏块分区subMbPartIdx的左上luma样本相对于子宏块左上样本的位置(x, y)。
-	int xAL = 0;
-	int yAL = 0;
-	if (macroblock[CurrMbAddr]->mbType == H264_MB_TYPE::P_8x8
-		|| macroblock[CurrMbAddr]->mbType == H264_MB_TYPE::P_8x8ref0
-		|| macroblock[CurrMbAddr]->mbType == H264_MB_TYPE::B_8x8
-		)
+
+
+	//(xFracL, yFracL)为以四分之一样本单位给出的偏移量
+	for (size_t yL = 0; yL < partHeight; yL++)
 	{
-		xAL = InverseRasterScan(subMbPartIdx, partWidth, partHeight, 8, 0);
-		yAL = InverseRasterScan(subMbPartIdx, partWidth, partHeight, 8, 1);
+		for (size_t xL = 0; xL < partWidth; xL++)
+		{
+			//整样点为单位给出的色度样点位置
+			int xIntL = xAL + (mvLX[0] >> 2) + xL;
+			int yIntL = yAL + (mvLX[1] >> 2) + yL;
+			//1/4 样点为单位给出的偏移量
+			int xFracL = mvLX[0] & 3;
+			int yFracL = mvLX[1] & 3;
+
+			predPartLXL[yL * partWidth + xL] = Luma_sample_interpolation_process(xIntL, yIntL, xFracL, yFracL, refPic);
+		}
 	}
-	else
+
+	if (sHeader.sps.ChromaArrayType != 0)
 	{
-		xAL = InverseRasterScan(subMbPartIdx, 4, 4, 8, 0);
-		yAL = InverseRasterScan(subMbPartIdx, 4, 4, 8, 1);
+		//整样点为单位给出的色度样点位置
+		int xIntC = 0;
+		int yIntC = 0;
+		//1/8 样点为单位给出的偏移量
+		int xFracC = 0;
+		int yFracC = 0;
+		for (size_t yC = 0; yC < partHeightC; yC++)
+		{
+			for (size_t xC = 0; xC < partWidthC; xC++)
+			{
+
+				if (sHeader.sps.ChromaArrayType == 1)
+				{
+					xIntC = (xAL / sHeader.sps.SubWidthC) + (mvCLX[0] >> 3) + xC;
+					yIntC = (yAL / sHeader.sps.SubHeightC) + (mvCLX[1] >> 3) + yC;
+					xFracC = mvCLX[0] & 7;
+					yFracC = mvCLX[1] & 7;
+				}
+				else if (sHeader.sps.ChromaArrayType == 2)
+				{
+					xIntC = (xAL / sHeader.sps.SubWidthC) + (mvCLX[0] >> 3) + xC;
+					yIntC = (yAL / sHeader.sps.SubHeightC) + (mvCLX[1] >> 2) + yC;
+					xFracC = mvCLX[0] & 7;
+					yFracC = (mvCLX[1] & 3) << 1;
+				}
+				else//ChromaArrayType == 3
+				{
+					xIntC = xAL + (mvLX[0] >> 2) + xC;
+					yIntC = yAL + (mvLX[1] >> 2) + yC;
+					xFracC = (mvCLX[0] & 3);
+					yFracC = (mvCLX[1] & 3);
+				}
+
+				if (sHeader.sps.ChromaArrayType != 3)
+				{
+
+				}
+			}
+		}
 	}
+}
+
+//亮度样点插值过程
+int ParseSlice::Luma_sample_interpolation_process(int xIntL, int yIntL, int xFracL, int yFracL, Picture* refPic)
+{
+	//如果MbaffFrameFlag 等于0 ，或者mb_field_decoding_flag 等于0 
+	int refPicHeightEffectiveL = PicHeightInSamplesL;
+	/*
+		G点是原点(0,0)  x11是(-2,-2)  U点是(1,3)  x31是(-2,-2)
+
+	   x11	 x12  A     aa    B   x13    x14
+
+
+
+	   x21		  C     bb    D
+
+
+
+		E    F    G  a  b  c  H    I    J
+				  d  e  f  g
+		cc   dd   h  i  j  k  m    ee   ff
+				  n  p  q  r
+		K    L    M     s  N  P    Q
+
+
+
+	   x31	x32	  R     gg    S
+
+
+
+				  T     hh    U
+
+*/
+#define getLumaSample(xDZL,yDZL) refPic->lumaData[Clip3(0, refPic->PicWidthInSamplesL - 1, xIntL+xDZL)][Clip3(0,refPicHeightEffectiveL - 1,yIntL+yDZL)]
+	int A = getLumaSample(0, -2);
+	int B = getLumaSample(1, -2);
+	int C = getLumaSample(0, -1);
+	int D = getLumaSample(1, -1);
+	int E = getLumaSample(-2, 0);
+	int F = getLumaSample(-1, 0);
+	int G = getLumaSample(0, 0); //坐标原点
+	int H = getLumaSample(1, 0);
+	int I = getLumaSample(2, 0);
+	int J = getLumaSample(3, 0);
+	int K = getLumaSample(-2, 1);
+	int L = getLumaSample(-1, 1);
+	int M = getLumaSample(0, 1);
+	int N = getLumaSample(1, 1);
+	int P = getLumaSample(2, 1);
+	int Q = getLumaSample(3, 1);
+	int R = getLumaSample(0, 2);
+	int S = getLumaSample(1, 2);
+	int T = getLumaSample(0, 3);
+	int U = getLumaSample(1, 3);
+
+	int X11 = getLumaSample(-2, -2); //A所在的行与E所在的列的交点
+	int X12 = getLumaSample(-1, -2);
+	int X13 = getLumaSample(2, -2);
+
+	int X14 = getLumaSample(3, -2);
+	int X21 = getLumaSample(-2, -1);
+	int X22 = getLumaSample(-1, -1);
+	int X23 = getLumaSample(2, -1);
+	int X24 = getLumaSample(3, -1);
+
+	int X31 = getLumaSample(-2, 2);
+	int X32 = getLumaSample(-1, 2);
+	int X33 = getLumaSample(2, 2);
+	int X34 = getLumaSample(3, 2);
+
+	int X41 = getLumaSample(-2, 3);
+	int X42 = getLumaSample(-1, 3);
+	int X43 = getLumaSample(2, 3);
+	int X44 = getLumaSample(3, 3);
+
+	//（ 1, −5, 20, 20, −5, 1）
+#define TapFilter(v1,v2,v3,v4,v5,v6) (v1 - 5*v2 + 20*v3 + 20*v4 - 5*v5 + v6)
+
+
+#define Clip1Y(x) Clip3(0, (1<<sHeader.sps.BitDepthY)-1, x)
+	int b1 = TapFilter(E, F, G, H, I, J);
+	int h1 = TapFilter(A, C, G, M, R, T);
+	int s1 = TapFilter(K, L, M, N, P, Q);
+	int m1 = TapFilter(B, D, H, N, S, U);
+
+	int b = Clip1Y((b1 + 16) >> 5);
+	int h = Clip1Y((h1 + 16) >> 5);
+	int s = Clip1Y((s1 + 16) >> 5);
+	int m = Clip1Y((m1 + 16) >> 5);
+
+	int aa = TapFilter(X11, X12, A, B, X13, X14);
+	int bb = TapFilter(X21, X22, C, D, X23, X24);
+	int gg = TapFilter(X31, X32, R, S, X33, X34);
+	int hh = TapFilter(X41, X42, T, U, X43, X44);
+
+	int cc = TapFilter(X11, X21, E, K, X31, X41);
+	int dd = TapFilter(X12, X22, F, L, X32, X42);
+	int ee = TapFilter(X13, X23, I, P, X33, X43);
+	int ff = TapFilter(X14, X24, J, Q, X34, X44);
+
+	int j1 = TapFilter(cc, dd, h1, m1, ee, ff);
+
+	int j = Clip1Y((j1 + 512) >> 10);
+	//计算两个最接近的整数和半整数位置的平均值
+	int a = (G + b + 1) >> 1;
+	int c = (H + b + 1) >> 1;
+	int d = (G + h + 1) >> 1;
+	int n = (M + h + 1) >> 1;
+	int f = (b + j + 1) >> 1;
+	int i = (h + j + 1) >> 1;
+	int k = (j + m + 1) >> 1;
+	int q = (j + s + 1) >> 1;
+	//计算对角线方向上两个最接近的半整数位置的平均值
+	int e = (b + h + 1) >> 1;
+	int g = (b + m + 1) >> 1;
+	int p = (h + s + 1) >> 1;
+	int r = (m + s + 1) >> 1;
+
+	//表 8-12
+	int predPartLXL[4][4] = {
+		{G, d, h, n},
+		{a, e, i, p},
+		{b, f, j, q},
+		{c, g, k, r}
+	};
+
+#undef Clip1Y
+#undef TapFilter
+#undef getLumaSample
+
+	return predPartLXL[xFracL][yFracL];
+}
+
+//色度样点插值过程
+int ParseSlice::Chroma_sample_interpolation_process(int xIntL, int yIntL, int xFracL, int yFracL, Picture* refPic)
+{
+	return 0;
 }
 
 
