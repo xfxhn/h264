@@ -185,8 +185,8 @@ private:
 	void Fractional_sample_interpolation_process(const int xAL, const int yAL, int mbPartIdx, int subMbPartIdx,
 		int partWidth, int partHeight, int partWidthC, int partHeightC, int mvLX[2], int mvCLX[2], Picture* refPic,
 		uint8_t* predPartLXL, uint8_t* predPartLXCb, uint8_t* predPartLXCr);
-	int Luma_sample_interpolation_process(int xIntL, int yIntL, int xFracL, int yFracL, Picture* refPic);
-	int Chroma_sample_interpolation_process(int xIntL, int yIntL, int xFracL, int yFracL, Picture* refPic);
+	uint8_t Luma_sample_interpolation_process(int xIntL, int yIntL, int xFracL, int yFracL, Picture* refPic);
+	uint8_t Chroma_sample_interpolation_process(int xIntC, int yIntC, int xFracC, int yFracC, Picture* refPic, bool isChromaCb);
 
 	void Derivation_process_for_motion_vector_components_and_reference_indices(DPB& dpb, int mbPartIdx, int subMbPartIdx,
 		int mvL0[2], int mvL1[2], int mvCL0[2], int mvCL1[2], int& refIdxL0, int& refIdxL1, int& predFlagL0, int& predFlagL1, int& subMvCnt);

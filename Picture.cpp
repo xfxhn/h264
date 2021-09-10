@@ -27,6 +27,22 @@ Picture::Picture(ParseSlice* slice, const SliceHeader& sHeader)
 		memcpy(lumaData[i], slice->lumaData[i], sizeof(uint8_t) * PicHeightInSamplesL);
 	}
 
+	PicWidthInSamplesC = slice->PicWidthInSamplesC;
+	PicHeightInSamplesC = slice->PicHeightInSamplesC;
+	chromaCbData = new uint8_t * [PicWidthInSamplesC];
+	chromaCrData = new uint8_t * [PicWidthInSamplesC];
+
+	for (size_t i = 0; i < PicWidthInSamplesC; i++)
+	{
+		chromaCbData[i] = new uint8_t[PicHeightInSamplesC]();
+		memcpy(chromaCbData[i], slice->chromaCbData[i], sizeof(uint8_t) * PicHeightInSamplesC);
+
+		chromaCrData[i] = new uint8_t[PicHeightInSamplesC]();
+		memcpy(chromaCrData[i], slice->chromaCrData[i], sizeof(uint8_t) * PicHeightInSamplesC);
+	}
+
+
+
 	pic_order_cnt_lsb = sHeader.pic_order_cnt_lsb;
 	frame_num = sHeader.frame_num;
 	field_pic_flag = sHeader.field_pic_flag;
@@ -87,6 +103,42 @@ Picture::~Picture()
 		}
 		delete[] lumaData;
 		lumaData = nullptr;
+	}
+
+	if (chromaCbData && chromaCrData)
+	{
+		for (size_t i = 0; i < PicWidthInSamplesC; i++)
+		{
+			if (chromaCbData[i])
+			{
+				delete[] chromaCbData[i];
+				chromaCbData[i] = nullptr;
+			}
+
+			if (chromaCrData[i])
+			{
+				delete[] chromaCrData[i];
+				chromaCrData[i] = nullptr;
+			}
+		}
+		delete[] chromaCbData;
+		chromaCbData = nullptr;
+		delete[] chromaCrData;
+		chromaCrData = nullptr;
+	}
+
+	if (chromaCrData)
+	{
+		for (size_t i = 0; i < PicWidthInSamplesC; i++)
+		{
+			if (chromaCrData[i])
+			{
+				delete[] chromaCrData[i];
+				chromaCrData[i] = nullptr;
+			}
+		}
+		delete[] chromaCrData;
+		chromaCrData = nullptr;
 	}
 
 }

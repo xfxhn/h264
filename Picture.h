@@ -17,9 +17,13 @@ public:
 	uint32_t PicSizeInMbs;
 	uint32_t PicWidthInSamplesL;
 	uint32_t PicHeightInSamplesL;
+	uint32_t PicWidthInSamplesC;
+	uint32_t PicHeightInSamplesC;
 
 	Macroblock** macroblock;
 	uint8_t** lumaData;
+	uint8_t** chromaCbData;
+	uint8_t** chromaCrData;
 
 	//解码POC需要用到的
 	int			FrameNumOffset;

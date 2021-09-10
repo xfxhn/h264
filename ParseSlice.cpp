@@ -105,7 +105,7 @@ ParseSlice::~ParseSlice()
 		lumaData = nullptr;
 	}
 
-	if (chromaCbData)
+	if (chromaCbData && chromaCrData)
 	{
 		for (size_t i = 0; i < PicWidthInSamplesC; i++)
 		{
@@ -114,21 +114,16 @@ ParseSlice::~ParseSlice()
 				delete[] chromaCbData[i];
 				chromaCbData[i] = nullptr;
 			}
-		}
-		delete[] chromaCbData;
-		chromaCbData = nullptr;
-	}
 
-	if (chromaCrData)
-	{
-		for (size_t i = 0; i < PicWidthInSamplesC; i++)
-		{
 			if (chromaCrData[i])
 			{
 				delete[] chromaCrData[i];
 				chromaCrData[i] = nullptr;
 			}
 		}
+		delete[] chromaCbData;
+		chromaCbData = nullptr;
+
 		delete[] chromaCrData;
 		chromaCrData = nullptr;
 	}
@@ -3399,7 +3394,13 @@ void ParseSlice::Fractional_sample_interpolation_process(const int xAL, const in
 
 				if (sHeader.sps.ChromaArrayType != 3)
 				{
-
+					predPartLXCb[yC * partWidthC + xC] = Chroma_sample_interpolation_process(xIntC, yIntC, xFracC, yFracC, refPic, true);
+					predPartLXCr[yC * partWidthC + xC] = Chroma_sample_interpolation_process(xIntC, yIntC, xFracC, yFracC, refPic, false);
+				}
+				else//ChromaArrayType is equal to 3
+				{
+					predPartLXCb[yC * partWidthC + xC] = Luma_sample_interpolation_process(xIntC, yIntC, xFracC, yFracC, refPic);
+					predPartLXCr[yC * partWidthC + xC] = Luma_sample_interpolation_process(xIntC, yIntC, xFracC, yFracC, refPic);
 				}
 			}
 		}
@@ -3407,7 +3408,7 @@ void ParseSlice::Fractional_sample_interpolation_process(const int xAL, const in
 }
 
 //亮度样点插值过程
-int ParseSlice::Luma_sample_interpolation_process(int xIntL, int yIntL, int xFracL, int yFracL, Picture* refPic)
+uint8_t ParseSlice::Luma_sample_interpolation_process(int xIntL, int yIntL, int xFracL, int yFracL, Picture* refPic)
 {
 	//如果MbaffFrameFlag 等于0 ，或者mb_field_decoding_flag 等于0 
 	int refPicHeightEffectiveL = PicHeightInSamplesL;
@@ -3538,9 +3539,30 @@ int ParseSlice::Luma_sample_interpolation_process(int xIntL, int yIntL, int xFra
 }
 
 //色度样点插值过程
-int ParseSlice::Chroma_sample_interpolation_process(int xIntL, int yIntL, int xFracL, int yFracL, Picture* refPic)
+uint8_t ParseSlice::Chroma_sample_interpolation_process(int xIntC, int yIntC, int xFracC, int yFracC, Picture* refPic, bool isChromaCb)
 {
-	return 0;
+	//如果MbaffFrameFlag 等于0 ， 或者mb_field_decoding_flag 等于0 
+	int refPicHeightEffectiveC = PicHeightInSamplesC;
+
+
+	int xAC = Clip3(0, refPic->PicWidthInSamplesC - 1, xIntC); // (8-262)
+	int xBC = Clip3(0, refPic->PicWidthInSamplesC - 1, xIntC + 1); // (8-263)
+	int xCC = Clip3(0, refPic->PicWidthInSamplesC - 1, xIntC); // (8-264)
+	int xDC = Clip3(0, refPic->PicWidthInSamplesC - 1, xIntC + 1); // (8-265)
+
+	int yAC = Clip3(0, refPicHeightEffectiveC - 1, yIntC); // (8-266)
+	int yBC = Clip3(0, refPicHeightEffectiveC - 1, yIntC); // (8-267)
+	int yCC = Clip3(0, refPicHeightEffectiveC - 1, yIntC + 1); // (8-268)
+	int yDC = Clip3(0, refPicHeightEffectiveC - 1, yIntC + 1); // (8-269)
+
+	uint8_t** buffer = isChromaCb ? refPic->chromaCbData : refPic->chromaCrData;
+
+	uint8_t A = buffer[xAC][xBC];
+	uint8_t B = buffer[xBC][yBC];
+	uint8_t C = buffer[xCC][yCC];
+	uint8_t D = buffer[xDC][yDC];
+
+	return ((8 - xFracC) * (8 - yFracC) * A + xFracC * (8 - yFracC) * B + (8 - xFracC) * yFracC * C + xFracC * yFracC * D + 32) >> 6;
 }
 
 
