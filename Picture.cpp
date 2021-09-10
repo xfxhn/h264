@@ -17,7 +17,7 @@ Picture::Picture(ParseSlice* slice, const SliceHeader& sHeader)
 		memcpy(macroblock[i], slice->macroblock[i], sizeof(Macroblock));
 	}
 
-	PicWidthInSamplesL = slice->PicHeightInSamplesL;
+	PicWidthInSamplesL = slice->PicWidthInSamplesL;
 	PicHeightInSamplesL = slice->PicHeightInSamplesL;
 
 	lumaData = new uint8_t * [PicWidthInSamplesL];
@@ -123,22 +123,11 @@ Picture::~Picture()
 		}
 		delete[] chromaCbData;
 		chromaCbData = nullptr;
+
 		delete[] chromaCrData;
 		chromaCrData = nullptr;
 	}
 
-	if (chromaCrData)
-	{
-		for (size_t i = 0; i < PicWidthInSamplesC; i++)
-		{
-			if (chromaCrData[i])
-			{
-				delete[] chromaCrData[i];
-				chromaCrData[i] = nullptr;
-			}
-		}
-		delete[] chromaCrData;
-		chromaCrData = nullptr;
-	}
+
 
 }

@@ -32,9 +32,6 @@ struct MyBITMAPINFOHEADER		/**** BMP file info structure ****/
 	uint32_t biClrImportant;   /* Number of important colors */
 };
 
-#define FLD    0
-#define FRM    1
-#define AFRM   2
 
 class ParseSlice
 {
@@ -178,15 +175,42 @@ private:
 	void Filtering_process_for_edges_for_bS_equal_to_4(const int p[4], const int q[4], int pp[3], int qq[3], int alpha, int beta, bool chromaStyleFilteringFlag);
 
 
-	void Decoding_process_for_Inter_prediction_samples(DPB& dpb, const int xAL, const int yAL, int mbPartIdx, int subMbPartIdx,
+	void Decoding_process_for_Inter_prediction_samples(
+		int logWDL, int w0L, int w1L, int o0L, int o1L,
+		int logWDCb, int w0Cb, int w1Cb, int o0Cb, int o1Cb,
+		int logWDCr, int w0Cr, int w1Cr, int o0Cr, int o1Cr,
+		DPB& dpb, const int xAL, const int yAL, int mbPartIdx, int subMbPartIdx,
 		int partWidth, int partHeight, int partWidthC, int partHeightC, int mvL0[2], int mvL1[2], int mvCL0[2], int mvCL1[2],
-		int refIdxL0, int refIdxL1, int predFlagL0, int predFlagL1);
+		int refIdxL0, int refIdxL1, int predFlagL0, int predFlagL1,
+		uint8_t* predPartL, uint8_t* predPartCb, uint8_t* predPartCr);
 
 	void Fractional_sample_interpolation_process(const int xAL, const int yAL, int mbPartIdx, int subMbPartIdx,
 		int partWidth, int partHeight, int partWidthC, int partHeightC, int mvLX[2], int mvCLX[2], Picture* refPic,
 		uint8_t* predPartLXL, uint8_t* predPartLXCb, uint8_t* predPartLXCr);
+
 	uint8_t Luma_sample_interpolation_process(int xIntL, int yIntL, int xFracL, int yFracL, Picture* refPic);
 	uint8_t Chroma_sample_interpolation_process(int xIntC, int yIntC, int xFracC, int yFracC, Picture* refPic, bool isChromaCb);
+
+	void Weighted_sample_prediction_process(
+		int logWDL, int w0L, int w1L, int o0L, int o1L,
+		int logWDCb, int w0Cb, int w1Cb, int o0Cb, int o1Cb,
+		int logWDCr, int w0Cr, int w1Cr, int o0Cr, int o1Cr,
+		int mbPartIdx, int subMbPartIdx,
+		int partWidth, int partHeight, int partWidthC, int partHeightC, int predFlagL0, int predFlagL1,
+		uint8_t* predPartL0L, uint8_t* predPartL0Cb, uint8_t* predPartL0Cr, uint8_t* predPartL1L, uint8_t* predPartL1Cb, uint8_t* predPartL1Cr,
+		uint8_t* predPartL, uint8_t* predPartCb, uint8_t* predPartCr);
+
+	void Default_weighted_sample_prediction_process(int partWidth, int partHeight, int partWidthC, int partHeightC, int predFlagL0, int predFlagL1,
+		uint8_t* predPartL0L, uint8_t* predPartL0Cb, uint8_t* predPartL0Cr, uint8_t* predPartL1L, uint8_t* predPartL1Cb, uint8_t* predPartL1Cr,
+		uint8_t* predPartL, uint8_t* predPartCb, uint8_t* predPartCr);
+
+	void Weighted_sample_prediction_process_next(
+		int logWDL, int w0L, int w1L, int o0L, int o1L,
+		int logWDCb, int w0Cb, int w1Cb, int o0Cb, int o1Cb,
+		int logWDCr, int w0Cr, int w1Cr, int o0Cr, int o1Cr,
+		int partWidth, int partHeight, int partWidthC, int partHeightC, int predFlagL0, int predFlagL1,
+		uint8_t* predPartL0L, uint8_t* predPartL0Cb, uint8_t* predPartL0Cr, uint8_t* predPartL1L, uint8_t* predPartL1Cb, uint8_t* predPartL1Cr,
+		uint8_t* predPartL, uint8_t* predPartCb, uint8_t* predPartCr);
 
 	void Derivation_process_for_motion_vector_components_and_reference_indices(DPB& dpb, int mbPartIdx, int subMbPartIdx,
 		int mvL0[2], int mvL1[2], int mvCL0[2], int mvCL1[2], int& refIdxL0, int& refIdxL1, int& predFlagL0, int& predFlagL1, int& subMvCnt);
