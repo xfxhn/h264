@@ -48,7 +48,7 @@ bool AnnexBReader::open(const char* filePath)
 			if (this->slice && this->slice->decodeFinished)
 			{
 				//环路滤波器
-				slice->Deblocking_filter_process();
+				slice->Deblocking_filter_process(lastHeader);
 
 				dpb.Decoding_to_complete(slice, lastHeader);
 
@@ -112,7 +112,7 @@ bool AnnexBReader::open(const char* filePath)
 			if (this->slice && this->slice->decodeFinished)
 			{
 				//环路滤波器
-				slice->Deblocking_filter_process();
+				slice->Deblocking_filter_process(lastHeader);
 
 
 				if (slice)

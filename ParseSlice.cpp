@@ -267,7 +267,7 @@ void ParseSlice::convertYuv420(uint8_t* buffer, size_t widthBytes)
 
 }
 //去块滤波器
-void ParseSlice::Deblocking_filter_process()
+void ParseSlice::Deblocking_filter_process(SliceHeader& header)
 {
 
 	bool fieldMbInFrameFlag = false;
@@ -285,11 +285,11 @@ void ParseSlice::Deblocking_filter_process()
 		int yW = NA;
 		constexpr int maxW = 16;
 		constexpr int maxH = 16;
-		getMbAddrNAndLuma4x4BlkIdxN(mbAddrA, -1, 0, maxW, maxH, xW, yW);
-		getMbAddrNAndLuma4x4BlkIdxN(mbAddrB, 0, -1, maxW, maxH, xW, yW);
+		getMbAddrNAndLuma4x4BlkIdxN(mbAddrA, -1, 0, maxW, maxH, xW, yW, currMb);
+		getMbAddrNAndLuma4x4BlkIdxN(mbAddrB, 0, -1, maxW, maxH, xW, yW, currMb);
 		//如果MbaffFrameFlag = 1且mb_field_decoding_flag = 1，则fieldMbInFrameFlag设置为1  
 
-		if (sHeader.MbaffFrameFlag && sHeader.field_pic_flag)
+		if (header.MbaffFrameFlag && header.field_pic_flag)
 		{
 			fieldMbInFrameFlag = true;
 		}
@@ -303,7 +303,7 @@ void ParseSlice::Deblocking_filter_process()
 			1：关闭去块滤波功能。
 			2：开启去块滤波功能，仅限slice内部*/
 
-		if (sHeader.disable_deblocking_filter_idc == 1)
+		if (header.disable_deblocking_filter_idc == 1)
 		{
 			filterInternalEdgesFlag = false;
 		}
@@ -313,11 +313,12 @@ void ParseSlice::Deblocking_filter_process()
 		}
 
 
+
 		//currMb宏块是否在这帧图像最左侧边缘，是=false，否则=true
-		if ((!sHeader.MbaffFrameFlag && (currMb % sHeader.sps.PicWidthInMbs == 0))
-			|| (sHeader.MbaffFrameFlag && ((currMb >> 1) % sHeader.sps.PicWidthInMbs == 0))
-			|| (sHeader.disable_deblocking_filter_idc == 1)
-			|| (sHeader.disable_deblocking_filter_idc == 2 && mbAddrA == NA)
+		if ((!header.MbaffFrameFlag && (currMb % header.sps.PicWidthInMbs == 0))
+			|| (header.MbaffFrameFlag && ((currMb >> 1) % header.sps.PicWidthInMbs == 0))
+			|| (header.disable_deblocking_filter_idc == 1)
+			|| (header.disable_deblocking_filter_idc == 2 && mbAddrA == NA)
 			)
 		{
 			filterLeftMbEdgeFlag = false;
@@ -328,11 +329,11 @@ void ParseSlice::Deblocking_filter_process()
 		}
 
 
-		if ((!sHeader.MbaffFrameFlag && currMb < sHeader.sps.PicWidthInMbs)
-			|| (sHeader.MbaffFrameFlag && (currMb >> 1) < sHeader.sps.PicWidthInMbs && sHeader.field_pic_flag)
-			|| (sHeader.MbaffFrameFlag && (currMb >> 1) < sHeader.sps.PicWidthInMbs && !sHeader.field_pic_flag && (currMb % 2) == 0)
-			|| (sHeader.disable_deblocking_filter_idc == 1)
-			|| (sHeader.disable_deblocking_filter_idc == 2 && mbAddrB == NA)
+		if ((!header.MbaffFrameFlag && currMb < header.sps.PicWidthInMbs)
+			|| (header.MbaffFrameFlag && (currMb >> 1) < header.sps.PicWidthInMbs && header.field_pic_flag)
+			|| (header.MbaffFrameFlag && (currMb >> 1) < header.sps.PicWidthInMbs && !header.field_pic_flag && (currMb % 2) == 0)
+			|| (header.disable_deblocking_filter_idc == 1)
+			|| (header.disable_deblocking_filter_idc == 2 && mbAddrB == NA)
 			)
 		{
 			filterTopMbEdgeFlag = false;
@@ -369,7 +370,7 @@ void ParseSlice::Deblocking_filter_process()
 				yE[k] = k;
 			}
 
-			Filtering_process_for_block_edges(currMb, mbAddrA, chromaEdgeFlag, verticalEdgeFlag, fieldModeInFrameFilteringFlag, iCbCr, mbEdgeFlag, xE, yE);
+			Filtering_process_for_block_edges(header, currMb, mbAddrA, chromaEdgeFlag, verticalEdgeFlag, fieldModeInFrameFilteringFlag, iCbCr, mbEdgeFlag, xE, yE);
 
 
 		}
@@ -390,7 +391,7 @@ void ParseSlice::Deblocking_filter_process()
 					yE[k] = k;
 				}
 
-				Filtering_process_for_block_edges(currMb, mbAddrA, chromaEdgeFlag, verticalEdgeFlag, fieldModeInFrameFilteringFlag, iCbCr, mbEdgeFlag, xE, yE);
+				Filtering_process_for_block_edges(header, currMb, mbAddrA, chromaEdgeFlag, verticalEdgeFlag, fieldModeInFrameFilteringFlag, iCbCr, mbEdgeFlag, xE, yE);
 
 			}
 
@@ -400,7 +401,7 @@ void ParseSlice::Deblocking_filter_process()
 				yE[k] = k;
 			}
 
-			Filtering_process_for_block_edges(currMb, mbAddrA, chromaEdgeFlag, verticalEdgeFlag, fieldModeInFrameFilteringFlag, iCbCr, mbEdgeFlag, xE, yE);
+			Filtering_process_for_block_edges(header, currMb, mbAddrA, chromaEdgeFlag, verticalEdgeFlag, fieldModeInFrameFilteringFlag, iCbCr, mbEdgeFlag, xE, yE);
 
 
 			if (macroblock[currMb]->transform_size_8x8_flag == false)
@@ -411,7 +412,7 @@ void ParseSlice::Deblocking_filter_process()
 					yE[k] = k;
 				}
 
-				Filtering_process_for_block_edges(currMb, mbAddrA, chromaEdgeFlag, verticalEdgeFlag, fieldModeInFrameFilteringFlag, iCbCr, mbEdgeFlag, xE, yE);
+				Filtering_process_for_block_edges(header, currMb, mbAddrA, chromaEdgeFlag, verticalEdgeFlag, fieldModeInFrameFilteringFlag, iCbCr, mbEdgeFlag, xE, yE);
 			}
 
 		}
@@ -432,7 +433,7 @@ void ParseSlice::Deblocking_filter_process()
 				yE[k] = 0;
 			}
 
-			Filtering_process_for_block_edges(currMb, mbAddrA, chromaEdgeFlag, verticalEdgeFlag, fieldModeInFrameFilteringFlag, iCbCr, mbEdgeFlag, xE, yE);
+			Filtering_process_for_block_edges(header, currMb, mbAddrB, chromaEdgeFlag, verticalEdgeFlag, fieldModeInFrameFilteringFlag, iCbCr, mbEdgeFlag, xE, yE);
 		}
 
 		//宏块内部水平边缘亮度滤波
@@ -453,7 +454,7 @@ void ParseSlice::Deblocking_filter_process()
 					yE[k] = 4;
 				}
 
-				Filtering_process_for_block_edges(currMb, mbAddrA, chromaEdgeFlag, verticalEdgeFlag, fieldModeInFrameFilteringFlag, iCbCr, mbEdgeFlag, xE, yE);
+				Filtering_process_for_block_edges(header, currMb, mbAddrB, chromaEdgeFlag, verticalEdgeFlag, fieldModeInFrameFilteringFlag, iCbCr, mbEdgeFlag, xE, yE);
 
 			}
 
@@ -463,7 +464,7 @@ void ParseSlice::Deblocking_filter_process()
 				yE[k] = 8;
 			}
 
-			Filtering_process_for_block_edges(currMb, mbAddrA, chromaEdgeFlag, verticalEdgeFlag, fieldModeInFrameFilteringFlag, iCbCr, mbEdgeFlag, xE, yE);
+			Filtering_process_for_block_edges(header, currMb, mbAddrB, chromaEdgeFlag, verticalEdgeFlag, fieldModeInFrameFilteringFlag, iCbCr, mbEdgeFlag, xE, yE);
 			if (macroblock[currMb]->transform_size_8x8_flag == false)
 			{
 				for (size_t k = 0; k < 16; k++)
@@ -472,13 +473,13 @@ void ParseSlice::Deblocking_filter_process()
 					yE[k] = 12;
 				}
 
-				Filtering_process_for_block_edges(currMb, mbAddrA, chromaEdgeFlag, verticalEdgeFlag, fieldModeInFrameFilteringFlag, iCbCr, mbEdgeFlag, xE, yE);
+				Filtering_process_for_block_edges(header, currMb, mbAddrB, chromaEdgeFlag, verticalEdgeFlag, fieldModeInFrameFilteringFlag, iCbCr, mbEdgeFlag, xE, yE);
 			}
 		}
 
 
 
-		if (sHeader.sps.ChromaArrayType != 0)
+		if (header.sps.ChromaArrayType != 0)
 		{
 			if (filterLeftMbEdgeFlag)
 			{
@@ -487,15 +488,15 @@ void ParseSlice::Deblocking_filter_process()
 				fieldModeInFrameFilteringFlag = fieldMbInFrameFlag;
 				mbEdgeFlag = true;
 
-				for (size_t k = 0; k < sHeader.sps.MbHeightC; k++)
+				for (size_t k = 0; k < header.sps.MbHeightC; k++)
 				{
 					xE[k] = 0; //(xEk, yEk) = (0, k)
 					yE[k] = k;
 				}
 				iCbCr = 0;
-				Filtering_process_for_block_edges(currMb, mbAddrA, chromaEdgeFlag, verticalEdgeFlag, fieldModeInFrameFilteringFlag, iCbCr, mbEdgeFlag, xE, yE);
+				Filtering_process_for_block_edges(header, currMb, mbAddrA, chromaEdgeFlag, verticalEdgeFlag, fieldModeInFrameFilteringFlag, iCbCr, mbEdgeFlag, xE, yE);
 				iCbCr = 1;
-				Filtering_process_for_block_edges(currMb, mbAddrA, chromaEdgeFlag, verticalEdgeFlag, fieldModeInFrameFilteringFlag, iCbCr, mbEdgeFlag, xE, yE);
+				Filtering_process_for_block_edges(header, currMb, mbAddrA, chromaEdgeFlag, verticalEdgeFlag, fieldModeInFrameFilteringFlag, iCbCr, mbEdgeFlag, xE, yE);
 			}
 			//内部垂直色度边的滤波
 			if (filterInternalEdgesFlag)
@@ -506,45 +507,45 @@ void ParseSlice::Deblocking_filter_process()
 				mbEdgeFlag = false;
 
 
-				if (sHeader.sps.ChromaArrayType != 3 || macroblock[currMb]->transform_size_8x8_flag == false)
+				if (header.sps.ChromaArrayType != 3 || macroblock[currMb]->transform_size_8x8_flag == false)
 				{
 
-					for (size_t k = 0; k < sHeader.sps.MbHeightC; k++)
+					for (size_t k = 0; k < header.sps.MbHeightC; k++)
 					{
 						xE[k] = 4; //(xEk, yEk) =  (4, k)
 						yE[k] = k;
 					}
 
 					iCbCr = 0;
-					Filtering_process_for_block_edges(currMb, mbAddrA, chromaEdgeFlag, verticalEdgeFlag, fieldModeInFrameFilteringFlag, iCbCr, mbEdgeFlag, xE, yE);
+					Filtering_process_for_block_edges(header, currMb, mbAddrA, chromaEdgeFlag, verticalEdgeFlag, fieldModeInFrameFilteringFlag, iCbCr, mbEdgeFlag, xE, yE);
 					iCbCr = 1;
-					Filtering_process_for_block_edges(currMb, mbAddrA, chromaEdgeFlag, verticalEdgeFlag, fieldModeInFrameFilteringFlag, iCbCr, mbEdgeFlag, xE, yE);
+					Filtering_process_for_block_edges(header, currMb, mbAddrA, chromaEdgeFlag, verticalEdgeFlag, fieldModeInFrameFilteringFlag, iCbCr, mbEdgeFlag, xE, yE);
 				}
 
-				if (sHeader.sps.ChromaArrayType == 3)
+				if (header.sps.ChromaArrayType == 3)
 				{
-					for (size_t k = 0; k < sHeader.sps.MbHeightC; k++)
+					for (size_t k = 0; k < header.sps.MbHeightC; k++)
 					{
 						xE[k] = 8; //(xEk, yEk) =  (8, k)
 						yE[k] = k;
 					}
 					iCbCr = 0;
-					Filtering_process_for_block_edges(currMb, mbAddrA, chromaEdgeFlag, verticalEdgeFlag, fieldModeInFrameFilteringFlag, iCbCr, mbEdgeFlag, xE, yE);
+					Filtering_process_for_block_edges(header, currMb, mbAddrA, chromaEdgeFlag, verticalEdgeFlag, fieldModeInFrameFilteringFlag, iCbCr, mbEdgeFlag, xE, yE);
 					iCbCr = 1;
-					Filtering_process_for_block_edges(currMb, mbAddrA, chromaEdgeFlag, verticalEdgeFlag, fieldModeInFrameFilteringFlag, iCbCr, mbEdgeFlag, xE, yE);
+					Filtering_process_for_block_edges(header, currMb, mbAddrA, chromaEdgeFlag, verticalEdgeFlag, fieldModeInFrameFilteringFlag, iCbCr, mbEdgeFlag, xE, yE);
 				}
 
-				if (sHeader.sps.ChromaArrayType == 3 && macroblock[currMb]->transform_size_8x8_flag == false)
+				if (header.sps.ChromaArrayType == 3 && macroblock[currMb]->transform_size_8x8_flag == false)
 				{
-					for (size_t k = 0; k < sHeader.sps.MbHeightC; k++)
+					for (size_t k = 0; k < header.sps.MbHeightC; k++)
 					{
 						xE[k] = 12; //(xEk, yEk) =  (12, k)
 						yE[k] = k;
 					}
 					iCbCr = 0;
-					Filtering_process_for_block_edges(currMb, mbAddrA, chromaEdgeFlag, verticalEdgeFlag, fieldModeInFrameFilteringFlag, iCbCr, mbEdgeFlag, xE, yE);
+					Filtering_process_for_block_edges(header, currMb, mbAddrA, chromaEdgeFlag, verticalEdgeFlag, fieldModeInFrameFilteringFlag, iCbCr, mbEdgeFlag, xE, yE);
 					iCbCr = 1;
-					Filtering_process_for_block_edges(currMb, mbAddrA, chromaEdgeFlag, verticalEdgeFlag, fieldModeInFrameFilteringFlag, iCbCr, mbEdgeFlag, xE, yE);
+					Filtering_process_for_block_edges(header, currMb, mbAddrA, chromaEdgeFlag, verticalEdgeFlag, fieldModeInFrameFilteringFlag, iCbCr, mbEdgeFlag, xE, yE);
 				}
 			}
 
@@ -557,15 +558,15 @@ void ParseSlice::Deblocking_filter_process()
 				fieldModeInFrameFilteringFlag = fieldMbInFrameFlag;
 				mbEdgeFlag = true;
 
-				for (size_t k = 0; k < sHeader.sps.MbWidthC; k++)
+				for (size_t k = 0; k < header.sps.MbWidthC; k++)
 				{
 					xE[k] = k; //(xEk, yEk) =(k,  0)
 					yE[k] = 0;
 				}
 				iCbCr = 0;
-				Filtering_process_for_block_edges(currMb, mbAddrA, chromaEdgeFlag, verticalEdgeFlag, fieldModeInFrameFilteringFlag, iCbCr, mbEdgeFlag, xE, yE);
+				Filtering_process_for_block_edges(header, currMb, mbAddrB, chromaEdgeFlag, verticalEdgeFlag, fieldModeInFrameFilteringFlag, iCbCr, mbEdgeFlag, xE, yE);
 				iCbCr = 1;
-				Filtering_process_for_block_edges(currMb, mbAddrA, chromaEdgeFlag, verticalEdgeFlag, fieldModeInFrameFilteringFlag, iCbCr, mbEdgeFlag, xE, yE);
+				Filtering_process_for_block_edges(header, currMb, mbAddrB, chromaEdgeFlag, verticalEdgeFlag, fieldModeInFrameFilteringFlag, iCbCr, mbEdgeFlag, xE, yE);
 			}
 
 			//内部水平
@@ -576,60 +577,60 @@ void ParseSlice::Deblocking_filter_process()
 				fieldModeInFrameFilteringFlag = fieldMbInFrameFlag;
 				mbEdgeFlag = false;
 
-				if (sHeader.sps.ChromaArrayType != 3 || macroblock[currMb]->transform_size_8x8_flag == false)
+				if (header.sps.ChromaArrayType != 3 || macroblock[currMb]->transform_size_8x8_flag == false)
 				{
-					for (size_t k = 0; k < sHeader.sps.MbHeightC; k++)
+					for (size_t k = 0; k < header.sps.MbHeightC; k++)
 					{
 						xE[k] = k; //(xEk, yEk) = (k, 4)
 						yE[k] = 4;
 					}
 
 					iCbCr = 0;
-					Filtering_process_for_block_edges(currMb, mbAddrA, chromaEdgeFlag, verticalEdgeFlag, fieldModeInFrameFilteringFlag, iCbCr, mbEdgeFlag, xE, yE);
+					Filtering_process_for_block_edges(header, currMb, mbAddrB, chromaEdgeFlag, verticalEdgeFlag, fieldModeInFrameFilteringFlag, iCbCr, mbEdgeFlag, xE, yE);
 					iCbCr = 1;
-					Filtering_process_for_block_edges(currMb, mbAddrA, chromaEdgeFlag, verticalEdgeFlag, fieldModeInFrameFilteringFlag, iCbCr, mbEdgeFlag, xE, yE);
+					Filtering_process_for_block_edges(header, currMb, mbAddrB, chromaEdgeFlag, verticalEdgeFlag, fieldModeInFrameFilteringFlag, iCbCr, mbEdgeFlag, xE, yE);
 				}
 
 
-				if (sHeader.sps.ChromaArrayType != 1)
+				if (header.sps.ChromaArrayType != 1)
 				{
-					for (size_t k = 0; k < sHeader.sps.MbHeightC; k++)
+					for (size_t k = 0; k < header.sps.MbHeightC; k++)
 					{
 						xE[k] = k; //(xEk, yEk) = (k, 4)
 						yE[k] = 8;
 					}
 
 					iCbCr = 0;
-					Filtering_process_for_block_edges(currMb, mbAddrA, chromaEdgeFlag, verticalEdgeFlag, fieldModeInFrameFilteringFlag, iCbCr, mbEdgeFlag, xE, yE);
+					Filtering_process_for_block_edges(header, currMb, mbAddrB, chromaEdgeFlag, verticalEdgeFlag, fieldModeInFrameFilteringFlag, iCbCr, mbEdgeFlag, xE, yE);
 					iCbCr = 1;
-					Filtering_process_for_block_edges(currMb, mbAddrA, chromaEdgeFlag, verticalEdgeFlag, fieldModeInFrameFilteringFlag, iCbCr, mbEdgeFlag, xE, yE);
+					Filtering_process_for_block_edges(header, currMb, mbAddrB, chromaEdgeFlag, verticalEdgeFlag, fieldModeInFrameFilteringFlag, iCbCr, mbEdgeFlag, xE, yE);
 				}
 
 				//422
-				if (sHeader.sps.ChromaArrayType == 2)
+				if (header.sps.ChromaArrayType == 2)
 				{
-					for (size_t k = 0; k < sHeader.sps.MbHeightC; k++)
+					for (size_t k = 0; k < header.sps.MbHeightC; k++)
 					{
 						xE[k] = k; //(xEk, yEk) = (k, 12)
 						yE[k] = 12;
 					}
 					iCbCr = 0;
-					Filtering_process_for_block_edges(currMb, mbAddrA, chromaEdgeFlag, verticalEdgeFlag, fieldModeInFrameFilteringFlag, iCbCr, mbEdgeFlag, xE, yE);
+					Filtering_process_for_block_edges(header, currMb, mbAddrB, chromaEdgeFlag, verticalEdgeFlag, fieldModeInFrameFilteringFlag, iCbCr, mbEdgeFlag, xE, yE);
 					iCbCr = 1;
-					Filtering_process_for_block_edges(currMb, mbAddrA, chromaEdgeFlag, verticalEdgeFlag, fieldModeInFrameFilteringFlag, iCbCr, mbEdgeFlag, xE, yE);
+					Filtering_process_for_block_edges(header, currMb, mbAddrB, chromaEdgeFlag, verticalEdgeFlag, fieldModeInFrameFilteringFlag, iCbCr, mbEdgeFlag, xE, yE);
 				}
 
-				if (sHeader.sps.ChromaArrayType == 3 && macroblock[currMb]->transform_size_8x8_flag == false)
+				if (header.sps.ChromaArrayType == 3 && macroblock[currMb]->transform_size_8x8_flag == false)
 				{
-					for (size_t k = 0; k < sHeader.sps.MbHeightC; k++)
+					for (size_t k = 0; k < header.sps.MbHeightC; k++)
 					{
 						xE[k] = k; //(xEk, yEk) = (k, 12)
 						yE[k] = 12;
 					}
 					iCbCr = 0;
-					Filtering_process_for_block_edges(currMb, mbAddrA, chromaEdgeFlag, verticalEdgeFlag, fieldModeInFrameFilteringFlag, iCbCr, mbEdgeFlag, xE, yE);
+					Filtering_process_for_block_edges(header, currMb, mbAddrB, chromaEdgeFlag, verticalEdgeFlag, fieldModeInFrameFilteringFlag, iCbCr, mbEdgeFlag, xE, yE);
 					iCbCr = 1;
-					Filtering_process_for_block_edges(currMb, mbAddrA, chromaEdgeFlag, verticalEdgeFlag, fieldModeInFrameFilteringFlag, iCbCr, mbEdgeFlag, xE, yE);
+					Filtering_process_for_block_edges(header, currMb, mbAddrB, chromaEdgeFlag, verticalEdgeFlag, fieldModeInFrameFilteringFlag, iCbCr, mbEdgeFlag, xE, yE);
 				}
 			}
 		}
@@ -637,13 +638,13 @@ void ParseSlice::Deblocking_filter_process()
 	}
 
 }
-void ParseSlice::Filtering_process_for_block_edges(int mbAddr, int mbAddrN, bool chromaEdgeFlag, bool verticalEdgeFlag, bool fieldModeInFrameFilteringFlag, int iCbCr, bool mbEdgeFlag, int xE[16], int yE[16])
+void ParseSlice::Filtering_process_for_block_edges(SliceHeader& header, int mbAddr, int mbAddrN, bool chromaEdgeFlag, bool verticalEdgeFlag, bool fieldModeInFrameFilteringFlag, int iCbCr, bool mbEdgeFlag, int xE[16], int yE[16])
 {
 	int nE = 0;
 	//一个边沿包含的像素数量，亮度为16，色度420为8；
 	if (chromaEdgeFlag)
 	{
-		nE = verticalEdgeFlag ? sHeader.sps.MbHeightC : sHeader.sps.MbWidthC;
+		nE = verticalEdgeFlag ? header.sps.MbHeightC : header.sps.MbWidthC;
 	}
 	else
 	{
@@ -687,8 +688,8 @@ void ParseSlice::Filtering_process_for_block_edges(int mbAddr, int mbAddrN, bool
 
 	if (chromaEdgeFlag)
 	{
-		xP = xI / sHeader.sps.SubWidthC;
-		yP = (yI + sHeader.sps.SubHeightC - 1) / sHeader.sps.SubHeightC;
+		xP = xI / header.sps.SubWidthC;
+		yP = (yI + header.sps.SubHeightC - 1) / header.sps.SubHeightC;
 	}
 	else
 	{
@@ -739,7 +740,7 @@ void ParseSlice::Filtering_process_for_block_edges(int mbAddr, int mbAddrN, bool
 			{
 				if (chromaEdgeFlag)
 				{
-					mb_p0_x += sHeader.sps.MbWidthC;
+					mb_p0_x += header.sps.MbWidthC;
 				}
 				else
 				{
@@ -772,7 +773,7 @@ void ParseSlice::Filtering_process_for_block_edges(int mbAddr, int mbAddrN, bool
 			{
 				if (chromaEdgeFlag)
 				{
-					mb_p0_y += sHeader.sps.MbHeightC;
+					mb_p0_y += header.sps.MbHeightC;
 				}
 				else
 				{
@@ -786,7 +787,7 @@ void ParseSlice::Filtering_process_for_block_edges(int mbAddr, int mbAddrN, bool
 		int qq[3] = { 0 };
 
 
-		Filtering_process_for_a_set_of_samples_across_a_horizontal_or_vertical_block_edge(mbAddr, mbAddrN, chromaEdgeFlag, verticalEdgeFlag,
+		Filtering_process_for_a_set_of_samples_across_a_horizontal_or_vertical_block_edge(header, mbAddr, mbAddrN, chromaEdgeFlag, verticalEdgeFlag,
 			fieldModeInFrameFilteringFlag, iCbCr, mbEdgeFlag, p, q, pp, qq, mb_p0_x, mb_p0_y, mb_q0_x, mb_q0_y);
 
 
@@ -807,25 +808,25 @@ void ParseSlice::Filtering_process_for_block_edges(int mbAddr, int mbAddrN, bool
 	}
 
 }
-void ParseSlice::Filtering_process_for_a_set_of_samples_across_a_horizontal_or_vertical_block_edge(int mbAddr, int mbAddrN, bool chromaEdgeFlag, bool verticalEdgeFlag, bool fieldModeInFrameFilteringFlag,
+void ParseSlice::Filtering_process_for_a_set_of_samples_across_a_horizontal_or_vertical_block_edge(SliceHeader& header, int mbAddr, int mbAddrN, bool chromaEdgeFlag, bool verticalEdgeFlag, bool fieldModeInFrameFilteringFlag,
 	int iCbCr, bool mbEdgeFlag, const  int p[4], const int q[4], int pp[3], int qq[3], const int mb_p0_x, const int mb_p0_y, const int mb_q0_x, const int mb_q0_y)
 {
 	int bS = 0;
 	if (chromaEdgeFlag)
 	{
-		const int mb_x_p0_chroma = sHeader.sps.SubWidthC * mb_p0_x;
-		const int mb_y_p0_chroma = sHeader.sps.SubWidthC * mb_p0_y;
-		const int mb_x_q0_chroma = sHeader.sps.SubWidthC * mb_q0_x;
-		const int mb_y_q0_chroma = sHeader.sps.SubWidthC * mb_q0_y;
-		bS = Derivation_process_for_the_luma_content_dependent_boundary_filtering_strength(mbAddr, false, mbAddrN,
+		const int mb_x_p0_chroma = header.sps.SubWidthC * mb_p0_x;
+		const int mb_y_p0_chroma = header.sps.SubWidthC * mb_p0_y;
+		const int mb_x_q0_chroma = header.sps.SubWidthC * mb_q0_x;
+		const int mb_y_q0_chroma = header.sps.SubWidthC * mb_q0_y;
+		bS = Derivation_process_for_the_luma_content_dependent_boundary_filtering_strength(header, mbAddr, false, mbAddrN,
 			mbEdgeFlag, p[0], q[0], verticalEdgeFlag, mb_x_p0_chroma, mb_y_p0_chroma, mb_x_q0_chroma, mb_y_q0_chroma);
 	}
 	else
 	{
-		bS = Derivation_process_for_the_luma_content_dependent_boundary_filtering_strength(mbAddr, false, mbAddrN, mbEdgeFlag, p[0], q[0], verticalEdgeFlag, mb_p0_x, mb_p0_y, mb_q0_x, mb_q0_y);
+		bS = Derivation_process_for_the_luma_content_dependent_boundary_filtering_strength(header, mbAddr, false, mbAddrN, mbEdgeFlag, p[0], q[0], verticalEdgeFlag, mb_p0_x, mb_p0_y, mb_q0_x, mb_q0_y);
 	}
 
-	//sHeader.FilterOffsetA
+	//header.FilterOffsetA
 
 	const int mbAddr_p0 = mbEdgeFlag ? mbAddrN : mbAddr;
 	const int mbAddr_q0 = mbAddr;
@@ -889,14 +890,14 @@ void ParseSlice::Filtering_process_for_a_set_of_samples_across_a_horizontal_or_v
 	bool filterSamplesFlag = false;
 	//表格索引
 	int indexA = 0;
-	Derivation_process_for_the_thresholds_for_each_block_edge(p[0], q[0], p[1], q[1], chromaEdgeFlag, bS, filterOffsetA, filterOffsetB, qPp, qPq, indexA, alpha, beta, filterSamplesFlag);
+	Derivation_process_for_the_thresholds_for_each_block_edge(header, p[0], q[0], p[1], q[1], chromaEdgeFlag, bS, filterOffsetA, filterOffsetB, qPp, qPq, indexA, alpha, beta, filterSamplesFlag);
 
-	const bool chromaStyleFilteringFlag = chromaEdgeFlag && (sHeader.sps.ChromaArrayType != 3);
+	const bool chromaStyleFilteringFlag = chromaEdgeFlag && (header.sps.ChromaArrayType != 3);
 	if (filterSamplesFlag)
 	{
 		if (bS < 4)
 		{
-			Filtering_process_for_edges_with_bS_less_than_4(p, q, pp, qq, chromaEdgeFlag, bS, beta, indexA, chromaStyleFilteringFlag);
+			Filtering_process_for_edges_with_bS_less_than_4(header, p, q, pp, qq, chromaEdgeFlag, bS, beta, indexA, chromaStyleFilteringFlag);
 		}
 		else//(bS == 4)
 		{
@@ -916,7 +917,7 @@ void ParseSlice::Filtering_process_for_a_set_of_samples_across_a_horizontal_or_v
 
 }
 //滤波强度推导
-int ParseSlice::Derivation_process_for_the_luma_content_dependent_boundary_filtering_strength(const int mbAddr, bool MbaffFrameFlag, int mbAddrN, bool mbEdgeFlag, int p0, int q0, bool verticalEdgeFlag,
+int ParseSlice::Derivation_process_for_the_luma_content_dependent_boundary_filtering_strength(SliceHeader& header, const int mbAddr, bool MbaffFrameFlag, int mbAddrN, bool mbEdgeFlag, int p0, int q0, bool verticalEdgeFlag,
 	const int mb_p0_x, const int mb_p0_y, const int mb_q0_x, const int mb_q0_y)
 {
 
@@ -937,18 +938,18 @@ int ParseSlice::Derivation_process_for_the_luma_content_dependent_boundary_filte
 	{
 		//样点p0和q0都在帧宏块内，而且两个样点p0和q0之中的两个或者一个在采用帧内宏块预测模式编码的宏块内
 
-		if (sHeader.sps.frame_mbs_only_flag && (isInterMode(macroblock[mbAddr_p0]->mode) || isInterMode(macroblock[mbAddr_q0]->mode))
-			|| (sHeader.sps.frame_mbs_only_flag && (
+		if (header.sps.frame_mbs_only_flag && (isInterMode(macroblock[mbAddr_p0]->mode) || isInterMode(macroblock[mbAddr_q0]->mode))
+			|| (header.sps.frame_mbs_only_flag && (
 				(macroblock[mbAddr_p0]->sliceNumber == macroblock[mbAddr_q0]->sliceNumber)
-				&& ((SLIECETYPE)sHeader.slice_type == SLIECETYPE::H264_SLIECE_TYPE_SP || (SLIECETYPE)sHeader.slice_type == SLIECETYPE::H264_SLIECE_TYPE_SI))
+				&& ((SLIECETYPE)header.slice_type == SLIECETYPE::H264_SLIECE_TYPE_SP || (SLIECETYPE)header.slice_type == SLIECETYPE::H264_SLIECE_TYPE_SI))
 				)
-			|| ((MbaffFrameFlag || sHeader.field_pic_flag)
+			|| ((MbaffFrameFlag || header.field_pic_flag)
 				&& verticalEdgeFlag
 				&& (isInterMode(macroblock[mbAddr_p0]->mode) || isInterMode(macroblock[mbAddr_q0]->mode))
 				)
-			|| ((MbaffFrameFlag || sHeader.field_pic_flag)
+			|| ((MbaffFrameFlag || header.field_pic_flag)
 				&& verticalEdgeFlag
-				&& ((SLIECETYPE)sHeader.slice_type == SLIECETYPE::H264_SLIECE_TYPE_SP || (SLIECETYPE)sHeader.slice_type == SLIECETYPE::H264_SLIECE_TYPE_SI)
+				&& ((SLIECETYPE)header.slice_type == SLIECETYPE::H264_SLIECE_TYPE_SP || (SLIECETYPE)header.slice_type == SLIECETYPE::H264_SLIECE_TYPE_SI)
 				)
 			)
 		{
@@ -962,7 +963,7 @@ int ParseSlice::Derivation_process_for_the_luma_content_dependent_boundary_filte
 			)
 		|| (!mixedModeEdgeFlag
 			&& ((macroblock[mbAddr_p0]->sliceNumber == macroblock[mbAddr_q0]->sliceNumber)
-				&& ((SLIECETYPE)sHeader.slice_type == SLIECETYPE::H264_SLIECE_TYPE_SP || (SLIECETYPE)sHeader.slice_type == SLIECETYPE::H264_SLIECE_TYPE_SI))
+				&& ((SLIECETYPE)header.slice_type == SLIECETYPE::H264_SLIECE_TYPE_SP || (SLIECETYPE)header.slice_type == SLIECETYPE::H264_SLIECE_TYPE_SI))
 			)
 		//mixedModeEdgeFlag==1
 		)
@@ -993,7 +994,7 @@ int ParseSlice::Derivation_process_for_the_luma_content_dependent_boundary_filte
 //判断真假边界，参考文档
 //https://blog.csdn.net/weixin_30577801/article/details/96313356?utm_medium=distribute.pc_relevant.none-task-blog-2%7Edefault%7EBlogCommendFromMachineLearnPai2%7Edefault-6.pc_relevant_baidujshouduan&depth_1-utm_source=distribute.pc_relevant.none-task-blog-2%7Edefault%7EBlogCommendFromMachineLearnPai2%7Edefault-6.pc_relevant_baidujshouduan
 //每个块边缘的阈值推导过程
-void ParseSlice::Derivation_process_for_the_thresholds_for_each_block_edge(int p0, int q0, int p1, int q1, bool chromaEdgeFlag, int bS, int filterOffsetA, int filterOffsetB, int qPp, int qPq, int& indexA, int& alpha, int& beta, bool& filterSamplesFlag)
+void ParseSlice::Derivation_process_for_the_thresholds_for_each_block_edge(SliceHeader& header, int p0, int q0, int p1, int q1, bool chromaEdgeFlag, int bS, int filterOffsetA, int filterOffsetB, int qPp, int qPq, int& indexA, int& alpha, int& beta, bool& filterSamplesFlag)
 {
 	//指定平均量化参数的变量
 	const int qPav = (qPp + qPq + 1) >> 1;
@@ -1023,13 +1024,13 @@ void ParseSlice::Derivation_process_for_the_thresholds_for_each_block_edge(int p
 
 	if (!chromaEdgeFlag)
 	{
-		alpha = alphas[indexA] * (1 << (sHeader.sps.BitDepthY - 8));
-		beta = betas[indexB] * (1 << (sHeader.sps.BitDepthY - 8));
+		alpha = alphas[indexA] * (1 << (header.sps.BitDepthY - 8));
+		beta = betas[indexB] * (1 << (header.sps.BitDepthY - 8));
 	}
 	else
 	{
-		alpha = alphas[indexA] * (1 << (sHeader.sps.BitDepthC - 8));
-		beta = betas[indexB] * (1 << (sHeader.sps.BitDepthC - 8));
+		alpha = alphas[indexA] * (1 << (header.sps.BitDepthC - 8));
+		beta = betas[indexB] * (1 << (header.sps.BitDepthC - 8));
 	}
 
 	filterSamplesFlag = (bS != 0 && std::abs(p0 - q0) < alpha && std::abs(p1 - p0) < beta && std::abs(q1 - q0) < beta);
@@ -1038,7 +1039,7 @@ void ParseSlice::Derivation_process_for_the_thresholds_for_each_block_edge(int p
 }
 
 //滤波强度小于4推导
-void ParseSlice::Filtering_process_for_edges_with_bS_less_than_4(const int p[4], const int q[4], int pp[3], int qq[3], bool chromaEdgeFlag, int bS, int beta, int indexA, bool chromaStyleFilteringFlag)
+void ParseSlice::Filtering_process_for_edges_with_bS_less_than_4(SliceHeader& header, const int p[4], const int q[4], int pp[3], int qq[3], bool chromaEdgeFlag, int bS, int beta, int indexA, bool chromaStyleFilteringFlag)
 {
 
 	constexpr int tC0Table[3][52] = {
@@ -1070,11 +1071,11 @@ void ParseSlice::Filtering_process_for_edges_with_bS_less_than_4(const int p[4],
 	int tC0 = 0;
 	if (chromaEdgeFlag)
 	{
-		tC0 = tC0Table[bS - 1][indexA] * (1 << (sHeader.sps.BitDepthC - 8));
+		tC0 = tC0Table[bS - 1][indexA] * (1 << (header.sps.BitDepthC - 8));
 	}
 	else
 	{
-		tC0 = tC0Table[bS - 1][indexA] * (1 << (sHeader.sps.BitDepthY - 8));
+		tC0 = tC0Table[bS - 1][indexA] * (1 << (header.sps.BitDepthY - 8));
 	}
 
 	// p3 p2 p1 p0 | q0 q1 q2 q3
@@ -1099,13 +1100,13 @@ void ParseSlice::Filtering_process_for_edges_with_bS_less_than_4(const int p[4],
 
 	if (chromaEdgeFlag)
 	{
-		pp[0] = Clip3(0, (1 << sHeader.sps.BitDepthC) - 1, p[0] + delta);
-		qq[0] = Clip3(0, (1 << sHeader.sps.BitDepthC) - 1, q[0] + delta);
+		pp[0] = Clip3(0, (1 << header.sps.BitDepthC) - 1, p[0] + delta);
+		qq[0] = Clip3(0, (1 << header.sps.BitDepthC) - 1, q[0] + delta);
 	}
 	else
 	{
-		pp[0] = Clip3(0, (1 << sHeader.sps.BitDepthY) - 1, p[0] + delta);
-		qq[0] = Clip3(0, (1 << sHeader.sps.BitDepthY) - 1, q[0] + delta);
+		pp[0] = Clip3(0, (1 << header.sps.BitDepthY) - 1, p[0] + delta);
+		qq[0] = Clip3(0, (1 << header.sps.BitDepthY) - 1, q[0] + delta);
 	}
 
 
@@ -2744,21 +2745,22 @@ void ParseSlice::getIntra8x8PredMode(size_t luma8x8BlkIdx, bool isLuam)
 }
 //mbAddrN 和luma4x4BlkIdxN（N 等于A or B）推导如下
 void ParseSlice::getMbAddrNAndLuma4x4BlkIdxN(
-	int& mbAddrN, const int xN, const int yN, const int maxW, const int maxH, int& xW, int& yW
+	int& mbAddrN, const int xN, const int yN, const int maxW, const int maxH, int& xW, int& yW, int _CurrMbAddr
 )
 {
 
+	_CurrMbAddr = _CurrMbAddr == -1 ? CurrMbAddr : _CurrMbAddr;
 #define isMbUsable(mbAddr, CurrMbAddr) (mbAddr < 0 || mbAddr > CurrMbAddr || macroblock[CurrMbAddr]->sliceNumber != macroblock[mbAddr]->sliceNumber)
 
 
 	if (xN < 0 && yN < 0)
 	{
-		//6.4.5 节规定的过程的输入为 mbAddrD = CurrMbAddr – PicWidthInMbs – 1，输出为 mbAddrD 是否可用。
-		//另 外，当CurrMbAddr % PicWidthInMbs 等于0 时mbAddrD 将被标识为不可用。
-		int mbAddrD = CurrMbAddr - sHeader.sps.PicWidthInMbs - 1;
+		//6.4.5 节规定的过程的输入为 mbAddrD = _CurrMbAddr – PicWidthInMbs – 1，输出为 mbAddrD 是否可用。
+		//另 外，当_CurrMbAddr % PicWidthInMbs 等于0 时mbAddrD 将被标识为不可用。
+		int mbAddrD = _CurrMbAddr - sHeader.sps.PicWidthInMbs - 1;
 		//不可用
 
-		if (isMbUsable(mbAddrD, CurrMbAddr) || CurrMbAddr % sHeader.sps.PicWidthInMbs == 0)
+		if (isMbUsable(mbAddrD, _CurrMbAddr) || _CurrMbAddr % sHeader.sps.PicWidthInMbs == 0)
 		{
 
 		}
@@ -2769,8 +2771,8 @@ void ParseSlice::getMbAddrNAndLuma4x4BlkIdxN(
 	}
 	else if (xN < 0 && (yN >= 0 && yN <= maxH - 1))
 	{
-		int mbAddrA = CurrMbAddr - 1;
-		if (isMbUsable(mbAddrA, CurrMbAddr) || CurrMbAddr % sHeader.sps.PicWidthInMbs == 0)
+		int mbAddrA = _CurrMbAddr - 1;
+		if (isMbUsable(mbAddrA, _CurrMbAddr) || _CurrMbAddr % sHeader.sps.PicWidthInMbs == 0)
 		{
 
 		}
@@ -2781,8 +2783,8 @@ void ParseSlice::getMbAddrNAndLuma4x4BlkIdxN(
 	}
 	else if ((xN >= 0 && xN <= maxW - 1) && yN < 0)
 	{
-		int mbAddrB = CurrMbAddr - sHeader.sps.PicWidthInMbs;
-		if (isMbUsable(mbAddrB, CurrMbAddr))
+		int mbAddrB = _CurrMbAddr - sHeader.sps.PicWidthInMbs;
+		if (isMbUsable(mbAddrB, _CurrMbAddr))
 		{
 
 		}
@@ -2793,8 +2795,8 @@ void ParseSlice::getMbAddrNAndLuma4x4BlkIdxN(
 	}
 	else if (xN > maxW - 1 && yN < 0)
 	{
-		int mbAddrC = CurrMbAddr - sHeader.sps.PicWidthInMbs + 1;
-		if (isMbUsable(mbAddrC, CurrMbAddr) || (CurrMbAddr + 1) % sHeader.sps.PicWidthInMbs == 0)
+		int mbAddrC = _CurrMbAddr - sHeader.sps.PicWidthInMbs + 1;
+		if (isMbUsable(mbAddrC, _CurrMbAddr) || (_CurrMbAddr + 1) % sHeader.sps.PicWidthInMbs == 0)
 		{
 
 		}
@@ -2806,7 +2808,7 @@ void ParseSlice::getMbAddrNAndLuma4x4BlkIdxN(
 	else if ((xN >= 0 && xN <= maxW - 1) && (yN >= 0 && yN <= maxH - 1))
 	{
 
-		mbAddrN = CurrMbAddr;
+		mbAddrN = _CurrMbAddr;
 	}
 
 	//表示与宏块mbAddrN左上角的相对（不是相对于当前宏块左上角）位置（xN，yN）。
@@ -2855,6 +2857,7 @@ void ParseSlice::transformDecode4x4LuamResidualProcess()
 
 			//4*4预测过程
 			Intra_4x4_prediction(luma4x4BlkIdx, true);
+
 
 			/*macroblock[CurrMbAddr]->lumaPredSamples;
 
@@ -3390,7 +3393,7 @@ void ParseSlice::Decoding_process_for_Inter_prediction_samples(
 		//如果当前宏块为帧宏块
 		Picture* refPic = dpb.RefPicList1[refIdxL1];
 		Fractional_sample_interpolation_process(xAL, yAL, mbPartIdx, subMbPartIdx,
-			partWidth, partHeight, partWidthC, partHeightC, mvL1, mvCL1, refPic, predPartL0L, predPartL0Cb, predPartL0Cr);
+			partWidth, partHeight, partWidthC, partHeightC, mvL1, mvCL1, refPic, predPartL1L, predPartL1Cb, predPartL1Cr);
 
 	}
 
@@ -3436,7 +3439,8 @@ void ParseSlice::Fractional_sample_interpolation_process(const int xAL, const in
 			//1/4 样点为单位给出的偏移量
 			int xFracL = mvLX[0] & 3;
 			int yFracL = mvLX[1] & 3;
-			if (yL * partWidth + xL > 42)
+
+			if (yL * partWidth + xL > 127)
 			{
 				int a = 1;
 			}
@@ -3525,6 +3529,20 @@ uint8_t ParseSlice::Luma_sample_interpolation_process(int xIntL, int yIntL, int 
 	   X41	X42	  T     hh    U   X43   X44
 
 */
+
+
+	uint8_t* view = new uint8_t[refPic->PicWidthInSamplesL * refPic->PicHeightInSamplesL];
+	for (size_t y = 0; y < PicHeightInSamplesL; y++)
+	{
+		for (size_t x = 0; x < PicWidthInSamplesL; x++)
+		{
+
+			uint8_t Y = refPic->lumaData[x][y];
+			view[y * PicWidthInSamplesL + x] = Y;
+
+		}
+	}
+
 #define getLumaSample(xDZL,yDZL) refPic->lumaData[Clip3(0, refPic->PicWidthInSamplesL - 1, xIntL+xDZL)][Clip3(0,refPicHeightEffectiveL - 1,yIntL+yDZL)]
 	int A = getLumaSample(0, -2);
 	int B = getLumaSample(1, -2);
@@ -3807,9 +3825,9 @@ void ParseSlice::Weighted_sample_prediction_process_next(
 
 	if (predFlagL0 == 1 && predFlagL1 == 0)
 	{
-		for (int y = 0; y <= partHeight - 1; y++)
+		for (int y = 0; y < partHeight; y++)
 		{
-			for (int x = 0; x <= partWidth - 1; x++)
+			for (int x = 0; x < partWidth; x++)
 			{
 				if (logWDL >= 1) //Clip1Y( x ) = Clip3( 0, ( 1 << BitDepthY ) − 1, x )
 				{
@@ -3824,9 +3842,9 @@ void ParseSlice::Weighted_sample_prediction_process_next(
 
 		if (sHeader.sps.ChromaArrayType != 0)
 		{
-			for (int y = 0; y <= partHeightC - 1; y++)
+			for (int y = 0; y < partHeightC; y++)
 			{
-				for (int x = 0; x <= partWidthC - 1; x++)
+				for (int x = 0; x < partWidthC; x++)
 				{
 					if (logWDCb >= 1) //Clip1Y( x ) = Clip3( 0, ( 1 << BitDepthC ) − 1, x )
 					{
@@ -3851,9 +3869,9 @@ void ParseSlice::Weighted_sample_prediction_process_next(
 	}
 	else if (predFlagL0 == 0 && predFlagL1 == 1)
 	{
-		for (int y = 0; y <= partHeight - 1; y++)
+		for (int y = 0; y < partHeight; y++)
 		{
-			for (int x = 0; x <= partWidth - 1; x++)
+			for (int x = 0; x < partWidth; x++)
 			{
 				if (logWDL >= 1) //Clip1Y( x ) = Clip3( 0, ( 1 << BitDepthY ) − 1, x )
 				{
@@ -3868,9 +3886,9 @@ void ParseSlice::Weighted_sample_prediction_process_next(
 
 		if (sHeader.sps.ChromaArrayType != 0)
 		{
-			for (int y = 0; y <= partHeightC - 1; y++)
+			for (int y = 0; y < partHeightC; y++)
 			{
-				for (int x = 0; x <= partWidthC - 1; x++)
+				for (int x = 0; x < partWidthC; x++)
 				{
 					if (logWDCb >= 1) //Clip1Y( x ) = Clip3( 0, ( 1 << BitDepthC ) − 1, x )
 					{
@@ -3896,9 +3914,9 @@ void ParseSlice::Weighted_sample_prediction_process_next(
 	else if (predFlagL0 == 1 && predFlagL1 == 1) //处理B帧的双向预测结果
 	{
 
-		for (int y = 0; y <= partHeight - 1; y++)
+		for (int y = 0; y < partHeight; y++)
 		{
-			for (int x = 0; x <= partWidth - 1; x++)
+			for (int x = 0; x < partWidth; x++)
 			{
 				//predPartC[ x, y ] = Clip1( ( ( predPartL0C[ x, y ] * w0C + predPartL1C[ x, y ] * w1C + 2logWDC ) >> ( logWDC + 1 ) ) + ( ( o0C + o1C + 1 ) >> 1 ) );
 				predPartL[y * partWidth + x] = Clip3(0, (1 << sHeader.sps.BitDepthY) - 1,
@@ -3908,9 +3926,9 @@ void ParseSlice::Weighted_sample_prediction_process_next(
 
 		if (sHeader.sps.ChromaArrayType != 0)
 		{
-			for (int y = 0; y <= partHeightC - 1; y++)
+			for (int y = 0; y < partHeightC; y++)
 			{
-				for (int x = 0; x <= partWidthC - 1; x++)
+				for (int x = 0; x < partWidthC; x++)
 				{
 					predPartCb[y * partWidthC + x] = Clip3(0, (1 << sHeader.sps.BitDepthC) - 1,
 						((predPartL0Cb[y * partWidthC + x] * w0Cb + predPartL1Cb[y * partWidthC + x] * w1Cb + (int)std::pow(2, logWDCb)) >> (logWDCb + 1)) + ((o0Cb + o1Cb + 1) >> 1));

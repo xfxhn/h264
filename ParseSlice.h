@@ -100,7 +100,7 @@ public:
 
 	void saveBmpFile(const char* filename);
 
-	void Deblocking_filter_process();
+	void Deblocking_filter_process(SliceHeader& sHeader);
 
 	void transformDecode4x4LuamResidualProcess();
 
@@ -122,7 +122,7 @@ public:
 	void Decoding_process_for_picture_order_count_type_2(DPB& dpb);
 
 
-	void getMbAddrNAndLuma4x4BlkIdxN(int& mbAddrN, const int xN, const int yN, const int maxW, const int maxH, int& xW, int& yW);
+	void getMbAddrNAndLuma4x4BlkIdxN(int& mbAddrN, const int xN, const int yN, const int maxW, const int maxH, int& xW, int& yW, int _CurrMbAddr = -1);
 
 	static void Derivation_process_for_macroblock_and_sub_macroblock_partition_indices(Macroblock* mb, int xP, int yP, int& mbPartIdxN, int& subMbPartIdxN);
 
@@ -165,13 +165,13 @@ private:
 
 	void Scaling_and_transformation_process_for_residual_8x8_blocks(int c[8][8], int r[8][8], bool isLuam, bool isChromaCb);
 
-	void Filtering_process_for_block_edges(int mbAddr, int mbAddrN, bool chromaEdgeFlag, bool verticalEdgeFlag, bool fieldModeInFrameFilteringFlag, int iCbCr, bool mbEdgeFlag, int xE[16], int yE[16]);
-	void Filtering_process_for_a_set_of_samples_across_a_horizontal_or_vertical_block_edge(int mbAddr, int mbAddrN, bool chromaEdgeFlag, bool verticalEdgeFlag, bool fieldModeInFrameFilteringFlag,
+	void Filtering_process_for_block_edges(SliceHeader& header, int mbAddr, int mbAddrN, bool chromaEdgeFlag, bool verticalEdgeFlag, bool fieldModeInFrameFilteringFlag, int iCbCr, bool mbEdgeFlag, int xE[16], int yE[16]);
+	void Filtering_process_for_a_set_of_samples_across_a_horizontal_or_vertical_block_edge(SliceHeader& header, int mbAddr, int mbAddrN, bool chromaEdgeFlag, bool verticalEdgeFlag, bool fieldModeInFrameFilteringFlag,
 		int iCbCr, bool mbEdgeFlag, const int p[4], const int q[4], int pp[3], int qq[3], const int mb_p0_x, const int mb_p0_y, const int mb_q0_x, const int mb_q0_y);
-	int Derivation_process_for_the_luma_content_dependent_boundary_filtering_strength(const int mbAddr, bool MbaffFrameFlag, int mbAddrN, bool mbEdgeFlag, int p0, int q0, bool verticalEdgeFlag, const int mb_p0_x, const int mb_p0_y, const int mb_q0_x, const int mb_q0_y);
+	int Derivation_process_for_the_luma_content_dependent_boundary_filtering_strength(SliceHeader& header, const int mbAddr, bool MbaffFrameFlag, int mbAddrN, bool mbEdgeFlag, int p0, int q0, bool verticalEdgeFlag, const int mb_p0_x, const int mb_p0_y, const int mb_q0_x, const int mb_q0_y);
 
-	void Derivation_process_for_the_thresholds_for_each_block_edge(int p0, int q0, int p1, int q1, bool chromaEdgeFlag, int bS, int filterOffsetA, int  filterOffsetB, int qPp, int qPq, int& indexA, int& alpha, int& beta, bool& filterSamplesFlag);
-	void Filtering_process_for_edges_with_bS_less_than_4(const int p[4], const int q[4], int pp[3], int qq[3], bool chromaEdgeFlag, int bS, int beta, int indexA, bool chromaStyleFilteringFlag);
+	void Derivation_process_for_the_thresholds_for_each_block_edge(SliceHeader& header, int p0, int q0, int p1, int q1, bool chromaEdgeFlag, int bS, int filterOffsetA, int  filterOffsetB, int qPp, int qPq, int& indexA, int& alpha, int& beta, bool& filterSamplesFlag);
+	void Filtering_process_for_edges_with_bS_less_than_4(SliceHeader& header, const int p[4], const int q[4], int pp[3], int qq[3], bool chromaEdgeFlag, int bS, int beta, int indexA, bool chromaStyleFilteringFlag);
 	void Filtering_process_for_edges_for_bS_equal_to_4(const int p[4], const int q[4], int pp[3], int qq[3], int alpha, int beta, bool chromaStyleFilteringFlag);
 
 

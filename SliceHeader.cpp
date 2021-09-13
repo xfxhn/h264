@@ -24,7 +24,7 @@ SliceHeader::SliceHeader(const ParseNalu& nalu)
 	slice_qp_delta = 0;
 	sp_for_switch_flag = 0;
 	slice_qs_delta = 0;
-	disable_deblocking_filter_idc = false;
+	disable_deblocking_filter_idc = 0;
 
 	slice_alpha_c0_offset_div2 = 0;
 	slice_beta_offset_div2 = 0;

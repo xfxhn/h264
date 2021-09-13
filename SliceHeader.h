@@ -45,7 +45,7 @@ public:
 	int32_t     slice_qp_delta; // 2 se(v)
 	uint32_t     sp_for_switch_flag; // 2 u(1)
 	int32_t     slice_qs_delta; // 2 se(v)
-	bool     disable_deblocking_filter_idc; // 2 ue(v) 0：开启环路滤波，滤波可跨越slice边界。1：关闭环路滤波。2：开启环路滤波，只针对同一个slice滤波。
+	int8_t     disable_deblocking_filter_idc; // 2 ue(v) 0：开启环路滤波，滤波可跨越slice边界。1：关闭环路滤波。2：开启环路滤波，只针对同一个slice滤波。
 	int8_t     slice_alpha_c0_offset_div2; // 2 se(v)
 	int8_t     slice_beta_offset_div2; // 2 se(v)
 	uint32_t     slice_group_change_cycle; // 2 u(v)
