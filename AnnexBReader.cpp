@@ -52,7 +52,7 @@ bool AnnexBReader::open(const char* filePath)
 
 				dpb.Decoding_to_complete(slice, lastHeader);
 
-				//slice->saveBmpFile("xf");
+				slice->saveBmpFile("xf");
 
 
 				if (this->slice)

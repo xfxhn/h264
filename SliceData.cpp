@@ -119,6 +119,10 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice, DPB& dpb)
 					Slice->mbCount++;
 
 					Slice->macroblock[Slice->CurrMbAddr]->macroblock_layer_skip(Slice, this);
+
+
+					Slice->Inter_prediction_process(dpb);
+
 					CurrMbAddr = NextMbAddress(sHeader, CurrMbAddr);
 
 				}
@@ -148,6 +152,8 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice, DPB& dpb)
 					//表示本宏块没有残差数据，相应的像素值只需要利用之前已经解码的I/P帧来预测获得
 
 					Slice->macroblock[Slice->CurrMbAddr]->macroblock_layer_skip(Slice, this);
+
+					Slice->Inter_prediction_process(dpb);
 
 				}
 

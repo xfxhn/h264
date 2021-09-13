@@ -3254,6 +3254,7 @@ void ParseSlice::Inter_prediction_process(DPB& dpb)
 			int predFlagL1 = 0;
 			//子宏块分割块的运动矢量个数
 			int subMvCnt = 0;
+
 			Derivation_process_for_motion_vector_components_and_reference_indices(dpb, mbPartIdx, subMbPartIdx,
 				mvL0, mvL1, mvCL0, mvCL1, refIdxL0, refIdxL1, predFlagL0, predFlagL1, subMvCnt);
 
@@ -3295,7 +3296,6 @@ void ParseSlice::Inter_prediction_process(DPB& dpb)
 			uint8_t* predPartCb = new uint8_t[partWidthC * partHeightC]();
 			uint8_t* predPartCr = new uint8_t[partWidthC * partHeightC]();
 
-
 			Decoding_process_for_Inter_prediction_samples(
 				logWDL, w0L, w1L, o0L, o1L,
 				logWDCb, w0Cb, w1Cb, o0Cb, o1Cb,
@@ -3332,11 +3332,16 @@ void ParseSlice::Inter_prediction_process(DPB& dpb)
 					for (size_t x = 0; x < partWidthC; x++)
 					{
 						//predC[ xP / SubWidthC + xS / SubWidthC + x, yP / SubHeightC + yS / SubHeightC + y ] = predPartC[ x, y ];
-						chromaCbData[xM + xP / sHeader.sps.SubWidthC + xS / sHeader.sps.SubWidthC + x][yM + yP / sHeader.sps.SubHeightC + yS / sHeader.sps.SubHeightC + y] = predPartCb[y * partWidthC + x];
-						chromaCrData[xM + xP / sHeader.sps.SubWidthC + xS / sHeader.sps.SubWidthC + x][yM + yP / sHeader.sps.SubHeightC + yS / sHeader.sps.SubHeightC + y] = predPartCr[y * partWidthC + x];
+						chromaCbData[xM / sHeader.sps.SubWidthC + xP / sHeader.sps.SubWidthC + xS / sHeader.sps.SubWidthC + x][yM / sHeader.sps.SubHeightC + yP / sHeader.sps.SubHeightC + yS / sHeader.sps.SubHeightC + y] = predPartCb[y * partWidthC + x];
+						chromaCrData[xM / sHeader.sps.SubWidthC + xP / sHeader.sps.SubWidthC + xS / sHeader.sps.SubWidthC + x][yM / sHeader.sps.SubHeightC + yP / sHeader.sps.SubHeightC + yS / sHeader.sps.SubHeightC + y] = predPartCr[y * partWidthC + x];
 					}
 				}
 			}
+
+			delete[] predPartL;
+			delete[] predPartCb;
+			delete[] predPartCr;
+
 		}
 
 
@@ -3431,7 +3436,10 @@ void ParseSlice::Fractional_sample_interpolation_process(const int xAL, const in
 			//1/4 样点为单位给出的偏移量
 			int xFracL = mvLX[0] & 3;
 			int yFracL = mvLX[1] & 3;
-
+			if (yL * partWidth + xL > 42)
+			{
+				int a = 1;
+			}
 			predPartLXL[yL * partWidth + xL] = Luma_sample_interpolation_process(xIntL, yIntL, xFracL, yFracL, refPic);
 		}
 	}
@@ -3514,7 +3522,7 @@ uint8_t ParseSlice::Luma_sample_interpolation_process(int xIntL, int yIntL, int 
 
 
 
-				  T     hh    U
+	   X41	X42	  T     hh    U   X43   X44
 
 */
 #define getLumaSample(xDZL,yDZL) refPic->lumaData[Clip3(0, refPic->PicWidthInSamplesL - 1, xIntL+xDZL)][Clip3(0,refPicHeightEffectiveL - 1,yIntL+yDZL)]
@@ -3653,7 +3661,7 @@ void ParseSlice::Weighted_sample_prediction_process(
 	uint8_t* predPartL0L, uint8_t* predPartL0Cb, uint8_t* predPartL0Cr, uint8_t* predPartL1L, uint8_t* predPartL1Cb, uint8_t* predPartL1Cr,
 	uint8_t* predPartL, uint8_t* predPartCb, uint8_t* predPartCr)
 {
-	if (predFlagL0 == 1 && ((SLIECETYPE)sHeader.slice_type == SLIECETYPE::H264_SLIECE_TYPE_SI || (SLIECETYPE)sHeader.slice_type == SLIECETYPE::H264_SLIECE_TYPE_SP))
+	if (predFlagL0 == 1 && ((SLIECETYPE)sHeader.slice_type == SLIECETYPE::H264_SLIECE_TYPE_P || (SLIECETYPE)sHeader.slice_type == SLIECETYPE::H264_SLIECE_TYPE_SP))
 	{
 		if (sHeader.pps.weighted_pred_flag)
 		{
@@ -3719,7 +3727,7 @@ void ParseSlice::Default_weighted_sample_prediction_process(
 
 	if (predFlagL0 == 1 && predFlagL1 == 0)
 	{
-		for (int y = 0; y <= partHeight; y++)
+		for (int y = 0; y < partHeight; y++)
 		{
 			for (int x = 0; x < partWidth; x++)
 			{
@@ -3730,9 +3738,9 @@ void ParseSlice::Default_weighted_sample_prediction_process(
 
 		if (sHeader.sps.ChromaArrayType != 0)
 		{
-			for (int y = 0; y <= partHeightC - 1; y++)
+			for (int y = 0; y < partHeightC; y++)
 			{
-				for (int x = 0; x <= partWidthC - 1; x++)
+				for (int x = 0; x < partWidthC; x++)
 				{
 					predPartCb[y * partWidthC + x] = predPartL0Cb[y * partWidthC + x];
 					predPartCr[y * partWidthC + x] = predPartL0Cr[y * partWidthC + x];
@@ -3742,7 +3750,7 @@ void ParseSlice::Default_weighted_sample_prediction_process(
 	}
 	else if (predFlagL0 == 0 && predFlagL1 == 1)
 	{
-		for (int y = 0; y <= partHeight; y++)
+		for (int y = 0; y < partHeight; y++)
 		{
 			for (int x = 0; x < partWidth; x++)
 			{
@@ -3752,9 +3760,9 @@ void ParseSlice::Default_weighted_sample_prediction_process(
 
 		if (sHeader.sps.ChromaArrayType != 0)
 		{
-			for (int y = 0; y <= partHeightC - 1; y++)
+			for (int y = 0; y < partHeightC; y++)
 			{
-				for (int x = 0; x <= partWidthC - 1; x++)
+				for (int x = 0; x < partWidthC; x++)
 				{
 					predPartCb[y * partWidthC + x] = predPartL1Cb[y * partWidthC + x];
 					predPartCr[y * partWidthC + x] = predPartL1Cr[y * partWidthC + x];
@@ -3764,9 +3772,9 @@ void ParseSlice::Default_weighted_sample_prediction_process(
 	}
 	else//predFlagL0 == 1 && predFlagL1 == 1
 	{
-		for (int y = 0; y <= partHeight - 1; y++)
+		for (int y = 0; y < partHeight; y++)
 		{
-			for (int x = 0; x <= partWidth - 1; x++)
+			for (int x = 0; x < partWidth; x++)
 			{
 				predPartL[y * partWidth + x] = (predPartL0L[y * partWidth + x] + predPartL1L[y * partWidth + x] + 1) >> 1;
 			}
@@ -3774,9 +3782,9 @@ void ParseSlice::Default_weighted_sample_prediction_process(
 
 		if (sHeader.sps.ChromaArrayType != 0)
 		{
-			for (int y = 0; y <= partHeightC - 1; y++)
+			for (int y = 0; y < partHeightC; y++)
 			{
-				for (int x = 0; x <= partWidthC - 1; x++)
+				for (int x = 0; x < partWidthC; x++)
 				{
 					predPartCb[y * partWidthC + x] = (predPartL0Cb[y * partWidthC + x] + predPartL1Cb[y * partWidthC + x] + 1) >> 1;
 					predPartCr[y * partWidthC + x] = (predPartL0Cr[y * partWidthC + x] + predPartL1Cr[y * partWidthC + x] + 1) >> 1;
