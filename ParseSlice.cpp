@@ -418,7 +418,6 @@ void ParseSlice::Deblocking_filter_process(SliceHeader& header)
 		}
 
 		//对顶部水平亮度边缘的过滤
-
 		if (filterTopMbEdgeFlag)
 		{
 			chromaEdgeFlag = false;
@@ -1101,12 +1100,12 @@ void ParseSlice::Filtering_process_for_edges_with_bS_less_than_4(SliceHeader& he
 	if (chromaEdgeFlag)
 	{
 		pp[0] = Clip3(0, (1 << header.sps.BitDepthC) - 1, p[0] + delta);
-		qq[0] = Clip3(0, (1 << header.sps.BitDepthC) - 1, q[0] + delta);
+		qq[0] = Clip3(0, (1 << header.sps.BitDepthC) - 1, q[0] - delta);
 	}
 	else
 	{
 		pp[0] = Clip3(0, (1 << header.sps.BitDepthY) - 1, p[0] + delta);
-		qq[0] = Clip3(0, (1 << header.sps.BitDepthY) - 1, q[0] + delta);
+		qq[0] = Clip3(0, (1 << header.sps.BitDepthY) - 1, q[0] - delta);
 	}
 
 
@@ -3440,10 +3439,7 @@ void ParseSlice::Fractional_sample_interpolation_process(const int xAL, const in
 			int xFracL = mvLX[0] & 3;
 			int yFracL = mvLX[1] & 3;
 
-			if (yL * partWidth + xL > 127)
-			{
-				int a = 1;
-			}
+
 			predPartLXL[yL * partWidth + xL] = Luma_sample_interpolation_process(xIntL, yIntL, xFracL, yFracL, refPic);
 		}
 	}
@@ -3531,17 +3527,17 @@ uint8_t ParseSlice::Luma_sample_interpolation_process(int xIntL, int yIntL, int 
 */
 
 
-	uint8_t* view = new uint8_t[refPic->PicWidthInSamplesL * refPic->PicHeightInSamplesL];
-	for (size_t y = 0; y < PicHeightInSamplesL; y++)
+/*uint8_t* view = new uint8_t[refPic->PicWidthInSamplesL * refPic->PicHeightInSamplesL];
+for (size_t y = 0; y < PicHeightInSamplesL; y++)
+{
+	for (size_t x = 0; x < PicWidthInSamplesL; x++)
 	{
-		for (size_t x = 0; x < PicWidthInSamplesL; x++)
-		{
 
-			uint8_t Y = refPic->lumaData[x][y];
-			view[y * PicWidthInSamplesL + x] = Y;
+		uint8_t Y = refPic->lumaData[x][y];
+		view[y * PicWidthInSamplesL + x] = Y;
 
-		}
 	}
+}*/
 
 #define getLumaSample(xDZL,yDZL) refPic->lumaData[Clip3(0, refPic->PicWidthInSamplesL - 1, xIntL+xDZL)][Clip3(0,refPicHeightEffectiveL - 1,yIntL+yDZL)]
 	int A = getLumaSample(0, -2);
@@ -3662,7 +3658,7 @@ uint8_t ParseSlice::Chroma_sample_interpolation_process(int xIntC, int yIntC, in
 
 	uint8_t** buffer = isChromaCb ? refPic->chromaCbData : refPic->chromaCrData;
 
-	uint8_t A = buffer[xAC][xBC];
+	uint8_t A = buffer[xAC][yAC];
 	uint8_t B = buffer[xBC][yBC];
 	uint8_t C = buffer[xCC][yCC];
 	uint8_t D = buffer[xDC][yDC];

@@ -208,7 +208,7 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice, DPB& dpb)
 			}
 			else  //Ö¡¼äÔ¤²â
 			{
-				Slice->Inter_prediction_process(dpb);
+				//Slice->Inter_prediction_process(dpb);
 			}
 
 		}
