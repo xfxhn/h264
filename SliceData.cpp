@@ -120,8 +120,10 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice, DPB& dpb)
 
 					Slice->macroblock[Slice->CurrMbAddr]->macroblock_layer_skip(Slice, this);
 
-
-					Slice->Inter_prediction_process(dpb);
+					uint8_t predPartL[16][16] = { 0 };
+					uint8_t predPartCb[16][16] = { 0 };
+					uint8_t predPartCr[16][16] = { 0 };
+					Slice->Inter_prediction_process(dpb, predPartL, predPartCb, predPartCr, true);
 
 					CurrMbAddr = NextMbAddress(sHeader, CurrMbAddr);
 
@@ -153,7 +155,12 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice, DPB& dpb)
 
 					Slice->macroblock[Slice->CurrMbAddr]->macroblock_layer_skip(Slice, this);
 
-					Slice->Inter_prediction_process(dpb);
+
+					uint8_t predPartL[16][16] = { 0 };
+					uint8_t predPartCb[16][16] = { 0 };
+					uint8_t predPartCr[16][16] = { 0 };
+					Slice->Inter_prediction_process(dpb, predPartL, predPartCb, predPartCr, true);
+
 
 				}
 
@@ -208,7 +215,23 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice, DPB& dpb)
 			}
 			else  //Ö¡¼äÔ¤²â
 			{
-				//Slice->Inter_prediction_process(dpb);
+
+				uint8_t predPartL[16][16] = { 0 };
+				uint8_t predPartCb[16][16] = { 0 };
+				uint8_t predPartCr[16][16] = { 0 };
+				Slice->Inter_prediction_process(dpb, predPartL, predPartCb, predPartCr);
+				if (Slice->macroblock[Slice->CurrMbAddr]->transform_size_8x8_flag)
+				{
+					Slice->transformDecode8x8LuamResidualProcessInter(predPartL);
+				}
+				else
+				{
+					Slice->transformDecode4x4LuamResidualProcessInter(predPartL);
+				}
+				isChromaCb = true;
+				Slice->transformDecodeChromaResidualProcessInter(predPartCb, isChromaCb);
+				isChromaCb = false;
+				Slice->transformDecodeChromaResidualProcessInter(predPartCr, isChromaCb);
 			}
 
 		}

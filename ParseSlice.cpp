@@ -2883,9 +2883,60 @@ void ParseSlice::transformDecode4x4LuamResidualProcess()
 
 			////环路滤波器之前的图像生成
 			Picture_construction_process_prior_to_deblocking_filter_process(u, "4*4", luma4x4BlkIdx, true);
+
+
 		}
 
 
+	}
+
+
+}
+
+void ParseSlice::transformDecode4x4LuamResidualProcessInter(uint8_t predPartL[16][16])
+{
+	if (macroblock[CurrMbAddr]->mode != H264_MB_PART_PRED_MODE::Intra_16x16)
+	{
+		scaling(true, false);
+		for (size_t luma4x4BlkIdx = 0; luma4x4BlkIdx < 16; luma4x4BlkIdx++)
+		{
+			int c[4][4] = { 0 };
+			int r[4][4] = { 0 };
+			//逆扫描过程  在解码器端则需要将这个一维数据转换成二维数组或矩阵进行运算
+			inverseScanner4x4Process(macroblock[CurrMbAddr]->level4x4[luma4x4BlkIdx], c);
+			//调用4*4残差缩放以及变换过程，c 为输入，r 为输出。输出是残差样点值
+			scalingTransformProcess(c, r, true, false);
+
+			//对近似均匀分布的语法元素，在编码和解码时选择旁路（bypass）模式，可以免除上下文建模，提高编解码的速度,不经过量化和dct。
+			if (macroblock[CurrMbAddr]->TransformBypassModeFlag
+				&& macroblock[CurrMbAddr]->mode == H264_MB_PART_PRED_MODE::Intra_4x4
+				&& (macroblock[CurrMbAddr]->Intra4x4PredMode[luma4x4BlkIdx] == 0 || macroblock[CurrMbAddr]->Intra4x4PredMode[luma4x4BlkIdx] == 1)
+				)
+			{
+				printError("不支持旁路变换解码");
+				exit(0);
+			}
+
+			//计算当前亮度块左上角亮度样点距离当前宏块左上角亮度样点的相对位置
+			int xO = InverseRasterScan(luma4x4BlkIdx / 4, 8, 8, 16, 0) + InverseRasterScan(luma4x4BlkIdx % 4, 4, 4, 8, 0);
+			int yO = InverseRasterScan(luma4x4BlkIdx / 4, 8, 8, 16, 1) + InverseRasterScan(luma4x4BlkIdx % 4, 4, 4, 8, 1);
+
+
+			int u[16] = { 0 };
+			for (size_t i = 0; i < 4; i++)
+			{
+				for (size_t j = 0; j < 4; j++)
+				{
+					//macroblock[CurrMbAddr]->predL[xO + j][yO + i]
+					//Clip1Y( x ) = Clip3( 0， ( 1 << BitDepthY ) − 1 ， x ) 
+					u[i * 4 + j] = Clip3(0, (1 << sHeader.sps.BitDepthY) - 1, predPartL[xO + j][yO + i] + r[i][j]);
+				}
+			}
+
+
+			////环路滤波器之前的图像生成
+			Picture_construction_process_prior_to_deblocking_filter_process(u, "4*4", luma4x4BlkIdx, true);
+		}
 	}
 
 
@@ -2935,6 +2986,46 @@ void ParseSlice::transformDecode8x8LuamResidualProcess()
 
 	}
 
+}
+
+void ParseSlice::transformDecode8x8LuamResidualProcessInter(uint8_t predPartL[16][16])
+{
+
+	scaling(true, false);
+
+	for (size_t luma8x8BlkIdx = 0; luma8x8BlkIdx < 4; luma8x8BlkIdx++)
+	{
+		int c[8][8] = { 0 };
+
+		//逆zigzag扫描
+		inverseScanner8x8Process(macroblock[CurrMbAddr]->level8x8[luma8x8BlkIdx], c);
+		int r[8][8] = { 0 };
+		Scaling_and_transformation_process_for_residual_8x8_blocks(c, r, true, false);
+
+		//对近似均匀分布的语法元素，在编码和解码时选择旁路（bypass）模式，可以免除上下文建模，提高编解码的速度,不经过量化和dct。
+		if (macroblock[CurrMbAddr]->TransformBypassModeFlag
+			&& macroblock[CurrMbAddr]->mode == H264_MB_PART_PRED_MODE::Intra_8x8
+			&& (macroblock[CurrMbAddr]->Intra4x4PredMode[luma8x8BlkIdx] == 0 || macroblock[CurrMbAddr]->Intra4x4PredMode[luma8x8BlkIdx] == 1)
+			)
+		{
+			printError("不支持旁路变换解码");
+			exit(0);
+		}
+
+		int xO = InverseRasterScan(luma8x8BlkIdx, 8, 8, 16, 0);
+		int yO = InverseRasterScan(luma8x8BlkIdx, 8, 8, 16, 1);
+
+		int u[64] = { 0 };
+
+		for (size_t i = 0; i < 8; i++)
+		{
+			for (size_t j = 0; j < 8; j++)
+			{
+				u[i * 8 + j] = Clip3(0, (1 << sHeader.sps.BitDepthY) - 1, predPartL[xO + j][yO + i] + r[i][j]);
+			}
+		}
+		Picture_construction_process_prior_to_deblocking_filter_process(u, "8*8", luma8x8BlkIdx, true);
+	}
 }
 
 //16*16亮度残差
@@ -3150,7 +3241,125 @@ void ParseSlice::transformDecodeChromaResidualProcess(bool isChromaCb)
 
 }
 
-void ParseSlice::Inter_prediction_process(DPB& dpb)
+void ParseSlice::transformDecodeChromaResidualProcessInter(uint8_t predPartC[16][16], bool isChromaCb)
+{
+
+	if (sHeader.sps.ChromaArrayType == 3)
+	{
+		//对ChromaArrayType等于3 444 的色度样本的转换解码过程的规范
+		transformDecodeChromaArrayTypeEqualTo3Process(isChromaCb);
+	}
+	else
+	{
+		int MbWidthC = sHeader.sps.MbWidthC;
+		int MbHeightC = sHeader.sps.MbHeightC;
+		//420 8 8
+		int numChroma4x4Blks = (MbWidthC / 4) * (MbHeightC / 4);
+		int iCbCr = (isChromaCb) ? 0 : 1;
+
+		int dcC[4][2] = { 0 };
+		if (sHeader.sps.ChromaArrayType == 1) //420
+		{
+			int c[2][2] = { 0 };
+
+			//420最大DC系数有4个
+			c[0][0] = macroblock[CurrMbAddr]->ChromaDCLevel[iCbCr][0];
+			c[0][1] = macroblock[CurrMbAddr]->ChromaDCLevel[iCbCr][1];
+			c[1][0] = macroblock[CurrMbAddr]->ChromaDCLevel[iCbCr][2];
+			c[1][1] = macroblock[CurrMbAddr]->ChromaDCLevel[iCbCr][3];
+			transformDecodeChromaDCProcess(c, dcC, MbWidthC, MbHeightC, isChromaCb);
+		}
+		else if (sHeader.sps.ChromaArrayType == 2)  //422
+		{
+			//422最大DC系数有8个
+			/*
+			|0,1|
+			|2,3|
+			|4,5|
+			|6,7|
+			*/
+			int c[4][2] = { 0 };
+			c[0][0] = macroblock[CurrMbAddr]->ChromaDCLevel[iCbCr][0];
+			c[0][1] = macroblock[CurrMbAddr]->ChromaDCLevel[iCbCr][1];
+			c[1][0] = macroblock[CurrMbAddr]->ChromaDCLevel[iCbCr][2];
+			c[1][1] = macroblock[CurrMbAddr]->ChromaDCLevel[iCbCr][3];
+			c[2][0] = macroblock[CurrMbAddr]->ChromaDCLevel[iCbCr][4];
+			c[2][1] = macroblock[CurrMbAddr]->ChromaDCLevel[iCbCr][5];
+			c[3][0] = macroblock[CurrMbAddr]->ChromaDCLevel[iCbCr][6];
+			c[3][1] = macroblock[CurrMbAddr]->ChromaDCLevel[iCbCr][7];
+			transformDecodeChromaDCProcess(c, dcC, MbWidthC, MbHeightC, isChromaCb);
+		}
+
+		int dcCToChroma[8] =
+		{
+			dcC[0][0], dcC[0][1],
+			dcC[1][0], dcC[1][1],
+			dcC[2][0], dcC[2][1],
+			dcC[3][0], dcC[3][1],
+		};
+
+		int rMb[8][16] = { 0 };//本应该是rMb[MbWidthC][MbHeightC], 此处按最大的8x16(422)尺寸来申请数组,
+
+
+		for (size_t chroma4x4BlkIdx = 0; chroma4x4BlkIdx < numChroma4x4Blks; chroma4x4BlkIdx++)
+		{
+
+			int chromaList[16] = { 0 };
+
+			chromaList[0] = dcCToChroma[chroma4x4BlkIdx];
+
+			for (size_t k = 1; k < 16; k++)
+			{
+				chromaList[k] = macroblock[CurrMbAddr]->ChromaACLevel[iCbCr][chroma4x4BlkIdx][k - 1];
+			}
+
+			int c[4][4] = { 0 };
+			//422 最大8
+			inverseScanner4x4Process(chromaList, c);
+
+			int r[4][4] = { 0 };
+			scalingTransformProcess(c, r, false, isChromaCb);
+
+
+			int xO = InverseRasterScan(chroma4x4BlkIdx, 4, 4, 8, 0);
+			int yO = InverseRasterScan(chroma4x4BlkIdx, 4, 4, 8, 1);
+
+			for (size_t i = 0; i < 4; i++)
+			{
+				for (size_t j = 0; j < 4; j++)
+				{
+					rMb[xO + j][yO + i] = r[i][j];
+				}
+			}
+		}
+
+		if (macroblock[CurrMbAddr]->TransformBypassModeFlag)
+		{
+			printError("不支持旁路变换");
+			exit(0);
+		}
+
+
+		int* u = new int[MbWidthC * MbHeightC];
+		for (size_t i = 0; i < MbWidthC; i++)
+		{
+			for (size_t j = 0; j < MbHeightC; j++)
+			{
+				u[i * MbWidthC + j] = Clip3(0, (1 << sHeader.sps.BitDepthC) - 1, predPartC[j][i] + rMb[j][i]);
+			}
+		}
+
+		Picture_construction_process_prior_to_deblocking_filter_process(u, "4*4", 0, false, isChromaCb);
+
+		delete[] u;
+		u = nullptr;
+	}
+
+
+
+}
+
+void ParseSlice::Inter_prediction_process(DPB& dpb, uint8_t predPartL[16][16], uint8_t predPartCb[16][16], uint8_t predPartCr[16][16], bool isSkip)
 {
 
 	Macroblock* mb = macroblock[CurrMbAddr];
@@ -3294,9 +3503,9 @@ void ParseSlice::Inter_prediction_process(DPB& dpb)
 			const int yAL = yM + yP + yS;
 
 
-			uint8_t* predPartL = new uint8_t[partWidth * partHeight]();
+			/*uint8_t* predPartL = new uint8_t[partWidth * partHeight]();
 			uint8_t* predPartCb = new uint8_t[partWidthC * partHeightC]();
-			uint8_t* predPartCr = new uint8_t[partWidthC * partHeightC]();
+			uint8_t* predPartCr = new uint8_t[partWidthC * partHeightC]();*/
 
 			Decoding_process_for_Inter_prediction_samples(
 				logWDL, w0L, w1L, o0L, o1L,
@@ -3319,30 +3528,35 @@ void ParseSlice::Inter_prediction_process(DPB& dpb)
 			mb->predFlagL1[mbPartIdx] = predFlagL1;
 
 			//predL[ xP + xS + x, yP + yS + y ] = predPartL[ x, y ] 
-			for (size_t y = 0; y < partHeight; y++)
-			{
-				for (size_t x = 0; x < partWidth; x++)
-				{
-					lumaData[xM + xP + xS + x][yM + yP + yS + y] = predPartL[y * partWidth + x];
-				}
-			}
 
-			if (sHeader.sps.ChromaArrayType != 0)
+			if (isSkip)
 			{
-				for (size_t y = 0; y < partHeightC; y++)
+				for (size_t y = 0; y < partHeight; y++)
 				{
-					for (size_t x = 0; x < partWidthC; x++)
+					for (size_t x = 0; x < partWidth; x++)
 					{
-						//predC[ xP / SubWidthC + xS / SubWidthC + x, yP / SubHeightC + yS / SubHeightC + y ] = predPartC[ x, y ];
-						chromaCbData[xM / sHeader.sps.SubWidthC + xP / sHeader.sps.SubWidthC + xS / sHeader.sps.SubWidthC + x][yM / sHeader.sps.SubHeightC + yP / sHeader.sps.SubHeightC + yS / sHeader.sps.SubHeightC + y] = predPartCb[y * partWidthC + x];
-						chromaCrData[xM / sHeader.sps.SubWidthC + xP / sHeader.sps.SubWidthC + xS / sHeader.sps.SubWidthC + x][yM / sHeader.sps.SubHeightC + yP / sHeader.sps.SubHeightC + yS / sHeader.sps.SubHeightC + y] = predPartCr[y * partWidthC + x];
+						lumaData[xM + xP + xS + x][yM + yP + yS + y] = predPartL[x][y];
+					}
+				}
+
+				if (sHeader.sps.ChromaArrayType != 0)
+				{
+					for (size_t y = 0; y < partHeightC; y++)
+					{
+						for (size_t x = 0; x < partWidthC; x++)
+						{
+							//predC[ xP / SubWidthC + xS / SubWidthC + x, yP / SubHeightC + yS / SubHeightC + y ] = predPartC[ x, y ];
+							chromaCbData[xM / sHeader.sps.SubWidthC + xP / sHeader.sps.SubWidthC + xS / sHeader.sps.SubWidthC + x][yM / sHeader.sps.SubHeightC + yP / sHeader.sps.SubHeightC + yS / sHeader.sps.SubHeightC + y] = predPartCb[x][y];
+							chromaCrData[xM / sHeader.sps.SubWidthC + xP / sHeader.sps.SubWidthC + xS / sHeader.sps.SubWidthC + x][yM / sHeader.sps.SubHeightC + yP / sHeader.sps.SubHeightC + yS / sHeader.sps.SubHeightC + y] = predPartCr[x][y];
+						}
 					}
 				}
 			}
 
-			delete[] predPartL;
+
+			/*delete[] predPartL;
 			delete[] predPartCb;
-			delete[] predPartCr;
+			delete[] predPartCr;*/
 
 		}
 
@@ -3361,7 +3575,7 @@ void ParseSlice::Decoding_process_for_Inter_prediction_samples(
 	DPB& dpb, const int xAL, const int yAL, int mbPartIdx, int subMbPartIdx,
 	int partWidth, int partHeight, int partWidthC, int partHeightC, int mvL0[2], int mvL1[2], int mvCL0[2], int mvCL1[2],
 	int refIdxL0, int refIdxL1, int predFlagL0, int predFlagL1,
-	uint8_t* predPartL, uint8_t* predPartCb, uint8_t* predPartCr)
+	uint8_t predPartL[16][16], uint8_t predPartCb[16][16], uint8_t predPartCr[16][16])
 {
 
 
@@ -3673,7 +3887,7 @@ void ParseSlice::Weighted_sample_prediction_process(
 	int mbPartIdx, int subMbPartIdx,
 	int partWidth, int partHeight, int partWidthC, int partHeightC, int predFlagL0, int predFlagL1,
 	uint8_t* predPartL0L, uint8_t* predPartL0Cb, uint8_t* predPartL0Cr, uint8_t* predPartL1L, uint8_t* predPartL1Cb, uint8_t* predPartL1Cr,
-	uint8_t* predPartL, uint8_t* predPartCb, uint8_t* predPartCr)
+	uint8_t predPartL[16][16], uint8_t predPartCb[16][16], uint8_t predPartCr[16][16])
 {
 	if (predFlagL0 == 1 && ((SLIECETYPE)sHeader.slice_type == SLIECETYPE::H264_SLIECE_TYPE_P || (SLIECETYPE)sHeader.slice_type == SLIECETYPE::H264_SLIECE_TYPE_SP))
 	{
@@ -3735,7 +3949,7 @@ void ParseSlice::Weighted_sample_prediction_process(
 void ParseSlice::Default_weighted_sample_prediction_process(
 	int partWidth, int partHeight, int partWidthC, int partHeightC, int predFlagL0, int predFlagL1,
 	uint8_t* predPartL0L, uint8_t* predPartL0Cb, uint8_t* predPartL0Cr, uint8_t* predPartL1L, uint8_t* predPartL1Cb, uint8_t* predPartL1Cr,
-	uint8_t* predPartL, uint8_t* predPartCb, uint8_t* predPartCr
+	uint8_t predPartL[16][16], uint8_t predPartCb[16][16], uint8_t predPartCr[16][16]
 )
 {
 
@@ -3745,7 +3959,7 @@ void ParseSlice::Default_weighted_sample_prediction_process(
 		{
 			for (int x = 0; x < partWidth; x++)
 			{
-				predPartL[y * partWidth + x] = predPartL0L[y * partWidth + x];
+				predPartL[x][y] = predPartL0L[y * partWidth + x];
 			}
 		}
 
@@ -3756,8 +3970,8 @@ void ParseSlice::Default_weighted_sample_prediction_process(
 			{
 				for (int x = 0; x < partWidthC; x++)
 				{
-					predPartCb[y * partWidthC + x] = predPartL0Cb[y * partWidthC + x];
-					predPartCr[y * partWidthC + x] = predPartL0Cr[y * partWidthC + x];
+					predPartCb[x][y] = predPartL0Cb[y * partWidthC + x];
+					predPartCr[x][y] = predPartL0Cr[y * partWidthC + x];
 				}
 			}
 		}
@@ -3768,7 +3982,7 @@ void ParseSlice::Default_weighted_sample_prediction_process(
 		{
 			for (int x = 0; x < partWidth; x++)
 			{
-				predPartL[y * partWidth + x] = predPartL1L[y * partWidth + x];
+				predPartL[x][y] = predPartL1L[y * partWidth + x];
 			}
 		}
 
@@ -3778,8 +3992,8 @@ void ParseSlice::Default_weighted_sample_prediction_process(
 			{
 				for (int x = 0; x < partWidthC; x++)
 				{
-					predPartCb[y * partWidthC + x] = predPartL1Cb[y * partWidthC + x];
-					predPartCr[y * partWidthC + x] = predPartL1Cr[y * partWidthC + x];
+					predPartCb[x][y] = predPartL1Cb[y * partWidthC + x];
+					predPartCr[x][y] = predPartL1Cr[y * partWidthC + x];
 				}
 			}
 		}
@@ -3790,7 +4004,7 @@ void ParseSlice::Default_weighted_sample_prediction_process(
 		{
 			for (int x = 0; x < partWidth; x++)
 			{
-				predPartL[y * partWidth + x] = (predPartL0L[y * partWidth + x] + predPartL1L[y * partWidth + x] + 1) >> 1;
+				predPartL[x][y] = (predPartL0L[y * partWidth + x] + predPartL1L[y * partWidth + x] + 1) >> 1;
 			}
 		}
 
@@ -3800,8 +4014,8 @@ void ParseSlice::Default_weighted_sample_prediction_process(
 			{
 				for (int x = 0; x < partWidthC; x++)
 				{
-					predPartCb[y * partWidthC + x] = (predPartL0Cb[y * partWidthC + x] + predPartL1Cb[y * partWidthC + x] + 1) >> 1;
-					predPartCr[y * partWidthC + x] = (predPartL0Cr[y * partWidthC + x] + predPartL1Cr[y * partWidthC + x] + 1) >> 1;
+					predPartCb[x][y] = (predPartL0Cb[y * partWidthC + x] + predPartL1Cb[y * partWidthC + x] + 1) >> 1;
+					predPartCr[x][y] = (predPartL0Cr[y * partWidthC + x] + predPartL1Cr[y * partWidthC + x] + 1) >> 1;
 				}
 			}
 		}
@@ -3816,7 +4030,7 @@ void ParseSlice::Weighted_sample_prediction_process_next(
 	int partWidth, int partHeight, int partWidthC,
 	int partHeightC, int predFlagL0, int predFlagL1,
 	uint8_t* predPartL0L, uint8_t* predPartL0Cb, uint8_t* predPartL0Cr, uint8_t* predPartL1L, uint8_t* predPartL1Cb, uint8_t* predPartL1Cr,
-	uint8_t* predPartL, uint8_t* predPartCb, uint8_t* predPartCr)
+	uint8_t predPartL[16][16], uint8_t predPartCb[16][16], uint8_t predPartCr[16][16])
 {
 
 	if (predFlagL0 == 1 && predFlagL1 == 0)
@@ -3827,11 +4041,11 @@ void ParseSlice::Weighted_sample_prediction_process_next(
 			{
 				if (logWDL >= 1) //Clip1Y( x ) = Clip3( 0, ( 1 << BitDepthY ) − 1, x )
 				{
-					predPartL[y * partWidth + x] = Clip3(0, (1 << sHeader.sps.BitDepthY) - 1, ((predPartL0L[y * partWidth + x] * w0L + (int)std::pow(2, logWDL - 1)) >> logWDL) + o0L);
+					predPartL[x][y] = Clip3(0, (1 << sHeader.sps.BitDepthY) - 1, ((predPartL0L[y * partWidth + x] * w0L + (int)std::pow(2, logWDL - 1)) >> logWDL) + o0L);
 				}
 				else
 				{
-					predPartL[y * partWidth + x] = Clip3(0, (1 << sHeader.sps.BitDepthY) - 1, predPartL0L[y * partWidth + x] * w0L + o0L);
+					predPartL[x][y] = Clip3(0, (1 << sHeader.sps.BitDepthY) - 1, predPartL0L[y * partWidth + x] * w0L + o0L);
 				}
 			}
 		}
@@ -3844,20 +4058,20 @@ void ParseSlice::Weighted_sample_prediction_process_next(
 				{
 					if (logWDCb >= 1) //Clip1Y( x ) = Clip3( 0, ( 1 << BitDepthC ) − 1, x )
 					{
-						predPartCb[y * partWidthC + x] = Clip3(0, (1 << sHeader.sps.BitDepthC) - 1, ((predPartL0Cb[y * partWidthC + x] * w0Cb + (int)std::pow(2, logWDCb - 1)) >> logWDCb) + o0Cb);
+						predPartCb[x][y] = Clip3(0, (1 << sHeader.sps.BitDepthC) - 1, ((predPartL0Cb[y * partWidthC + x] * w0Cb + (int)std::pow(2, logWDCb - 1)) >> logWDCb) + o0Cb);
 					}
 					else
 					{
-						predPartCb[y * partWidthC + x] = Clip3(0, (1 << sHeader.sps.BitDepthC) - 1, predPartL0Cb[y * partWidthC + x] * w0Cb + o0Cb);
+						predPartCb[x][y] = Clip3(0, (1 << sHeader.sps.BitDepthC) - 1, predPartL0Cb[y * partWidthC + x] * w0Cb + o0Cb);
 					}
 
 					if (logWDCr >= 1) //Clip1Y( x ) = Clip3( 0, ( 1 << BitDepthC ) − 1, x )
 					{
-						predPartCr[y * partWidthC + x] = Clip3(0, (1 << sHeader.sps.BitDepthC) - 1, ((predPartL0Cr[y * partWidthC + x] * w0Cr + (int)std::pow(2, logWDCr - 1)) >> logWDCr) + o0Cr);
+						predPartCr[x][y] = Clip3(0, (1 << sHeader.sps.BitDepthC) - 1, ((predPartL0Cr[y * partWidthC + x] * w0Cr + (int)std::pow(2, logWDCr - 1)) >> logWDCr) + o0Cr);
 					}
 					else
 					{
-						predPartCr[y * partWidthC + x] = Clip3(0, (1 << sHeader.sps.BitDepthC) - 1, predPartL0Cr[y * partWidthC + x] * w0Cr + o0Cr);
+						predPartCr[x][y] = Clip3(0, (1 << sHeader.sps.BitDepthC) - 1, predPartL0Cr[y * partWidthC + x] * w0Cr + o0Cr);
 					}
 				}
 			}
@@ -3871,11 +4085,11 @@ void ParseSlice::Weighted_sample_prediction_process_next(
 			{
 				if (logWDL >= 1) //Clip1Y( x ) = Clip3( 0, ( 1 << BitDepthY ) − 1, x )
 				{
-					predPartL[y * partWidth + x] = Clip3(0, (1 << sHeader.sps.BitDepthY) - 1, ((predPartL1L[y * partWidth + x] * w0L + (int)std::pow(2, logWDL - 1)) >> logWDL) + o0L);
+					predPartL[x][y] = Clip3(0, (1 << sHeader.sps.BitDepthY) - 1, ((predPartL1L[y * partWidth + x] * w0L + (int)std::pow(2, logWDL - 1)) >> logWDL) + o0L);
 				}
 				else
 				{
-					predPartL[y * partWidth + x] = Clip3(0, (1 << sHeader.sps.BitDepthY) - 1, predPartL1L[y * partWidth + x] * w0L + o0L);
+					predPartL[x][y] = Clip3(0, (1 << sHeader.sps.BitDepthY) - 1, predPartL1L[y * partWidth + x] * w0L + o0L);
 				}
 			}
 		}
@@ -3888,20 +4102,20 @@ void ParseSlice::Weighted_sample_prediction_process_next(
 				{
 					if (logWDCb >= 1) //Clip1Y( x ) = Clip3( 0, ( 1 << BitDepthC ) − 1, x )
 					{
-						predPartCb[y * partWidthC + x] = Clip3(0, (1 << sHeader.sps.BitDepthC) - 1, ((predPartL1Cb[y * partWidthC + x] * w1Cb + (int)std::pow(2, logWDCb - 1)) >> logWDCb) + o1Cb);
+						predPartCb[x][y] = Clip3(0, (1 << sHeader.sps.BitDepthC) - 1, ((predPartL1Cb[y * partWidthC + x] * w1Cb + (int)std::pow(2, logWDCb - 1)) >> logWDCb) + o1Cb);
 					}
 					else
 					{
-						predPartCb[y * partWidthC + x] = Clip3(0, (1 << sHeader.sps.BitDepthC) - 1, predPartL1Cb[y * partWidthC + x] * w1Cb + o1Cb);
+						predPartCb[x][y] = Clip3(0, (1 << sHeader.sps.BitDepthC) - 1, predPartL1Cb[y * partWidthC + x] * w1Cb + o1Cb);
 					}
 
 					if (logWDCr >= 1) //Clip1Y( x ) = Clip3( 0, ( 1 << BitDepthC ) − 1, x )
 					{
-						predPartCr[y * partWidthC + x] = Clip3(0, (1 << sHeader.sps.BitDepthC) - 1, ((predPartL1Cr[y * partWidthC + x] * w1Cr + (int)std::pow(2, logWDCr - 1)) >> logWDCr) + o1Cr);
+						predPartCr[x][y] = Clip3(0, (1 << sHeader.sps.BitDepthC) - 1, ((predPartL1Cr[y * partWidthC + x] * w1Cr + (int)std::pow(2, logWDCr - 1)) >> logWDCr) + o1Cr);
 					}
 					else
 					{
-						predPartCr[y * partWidthC + x] = Clip3(0, (1 << sHeader.sps.BitDepthC) - 1, predPartL1Cr[y * partWidthC + x] * w1Cr + o1Cr);
+						predPartCr[x][y] = Clip3(0, (1 << sHeader.sps.BitDepthC) - 1, predPartL1Cr[y * partWidthC + x] * w1Cr + o1Cr);
 					}
 				}
 			}
@@ -3915,7 +4129,7 @@ void ParseSlice::Weighted_sample_prediction_process_next(
 			for (int x = 0; x < partWidth; x++)
 			{
 				//predPartC[ x, y ] = Clip1( ( ( predPartL0C[ x, y ] * w0C + predPartL1C[ x, y ] * w1C + 2logWDC ) >> ( logWDC + 1 ) ) + ( ( o0C + o1C + 1 ) >> 1 ) );
-				predPartL[y * partWidth + x] = Clip3(0, (1 << sHeader.sps.BitDepthY) - 1,
+				predPartL[x][y] = Clip3(0, (1 << sHeader.sps.BitDepthY) - 1,
 					((predPartL0L[y * partWidth + x] * w0L + predPartL1L[y * partWidth + x] * w1L + (int)std::pow(2, logWDL)) >> (logWDL + 1)) + ((o0L + o1L + 1) >> 1));
 			}
 		}
@@ -3926,10 +4140,10 @@ void ParseSlice::Weighted_sample_prediction_process_next(
 			{
 				for (int x = 0; x < partWidthC; x++)
 				{
-					predPartCb[y * partWidthC + x] = Clip3(0, (1 << sHeader.sps.BitDepthC) - 1,
+					predPartCb[x][y] = Clip3(0, (1 << sHeader.sps.BitDepthC) - 1,
 						((predPartL0Cb[y * partWidthC + x] * w0Cb + predPartL1Cb[y * partWidthC + x] * w1Cb + (int)std::pow(2, logWDCb)) >> (logWDCb + 1)) + ((o0Cb + o1Cb + 1) >> 1));
 
-					predPartCr[y * partWidthC + x] = Clip3(0, (1 << sHeader.sps.BitDepthC) - 1,
+					predPartCr[x][y] = Clip3(0, (1 << sHeader.sps.BitDepthC) - 1,
 						((predPartL0Cr[y * partWidthC + x] * w0Cr + predPartL1Cr[y * partWidthC + x] * w1Cr + (int)std::pow(2, logWDCr)) >> (logWDCr + 1)) + ((o0Cr + o1Cr + 1) >> 1));
 				}
 			}
