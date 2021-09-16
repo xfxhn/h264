@@ -118,6 +118,8 @@ public:
 
 	void Inter_prediction_process(DPB& dpb, uint8_t predPartL[16][16], uint8_t predPartCb[16][16], uint8_t predPartCr[16][16], bool isSkip = false);
 
+	void Sample_construction_process_for_I_PCM_macroblocks();
+
 
 
 
@@ -185,7 +187,10 @@ private:
 		int logWDL, int w0L, int w1L, int o0L, int o1L,
 		int logWDCb, int w0Cb, int w1Cb, int o0Cb, int o1Cb,
 		int logWDCr, int w0Cr, int w1Cr, int o0Cr, int o1Cr,
-		DPB& dpb, const int xAL, const int yAL, int mbPartIdx, int subMbPartIdx,
+		DPB& dpb,
+		const int xAL, const int yAL,
+		int xP, int xS, int yP, int yS,
+		int mbPartIdx, int subMbPartIdx,
 		int partWidth, int partHeight, int partWidthC, int partHeightC, int mvL0[2], int mvL1[2], int mvCL0[2], int mvCL1[2],
 		int refIdxL0, int refIdxL1, int predFlagL0, int predFlagL1,
 		uint8_t predPartL[16][16], uint8_t predPartCb[16][16], uint8_t predPartCr[16][16]);
@@ -201,16 +206,20 @@ private:
 		int logWDL, int w0L, int w1L, int o0L, int o1L,
 		int logWDCb, int w0Cb, int w1Cb, int o0Cb, int o1Cb,
 		int logWDCr, int w0Cr, int w1Cr, int o0Cr, int o1Cr,
+		int xP, int xS, int yP, int yS,
 		int mbPartIdx, int subMbPartIdx,
 		int partWidth, int partHeight, int partWidthC, int partHeightC, int predFlagL0, int predFlagL1,
 		uint8_t* predPartL0L, uint8_t* predPartL0Cb, uint8_t* predPartL0Cr, uint8_t* predPartL1L, uint8_t* predPartL1Cb, uint8_t* predPartL1Cr,
 		uint8_t predPartL[16][16], uint8_t predPartCb[16][16], uint8_t predPartCr[16][16]);
 
-	void Default_weighted_sample_prediction_process(int partWidth, int partHeight, int partWidthC, int partHeightC, int predFlagL0, int predFlagL1,
+	void Default_weighted_sample_prediction_process(
+		int xP, int xS, int yP, int yS,
+		int partWidth, int partHeight, int partWidthC, int partHeightC, int predFlagL0, int predFlagL1,
 		uint8_t* predPartL0L, uint8_t* predPartL0Cb, uint8_t* predPartL0Cr, uint8_t* predPartL1L, uint8_t* predPartL1Cb, uint8_t* predPartL1Cr,
 		uint8_t predPartL[16][16], uint8_t predPartCb[16][16], uint8_t predPartCr[16][16]);
 
 	void Weighted_sample_prediction_process_next(
+		int xP, int xS, int yP, int yS,
 		int logWDL, int w0L, int w1L, int o0L, int o1L,
 		int logWDCb, int w0Cb, int w1Cb, int o0Cb, int o1Cb,
 		int logWDCr, int w0Cr, int w1Cr, int o0Cr, int o1Cr,

@@ -161,7 +161,6 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice, DPB& dpb)
 					uint8_t predPartCr[16][16] = { 0 };
 					Slice->Inter_prediction_process(dpb, predPartL, predPartCb, predPartCr, true);
 
-
 				}
 
 				moreDataFlag = !mb_skip_flag;
@@ -209,9 +208,9 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice, DPB& dpb)
 				isChromaCb = false;
 				Slice->transformDecodeChromaResidualProcess(isChromaCb);
 			}
-			else if (Slice->macroblock[Slice->CurrMbAddr]->mbType == H264_MB_TYPE::I_PCM)
+			else if (Slice->macroblock[Slice->CurrMbAddr]->mbType == H264_MB_TYPE::I_PCM)//该宏块没有残差，也没有预测值，码流中的数据直接为原始像素值
 			{
-
+				Slice->Sample_construction_process_for_I_PCM_macroblocks();
 			}
 			else  //帧间预测
 			{

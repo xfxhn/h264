@@ -8,6 +8,7 @@ Picture::Picture(ParseSlice* slice, const SliceHeader& sHeader)
 
 	sps = sHeader.sps;
 	pps = sHeader.pps;
+	slice_type = sHeader.slice_type;
 	PicSizeInMbs = sHeader.PicSizeInMbs;
 
 	macroblock = new Macroblock * [PicSizeInMbs];

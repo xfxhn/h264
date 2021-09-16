@@ -19,6 +19,7 @@ public:
 	uint32_t PicHeightInSamplesL;
 	uint32_t PicWidthInSamplesC;
 	uint32_t PicHeightInSamplesC;
+	uint8_t  slice_type;
 
 	Macroblock** macroblock;
 	uint8_t** lumaData;
