@@ -48,7 +48,7 @@ bool AnnexBReader::open(const char* filePath)
 			if (this->slice && this->slice->decodeFinished)
 			{
 				//»·Â·ÂË²¨Æ÷
-				slice->Deblocking_filter_process(lastHeader);
+				//slice->Deblocking_filter_process(lastHeader);
 
 				dpb.Decoding_to_complete(slice, lastHeader);
 

@@ -3364,7 +3364,7 @@ void ParseSlice::Inter_prediction_process(DPB& dpb, uint8_t predPartL[16][16], u
 
 	Macroblock* mb = macroblock[CurrMbAddr];
 
-
+	//B_Skip 和 B_Direct_16x16 表示比特流中的子宏块没有运动矢量差或参考序号
 	int NumMbPart = 0;
 	if (mb->mbType == H264_MB_TYPE::B_Skip || mb->mbType == H264_MB_TYPE::B_Direct_16x16)
 	{
@@ -3488,10 +3488,7 @@ void ParseSlice::Inter_prediction_process(DPB& dpb, uint8_t predPartL[16][16], u
 			int o0Cr = 0;
 			int o1Cr = 0;
 
-			if (CurrMbAddr == 77 && sHeader.slice_type == 1)
-			{
-				int a = 1;
-			}
+
 			//加权预测的过程
 			if (sHeader.pps.weighted_pred_flag && ((sHeader.slice_type == 0) || (sHeader.slice_type == 3)) //H264_SLIECE_TYPE_P=0
 				|| (sHeader.pps.weighted_bipred_idc > 0 && sHeader.slice_type == 1) //H264_SLIECE_TYPE_B=1
@@ -3641,6 +3638,7 @@ void ParseSlice::Decoding_process_for_Inter_prediction_samples(
 		//参考图像选择过程
 		//如果当前宏块为帧宏块
 		Picture* refPic = dpb.RefPicList1[refIdxL1];
+
 		Fractional_sample_interpolation_process(xAL, yAL, mbPartIdx, subMbPartIdx,
 			partWidth, partHeight, partWidthC, partHeightC, mvL1, mvCL1, refPic, predPartL1L, predPartL1Cb, predPartL1Cr);
 
@@ -4242,8 +4240,8 @@ void ParseSlice::Derivation_process_for_prediction_weights(DPB& dpb, int refIdxL
 
 		//field_pic_flag is equal to 1 or the current macroblock is a frame macroblock
 		Picture* currPicOrField = new Picture(this, sHeader);
-		Picture* pic0 = dpb.RefPicList1[refIdxL0];
-		Picture* pic1 = dpb.RefPicList0[refIdxL1];
+		Picture* pic0 = dpb.RefPicList0[refIdxL0];
+		Picture* pic1 = dpb.RefPicList1[refIdxL1];
 
 
 		int tb = Clip3(-128, 127, DiffPicOrderCnt(currPicOrField, pic0)); //(8-201)

@@ -11,8 +11,10 @@ public:
 public:
 	Array(size_t capacity);
 	void push(T data);
-	void splice(size_t idx, size_t count = 0);
+	void splice(size_t idx, int count = -1);
+	void clear();
 
+	void deletePointer(size_t idx, int count = -1);
 	T& operator[](int idx);
 	~Array();
 };
@@ -42,16 +44,90 @@ void Array<T>::push(T data)
 		length++;
 	}
 }
+template<class T>
+inline void Array<T>::deletePointer(size_t idx, int count)
+{
+	size_t size = 0;
+
+	size_t deleteSize = 0;
+	if (count == -1) {
+		size = length;
+	}
+	else {
+		size = idx + count;
+	}
+
+	for (size_t i = idx; i < length; i++)
+	{
+		if (i >= idx && i < size)
+		{
+			if (arr[i])
+			{
+				deleteSize++;
+				arr[i] = nullptr;
+			}
+		}
+		else if (i >= size)
+		{
+			arr[i - count] = arr[i];
+			arr[i] = nullptr;
+		}
+	}
+
+	length -= deleteSize;
+
+}
+template<class T>
+void Array<T>::splice(size_t idx, int count)
+{
+	size_t size = 0;
+	if (count == -1) {
+		size = length;
+	}
+	else {
+		size = idx + count;
+	}
+
+
+	size_t deleteSize = 0;
+
+	for (size_t i = idx; i < length; i++)
+	{
+		if (i >= idx && i < size)
+		{
+			if (arr[i])
+			{
+				deleteSize++;
+				delete arr[i];
+				arr[i] = nullptr;
+			}
+		}
+		else if (i >= size)
+		{
+			arr[i - count] = arr[i];
+			arr[i] = nullptr;
+		}
+	}
+
+	length -= deleteSize;
+}
 
 template<class T>
-void Array<T>::splice(size_t idx, size_t count)
+inline void Array<T>::clear()
 {
-	for (size_t i = idx; i < count; i++)
+	for (size_t i = 0; i < length; i++)
 	{
-		arr[i] = nullptr;
+		if (arr[i])
+		{
+			delete arr[i];
+			arr[i] = nullptr;
+		}
 	}
-	length = idx;
+
+	length = 0;
 }
+
+
 
 
 

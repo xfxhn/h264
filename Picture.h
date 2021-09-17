@@ -50,6 +50,7 @@ public:
 	int			LongTermFrameIdx;    //长期参考帧
 	PICTURE_MARKING  reference_marked_type; //参考帧标记状态
 	bool		memory_management_control_operation_5_flag; //所有图像标记为不用作参考
+	bool		memory_management_control_operation_6_flag;
 
 
 

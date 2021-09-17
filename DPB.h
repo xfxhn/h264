@@ -25,6 +25,7 @@ public:
 
 public:
 	DPB();
+	~DPB();
 	void Decoding_to_complete(ParseSlice* slice, const  SliceHeader& sHeader);
 
 

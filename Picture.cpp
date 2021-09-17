@@ -73,6 +73,7 @@ Picture::Picture(ParseSlice* slice, const SliceHeader& sHeader)
 	LongTermPicNum = 0;
 	LongTermFrameIdx = 0;
 	memory_management_control_operation_5_flag = false;
+	memory_management_control_operation_6_flag = false;
 }
 
 Picture::~Picture()

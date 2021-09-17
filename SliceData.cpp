@@ -218,7 +218,13 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice, DPB& dpb)
 				uint8_t predPartL[16][16] = { 0 };
 				uint8_t predPartCb[16][16] = { 0 };
 				uint8_t predPartCr[16][16] = { 0 };
+
+
 				Slice->Inter_prediction_process(dpb, predPartL, predPartCb, predPartCr);
+				if (sHeader.slice_type == 1)
+				{
+					int a = 1;
+				}
 				if (Slice->macroblock[Slice->CurrMbAddr]->transform_size_8x8_flag)
 				{
 					Slice->transformDecode8x8LuamResidualProcessInter(predPartL);
