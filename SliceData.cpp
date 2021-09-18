@@ -16,10 +16,10 @@ int SliceData::NextMbAddress(const SliceHeader& sHeader, uint32_t n)
 	int i = n + 1;
 
 
-	if (i >= sHeader.PicSizeInMbs)
+	if (n >= sHeader.PicSizeInMbs)
 	{
 		printError("i >= slice_header.PicSizeInMbs(%d);");
-		return -1;
+		exit(-1);
 	}
 
 	//i有效且其所属片组与n不同 i=i+1,因为如果有多条带组，宏块的顺序就是乱的
@@ -31,7 +31,7 @@ int SliceData::NextMbAddress(const SliceHeader& sHeader, uint32_t n)
 	return i;
 }
 
-bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice, DPB& dpb)
+bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice, DPB& dpb, int nal_cnt)
 {
 	Cabac cabac;
 
@@ -142,12 +142,17 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice, DPB& dpb)
 				Slice->mbX = (CurrMbAddr % Slice->sHeader.sps.PicWidthInMbs);
 				Slice->mbY = (CurrMbAddr / Slice->sHeader.sps.PicWidthInMbs);
 
+
 				Slice->CurrMbAddr = CurrMbAddr;
 
 
 				mb_skip_flag = cabac.decode_mb_skip_flag(bs, Slice);
 
-
+				if (nal_cnt == 7 && CurrMbAddr == 426)
+				{
+					uint32_t a = bs.readMultiBit(120);
+					int v = 1;
+				}
 				if (mb_skip_flag)
 				{
 					Slice->mbCount++;
@@ -159,6 +164,7 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice, DPB& dpb)
 					uint8_t predPartL[16][16] = { 0 };
 					uint8_t predPartCb[16][16] = { 0 };
 					uint8_t predPartCr[16][16] = { 0 };
+
 					Slice->Inter_prediction_process(dpb, predPartL, predPartCb, predPartCr, true);
 
 				}
@@ -166,6 +172,8 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice, DPB& dpb)
 				moreDataFlag = !mb_skip_flag;
 			}
 		}
+
+		
 
 		if (moreDataFlag)
 		{
@@ -181,8 +189,12 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice, DPB& dpb)
 			Slice->CurrMbAddr = CurrMbAddr;
 			Slice->mbCount++;
 
-			Slice->macroblock[Slice->CurrMbAddr]->macroblock_layer(bs, Slice, this, cabac);
-
+			Slice->macroblock[Slice->CurrMbAddr]->macroblock_layer(bs, Slice, this, cabac, nal_cnt);
+			if (nal_cnt == 7 && CurrMbAddr == 391)
+			{
+				uint64_t a = bs.readMultiBit(200);
+				int v = 1;
+			}
 			bool isChromaCb = true;
 			if (Slice->macroblock[Slice->CurrMbAddr]->mode == H264_MB_PART_PRED_MODE::Intra_4x4)
 			{
@@ -221,10 +233,7 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice, DPB& dpb)
 
 
 				Slice->Inter_prediction_process(dpb, predPartL, predPartCb, predPartCr);
-				if (sHeader.slice_type == 1)
-				{
-					int a = 1;
-				}
+
 				if (Slice->macroblock[Slice->CurrMbAddr]->transform_size_8x8_flag)
 				{
 					Slice->transformDecode8x8LuamResidualProcessInter(predPartL);
@@ -248,6 +257,9 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice, DPB& dpb)
 		}
 		else
 		{
+
+
+
 			if ((SLIECETYPE)sHeader.slice_type != SLIECETYPE::H264_SLIECE_TYPE_I && (SLIECETYPE)sHeader.slice_type != SLIECETYPE::H264_SLIECE_TYPE_SI)
 			{
 				prevMbSkipped = mb_skip_flag;
@@ -264,6 +276,8 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice, DPB& dpb)
 				moreDataFlag = !end_of_slice_flag;
 			}
 		}
+
+
 		CurrMbAddr = NextMbAddress(sHeader, CurrMbAddr);
 	} while (moreDataFlag);
 

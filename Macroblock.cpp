@@ -229,7 +229,7 @@ Macroblock::Macroblock()
 //CodedBlockPatternChroma :如果当前宏块类型采用的预测方式为Intra_16x16，那么该字段有效,它表示了Luma宏块中的CBP
 //
 //一个宏块的色度分量的coded_block_pattern，Cb、Cr的CodedBlockPatternChroma相同
-bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* sliceData, Cabac& cabac)
+bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* sliceData, Cabac& cabac, int nal_cnt)
 {
 
 	sliceBase = Slice;
@@ -255,7 +255,11 @@ bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* s
 		mb_type = bs.readUE(); //2 ue(v) | ae(v)
 	}
 
-
+	if (nal_cnt == 7 && sliceBase->CurrMbAddr == 391)
+	{
+		uint64_t a = bs.readMultiBit(400);
+		int v = 1;
+	}
 
 	uint8_t	 slice_type = sHeader.slice_type;
 
@@ -358,7 +362,9 @@ bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* s
 				mode = MbPartPredMode(0);
 			}
 
-			mb_pred(bs, cabac);
+			mb_pred(bs, cabac, nal_cnt);
+
+
 
 		}
 
@@ -504,7 +510,7 @@ bool Macroblock::macroblock_layer_skip(ParseSlice* Slice, SliceData* slice_data)
 
 
 //宏块预测语法
-bool Macroblock::mb_pred(BitStream& bs, Cabac& cabac)
+bool Macroblock::mb_pred(BitStream& bs, Cabac& cabac, int nal_cnt)
 {
 	const SliceHeader& sHeader = sliceBase->sHeader;
 	//Direct 直接预测：一种不用解码运动矢量的块的帧间预测模式。针对空域预测和时域预测又两种直接预测模式。
@@ -651,9 +657,11 @@ bool Macroblock::mb_pred(BitStream& bs, Cabac& cabac)
 				{
 					if (isAe)
 					{
+
 						int mvd_flag = compIdx;
 						int subMbPartIdx = 0;
 						cabac.decode_mvd_lX(sliceBase, bs, mbPartIdx, subMbPartIdx, mvd_flag, mvd_l0[mbPartIdx][0][compIdx]);
+
 					}
 					else
 					{

@@ -81,15 +81,21 @@ size_t FileReader::EBSP_TO_RBSP(uint8_t* src, size_t length)
 
 FileReader::FileReader(const char* filename)
 {
+	if (file)
+	{
+		return;
+	}
 	file = fopen(filename, "rb");
 	if (file == nullptr) {
 		std::cout << "fopen´ò¿ªÊ§°Ü" << std::endl;
 		return;
 	}
+
 	bufferStart = new uint8_t[FileReader::MAX_BUFFER_SIZE];
 	size_t bufferSize = fread(bufferStart, 1, FileReader::MAX_BUFFER_SIZE, file);
 
 	bufferPosition = bufferStart;
+
 	bufferEnd = bufferStart + bufferSize - 1;
 }
 

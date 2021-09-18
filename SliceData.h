@@ -21,7 +21,7 @@ public:
 
 	SliceData();
 	int NextMbAddress(const SliceHeader& sHeader, uint32_t n);
-	bool slice_data(BitStream& bs, ParseSlice* Slice, DPB& bpb);
+	bool slice_data(BitStream& bs, ParseSlice* Slice, DPB& bpb, int nal_cnt);
 	~SliceData();
 };
 

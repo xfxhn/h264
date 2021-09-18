@@ -253,7 +253,7 @@ private:
 		int& mbPartIdxA, int& mbPartIdxB, int& mbPartIdxC, int& mbPartIdxD,
 		int& subMbPartIdxA, int& subMbPartIdxB, int& subMbPartIdxC, int& subMbPartIdxD);
 
-	static int DiffPicOrderCnt(Picture* picA, Picture* picB);
+	static int DiffPicOrderCnt(int PicOrderCntA, int PicOrderCntB);
 
 
 	void Derivation_process_for_prediction_weights(DPB& dpb, int refIdxL0, int refIdxL1, int predFlagL0, int predFlagL1,

@@ -24,12 +24,23 @@ bool AnnexBReader::open(const char* filePath)
 	SliceHeader lastHeader(ParseNalu());*/
 
 	SliceHeader lastHeader(nalu);
-
+	int nal_cnt = 0;
 
 	DPB dpb;
 	while (isStopLoop) {
 
 		file.readNalUint(data, size, isStopLoop);
+
+		if (nal_cnt == 7)
+		{
+			for (size_t i = 0; i < 56; i++)
+			{
+				cout << (int)data[i] << endl;
+			}
+
+			int a = 1;
+		}
+
 
 		BitStream bs(data, size);
 
@@ -48,11 +59,14 @@ bool AnnexBReader::open(const char* filePath)
 			if (this->slice && this->slice->decodeFinished)
 			{
 				//环路滤波器
-				//slice->Deblocking_filter_process(lastHeader);
+				slice->Deblocking_filter_process(lastHeader);
 
 				dpb.Decoding_to_complete(slice, lastHeader);
 
-				slice->saveBmpFile("xf");
+				char buf[50];
+				sprintf(buf, "./output/xf-%d-%d.bmp", nal_cnt, lastHeader.slice_type);
+				//"./output/xf1.bmp"
+				slice->saveBmpFile(buf);
 
 
 				if (this->slice)
@@ -88,7 +102,7 @@ bool AnnexBReader::open(const char* filePath)
 			}
 			lastHeader = sHeader;
 			SliceData sData;
-			sData.slice_data(bs, slice, dpb);
+			sData.slice_data(bs, slice, dpb, nal_cnt);
 
 			break;
 		}
@@ -114,6 +128,9 @@ bool AnnexBReader::open(const char* filePath)
 				//环路滤波器
 				slice->Deblocking_filter_process(lastHeader);
 
+				dpb.Decoding_to_complete(slice, lastHeader);
+
+				slice->saveBmpFile("xf");
 
 				if (slice)
 				{
@@ -158,7 +175,7 @@ bool AnnexBReader::open(const char* filePath)
 			lastHeader = sHeader;
 
 			SliceData sData;
-			sData.slice_data(bs, slice, dpb);
+			sData.slice_data(bs, slice, dpb, nal_cnt);
 
 			break;
 		}
@@ -194,6 +211,7 @@ bool AnnexBReader::open(const char* filePath)
 
 			break;
 		}
+		nal_cnt++;
 	}
 
 	return true;

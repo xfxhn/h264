@@ -193,7 +193,7 @@ public:
 	int                  refIdxL1[4];
 public:
 	Macroblock();
-	bool macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* slice_data, Cabac& cabac);
+	bool macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* slice_data, Cabac& cabac, int nal_cnt);
 	bool macroblock_layer_skip(ParseSlice* Slice, SliceData* slice_data);
 
 
@@ -205,7 +205,7 @@ private:
 
 	int fixed_mb_type(uint32_t slice_type, uint8_t& fix_mb_type, SLIECETYPE& fix_slice_type);
 
-	bool mb_pred(BitStream& bs, Cabac& cabac);
+	bool mb_pred(BitStream& bs, Cabac& cabac, int nal_cnt);
 
 	bool residual(BitStream& bs, int startIdx, int endIdx, Cabac& cabac);
 	bool sub_mb_pred(BitStream& bs, Cabac& cabac);

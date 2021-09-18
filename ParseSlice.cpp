@@ -153,7 +153,7 @@ void ParseSlice::saveBmpFile(const char* filename)
 
 
 	convertYuv420(buffer, widthBytes);
-	FILE* fp = fopen("./output/xf1.bmp", "wb");
+	FILE* fp = fopen(filename, "wb");
 	if (!fp)
 	{
 		return;
@@ -3532,15 +3532,22 @@ void ParseSlice::Inter_prediction_process(DPB& dpb, uint8_t predPartL[16][16], u
 
 			//predL[ xP + xS + x, yP + yS + y ] = predPartL[ x, y ] 
 
+			////计算当前亮度块左上角亮度样点距离当前宏块左上角亮度样点的相对位置
+
+			//int xO = InverseRasterScan(luma8x8BlkIdx, 8, 8, 16, 0);
+			//int yO = InverseRasterScan(luma8x8BlkIdx, 8, 8, 16, 1);
+			//int xO = InverseRasterScan(luma4x4BlkIdx / 4, 8, 8, 16, 0) + InverseRasterScan(luma4x4BlkIdx % 4, 4, 4, 8, 0);
+			//int yO = InverseRasterScan(luma4x4BlkIdx / 4, 8, 8, 16, 1) + InverseRasterScan(luma4x4BlkIdx % 4, 4, 4, 8, 1);
 			if (isSkip)
 			{
 				for (size_t y = 0; y < partHeight; y++)
 				{
 					for (size_t x = 0; x < partWidth; x++)
 					{
-						lumaData[xM + xP + xS + x][yM + yP + yS + y] = predPartL[x][y];
+						lumaData[xM + xP + xS + x][yM + yP + yS + y] = predPartL[xP + xS + x][yP + yS + y];
 					}
 				}
+
 
 				if (sHeader.sps.ChromaArrayType != 0)
 				{
@@ -3549,8 +3556,8 @@ void ParseSlice::Inter_prediction_process(DPB& dpb, uint8_t predPartL[16][16], u
 						for (size_t x = 0; x < partWidthC; x++)
 						{
 							//predC[ xP / SubWidthC + xS / SubWidthC + x, yP / SubHeightC + yS / SubHeightC + y ] = predPartC[ x, y ];
-							chromaCbData[xM / sHeader.sps.SubWidthC + xP / sHeader.sps.SubWidthC + xS / sHeader.sps.SubWidthC + x][yM / sHeader.sps.SubHeightC + yP / sHeader.sps.SubHeightC + yS / sHeader.sps.SubHeightC + y] = predPartCb[x][y];
-							chromaCrData[xM / sHeader.sps.SubWidthC + xP / sHeader.sps.SubWidthC + xS / sHeader.sps.SubWidthC + x][yM / sHeader.sps.SubHeightC + yP / sHeader.sps.SubHeightC + yS / sHeader.sps.SubHeightC + y] = predPartCr[x][y];
+							chromaCbData[xM / sHeader.sps.SubWidthC + xP / sHeader.sps.SubWidthC + xS / sHeader.sps.SubWidthC + x][yM / sHeader.sps.SubHeightC + yP / sHeader.sps.SubHeightC + yS / sHeader.sps.SubHeightC + y] = predPartCb[xP / sHeader.sps.SubWidthC + xS / sHeader.sps.SubWidthC + x][yP / sHeader.sps.SubHeightC + yS / sHeader.sps.SubHeightC + y];
+							chromaCrData[xM / sHeader.sps.SubWidthC + xP / sHeader.sps.SubWidthC + xS / sHeader.sps.SubWidthC + x][yM / sHeader.sps.SubHeightC + yP / sHeader.sps.SubHeightC + yS / sHeader.sps.SubHeightC + y] = predPartCr[xP / sHeader.sps.SubWidthC + xS / sHeader.sps.SubWidthC + x][yP / sHeader.sps.SubHeightC + yS / sHeader.sps.SubHeightC + y];
 						}
 					}
 				}
@@ -3688,7 +3695,10 @@ void ParseSlice::Fractional_sample_interpolation_process(const int xAL, const in
 			int xFracL = mvLX[0] & 3;
 			int yFracL = mvLX[1] & 3;
 
-
+			/*if (yL * partWidth + xL == 43 && sHeader.slice_type == 1)
+			{
+				int a = 1;
+			}*/
 			predPartLXL[yL * partWidth + xL] = Luma_sample_interpolation_process(xIntL, yIntL, xFracL, yFracL, refPic);
 		}
 	}
@@ -4237,20 +4247,24 @@ void ParseSlice::Derivation_process_for_prediction_weights(DPB& dpb, int refIdxL
 			o0Cr = 0;
 			o1Cr = 0;
 		}
-
+		//picX->TopFieldOrderCnt, picX->BottomFieldOrderCnt
 		//field_pic_flag is equal to 1 or the current macroblock is a frame macroblock
-		Picture* currPicOrField = new Picture(this, sHeader);
+		//Picture* currPicOrField = new Picture(this, sHeader);
 		Picture* pic0 = dpb.RefPicList0[refIdxL0];
 		Picture* pic1 = dpb.RefPicList1[refIdxL1];
 
 
-		int tb = Clip3(-128, 127, DiffPicOrderCnt(currPicOrField, pic0)); //(8-201)
+		int currPicOrderCnt = std::min(this->TopFieldOrderCnt, this->BottomFieldOrderCnt);
+		int pic0PicOrderCnt = std::min(pic0->TopFieldOrderCnt, pic0->BottomFieldOrderCnt);
+		int pic1PicOrderCnt = std::min(pic1->TopFieldOrderCnt, pic1->BottomFieldOrderCnt);
+
+		int tb = Clip3(-128, 127, DiffPicOrderCnt(currPicOrderCnt, pic0PicOrderCnt)); //(8-201)
 		//picX->TopFieldOrderCnt, picX->BottomFieldOrderCnt
-		int td = Clip3(-128, 127, DiffPicOrderCnt(pic1, pic0)); //(8-202)
+		int td = Clip3(-128, 127, DiffPicOrderCnt(pic1PicOrderCnt, pic0PicOrderCnt)); //(8-202)
 		int tx = (16384 + std::abs(td / 2)) / td; //(8-197)
 		int DistScaleFactor = Clip3(-1024, 1023, (tb * tx + 32) >> 6); //(8-198)
 
-		if (DiffPicOrderCnt(pic1, pic0) == 0
+		if (DiffPicOrderCnt(pic1PicOrderCnt, pic0PicOrderCnt) == 0
 			|| pic0->reference_marked_type == PICTURE_MARKING::LONG_TERM_REFERENCE
 			|| pic1->reference_marked_type == PICTURE_MARKING::LONG_TERM_REFERENCE
 			|| (DistScaleFactor >> 2) < -64
@@ -4281,8 +4295,6 @@ void ParseSlice::Derivation_process_for_prediction_weights(DPB& dpb, int refIdxL
 			}
 		}
 
-		delete currPicOrField;
-		currPicOrField = nullptr;
 	}
 	else if (explicitModeFlag == 1)
 	{
@@ -4757,15 +4769,20 @@ void ParseSlice::Derivation_process_for_temporal_direct_luma_motion_vector_and_r
 	//vertMvScale 等于 One_To_One）， mvCol[ 1 ]保持不变
 
 	//field_pic_flag等于1，或者当前宏块为帧宏块
-	Picture* currPicOrField = new Picture(this, sHeader);
+	//Picture* currPicOrField = new Picture(this, sHeader);
 	Picture* pic0 = dpb.RefPicList0[refIdxL0];
 	Picture* pic1 = dpb.RefPicList1[0];
 
 
 	//当前宏块中每个 4×4 子宏块分割块的两个运动矢量 mvL0 和 mvL1 推导过程
+	int currPicOrderCnt = std::min(this->TopFieldOrderCnt, this->BottomFieldOrderCnt);
+	int pic0PicOrderCnt = std::min(pic0->TopFieldOrderCnt, pic0->BottomFieldOrderCnt);
+	int pic1PicOrderCnt = std::min(pic1->TopFieldOrderCnt, pic1->BottomFieldOrderCnt);
+
+
 
 	if (dpb.RefPicList0[refIdxL0]->reference_marked_type == PICTURE_MARKING::LONG_TERM_REFERENCE
-		|| DiffPicOrderCnt(pic1, pic0) == 0
+		|| DiffPicOrderCnt(pic1PicOrderCnt, pic0PicOrderCnt) == 0
 		)
 	{
 		mvL0[0] = mvCol[0];
@@ -4776,8 +4793,8 @@ void ParseSlice::Derivation_process_for_temporal_direct_luma_motion_vector_and_r
 	}
 	else
 	{
-		int tb = Clip3(-128, 127, DiffPicOrderCnt(currPicOrField, pic0));
-		int td = Clip3(-128, 127, DiffPicOrderCnt(pic1, pic0));
+		int tb = Clip3(-128, 127, DiffPicOrderCnt(currPicOrderCnt, pic0PicOrderCnt));
+		int td = Clip3(-128, 127, DiffPicOrderCnt(pic1PicOrderCnt, pic0PicOrderCnt));
 		int tx = (16384 + std::abs(td / 2)) / td;
 
 		int DistScaleFactor = Clip3(-1024, 1023, (tb * tx + 32) >> 6);
@@ -4790,9 +4807,6 @@ void ParseSlice::Derivation_process_for_temporal_direct_luma_motion_vector_and_r
 
 	predFlagL0 = 1;
 	predFlagL1 = 1;
-
-	delete currPicOrField;
-	currPicOrField = nullptr;
 }
 
 //共同位置4x4子宏块分割块的推导过程
@@ -5120,15 +5134,13 @@ void ParseSlice::Derivation_process_for_neighbouring_partitions(int mbPartIdx, i
 	}
 }
 
-int ParseSlice::DiffPicOrderCnt(Picture* picA, Picture* picB)
+int ParseSlice::DiffPicOrderCnt(int PicOrderCntA, int PicOrderCntB)
 {
-#define PicOrderCnt(picX) std::min(picX->TopFieldOrderCnt, picX->BottomFieldOrderCnt)
 
 
-	return PicOrderCnt(picA) - PicOrderCnt(picB);
+	return PicOrderCntA - PicOrderCntB;
 
 
-#undef PicOrderCnt
 }
 
 
