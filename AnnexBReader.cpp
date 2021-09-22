@@ -31,7 +31,7 @@ bool AnnexBReader::open(const char* filePath)
 
 		file.readNalUint(data, size, isStopLoop);
 
-		if (nal_cnt == 7)
+		/*if (nal_cnt == 7)
 		{
 			for (size_t i = 0; i < 56; i++)
 			{
@@ -39,7 +39,7 @@ bool AnnexBReader::open(const char* filePath)
 			}
 
 			int a = 1;
-		}
+		}*/
 
 
 		BitStream bs(data, size);
@@ -66,7 +66,7 @@ bool AnnexBReader::open(const char* filePath)
 				char buf[50];
 				sprintf(buf, "./output/xf-%d-%d.bmp", nal_cnt, lastHeader.slice_type);
 				//"./output/xf1.bmp"
-				slice->saveBmpFile(buf);
+				//slice->saveBmpFile(buf);
 
 
 				if (this->slice)

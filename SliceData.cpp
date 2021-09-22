@@ -148,11 +148,7 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice, DPB& dpb, int nal_c
 
 				mb_skip_flag = cabac.decode_mb_skip_flag(bs, Slice);
 
-				if (nal_cnt == 7 && CurrMbAddr == 426)
-				{
-					uint32_t a = bs.readMultiBit(120);
-					int v = 1;
-				}
+
 				if (mb_skip_flag)
 				{
 					Slice->mbCount++;
@@ -173,7 +169,11 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice, DPB& dpb, int nal_c
 			}
 		}
 
-		
+		if (nal_cnt == 7 && CurrMbAddr == 450)
+		{
+			uint64_t a = bs.readMultiBit(400);
+			int v = 1;
+		}
 
 		if (moreDataFlag)
 		{
@@ -190,11 +190,7 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice, DPB& dpb, int nal_c
 			Slice->mbCount++;
 
 			Slice->macroblock[Slice->CurrMbAddr]->macroblock_layer(bs, Slice, this, cabac, nal_cnt);
-			if (nal_cnt == 7 && CurrMbAddr == 391)
-			{
-				uint64_t a = bs.readMultiBit(200);
-				int v = 1;
-			}
+
 			bool isChromaCb = true;
 			if (Slice->macroblock[Slice->CurrMbAddr]->mode == H264_MB_PART_PRED_MODE::Intra_4x4)
 			{

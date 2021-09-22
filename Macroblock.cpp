@@ -255,11 +255,11 @@ bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* s
 		mb_type = bs.readUE(); //2 ue(v) | ae(v)
 	}
 
-	if (nal_cnt == 7 && sliceBase->CurrMbAddr == 391)
+	/*if (nal_cnt == 7 && sliceBase->CurrMbAddr == 391)
 	{
 		uint64_t a = bs.readMultiBit(400);
 		int v = 1;
-	}
+	}*/
 
 	uint8_t	 slice_type = sHeader.slice_type;
 
