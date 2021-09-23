@@ -460,9 +460,12 @@ void DPB::Modification_process_of_reference_picture_lists_for_short_term_referen
 			picNumLXNoWrap = picNumLXPred + (abs_diff_pic_num_minus1 + 1);
 		}
 	}
-
+	//picNumLXPred是变量picNumLXNoWrap的预测值。
+	//当第一次为一个片调用此子句中指定的进程时(即，当在ref_pic_list_modify()语法中第一次出现modification_of_pic_nums_idc等于0或1时)，
+	//picNumL0Pred和picNumL1Pred最初被设置为等于CurrPicNum。 每次赋值picNumLXNoWrap后，picNumLXNoWrap的值被赋给picNumLXPred。
 	picNumLXPred = picNumLXNoWrap;
 
+	//picNumLX应等于标记为“用于短期参考”的参考图片的PicNum
 	int picNumLX = 0;
 	if (picNumLXNoWrap > sHeader.CurrPicNum)
 	{
@@ -473,50 +476,49 @@ void DPB::Modification_process_of_reference_picture_lists_for_short_term_referen
 		picNumLX = picNumLXNoWrap;
 	}
 
-
-	//将短期图像序号为 picNumLX 的图像放入 refIdxLX 索引指定的位置，并将后面的其它图像向后移位，增加 refIdxLX 的值。
-	for (size_t cIdx = num_ref_idx_lX_active_minus1 + 1; cIdx > refIdxLX; cIdx--)
+	//num_ref_idx_lX_active_minus1最大参考序号,加1是最大参考数目，不是实际参考数目
+	//将具有短期图片号picNumLX的图片放置到索引位置refIdxLX，将列表中任何其他剩余图片的位置移动到稍后，并增加refIdxLX的值。  
+	for (size_t cIdx = RefPicListX.length; cIdx > refIdxLX; cIdx--)
 	{
 		RefPicListX[cIdx] = RefPicListX[cIdx - 1];
 	}
 
 	size_t idx = 0;
-	for (; idx < num_ref_idx_lX_active_minus1 + 1; idx++)
+	for (; idx < RefPicListX.length; idx++)
 	{
 		if (RefPicListX[idx]->PicNum == picNumLX && RefPicListX[idx]->reference_marked_type == PICTURE_MARKING::SHORT_TERM_REFERENCE)
 		{
 			break;
 		}
 	}
-
+	RefPicListX[refIdxLX++] = RefPicListX[idx];
 	int nIdx = refIdxLX;
-
-	for (size_t cIdx = refIdxLX; cIdx <= num_ref_idx_lX_active_minus1 + 1; cIdx++)
+	Picture* aa = RefPicListX[4];
+	for (size_t cIdx = refIdxLX; cIdx < RefPicListX.length; cIdx++)
 	{
-		if (RefPicListX[cIdx] != NULL)
+
+		int PicNumF = (RefPicListX[cIdx]->reference_marked_type == PICTURE_MARKING::SHORT_TERM_REFERENCE)
+			? RefPicListX[cIdx]->PicNum : sHeader.MaxPicNum;
+		if (PicNumF != picNumLX) //if ( PicNumF( RefPicListX[ cIdx ] ) != picNumLX )
 		{
-			int32_t PicNumF = (RefPicListX[cIdx]->reference_marked_type == PICTURE_MARKING::SHORT_TERM_REFERENCE)
-				? RefPicListX[cIdx]->PicNum : sHeader.MaxPicNum;
-			if (PicNumF != picNumLX) //if ( PicNumF( RefPicListX[ cIdx ] ) != picNumLX )
-			{
-				RefPicListX[nIdx++] = RefPicListX[cIdx];
-			}
+			RefPicListX[nIdx++] = RefPicListX[cIdx];
 		}
+
 	}
 
-	RefPicListX[num_ref_idx_lX_active_minus1 + 1] = NULL;
+	RefPicListX[num_ref_idx_lX_active_minus1 + 1] = nullptr;
 }
 
 void DPB::Modification_process_of_reference_picture_lists_for_long_term_reference_pictures(int& refIdxLX, int& picNumL0Pred, uint16_t long_term_pic_num,
 	uint8_t num_ref_idx_lX_active_minus1, Array<Picture*>& RefPicListX, const SliceHeader& sHeader)
 {
-	for (size_t cIdx = num_ref_idx_lX_active_minus1 + 1; cIdx > refIdxLX; cIdx--)
+	for (size_t cIdx = RefPicListX.length; cIdx > refIdxLX; cIdx--)
 	{
 		RefPicListX[cIdx] = RefPicListX[cIdx - 1];
 	}
 
 	size_t idx = 0;
-	for (; idx < num_ref_idx_lX_active_minus1 + 1; idx++)
+	for (; idx < RefPicListX.length; idx++)
 	{
 		if (RefPicListX[idx]->LongTermPicNum == long_term_pic_num)
 		{
@@ -527,7 +529,7 @@ void DPB::Modification_process_of_reference_picture_lists_for_long_term_referenc
 
 	int nIdx = refIdxLX;
 
-	for (size_t cIdx = refIdxLX; cIdx <= num_ref_idx_lX_active_minus1 + 1; cIdx++)
+	for (size_t cIdx = refIdxLX; cIdx < RefPicListX.length; cIdx++)
 	{
 		int LongTermPicNumF = (RefPicListX[cIdx]->reference_marked_type == PICTURE_MARKING::LONG_TERM_REFERENCE)
 			? RefPicListX[cIdx]->LongTermPicNum : 0;//(2 * (MaxLongTermFrameIdx + 1));

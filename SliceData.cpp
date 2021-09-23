@@ -78,6 +78,11 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice, DPB& dpb, int nal_c
 			|| (SLIECETYPE)sHeader.slice_type == SLIECETYPE::H264_SLIECE_TYPE_B
 			)
 		{
+			if (nal_cnt == 8)
+			{
+
+				int a = 1;
+			}
 			dpb.Decoding_process_for_reference_picture_lists_construction(Slice);
 		}
 	}
@@ -88,7 +93,7 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice, DPB& dpb, int nal_c
 
 	do
 	{
-
+		
 
 		if ((SLIECETYPE)sHeader.slice_type != SLIECETYPE::H264_SLIECE_TYPE_I && (SLIECETYPE)sHeader.slice_type != SLIECETYPE::H264_SLIECE_TYPE_SI)
 		{
@@ -169,11 +174,7 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice, DPB& dpb, int nal_c
 			}
 		}
 
-		if (nal_cnt == 7 && CurrMbAddr == 450)
-		{
-			uint64_t a = bs.readMultiBit(400);
-			int v = 1;
-		}
+		
 
 		if (moreDataFlag)
 		{
@@ -190,7 +191,7 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice, DPB& dpb, int nal_c
 			Slice->mbCount++;
 
 			Slice->macroblock[Slice->CurrMbAddr]->macroblock_layer(bs, Slice, this, cabac, nal_cnt);
-
+			
 			bool isChromaCb = true;
 			if (Slice->macroblock[Slice->CurrMbAddr]->mode == H264_MB_PART_PRED_MODE::Intra_4x4)
 			{

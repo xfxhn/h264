@@ -31,21 +31,15 @@ bool AnnexBReader::open(const char* filePath)
 
 		file.readNalUint(data, size, isStopLoop);
 
-		/*if (nal_cnt == 7)
-		{
-			for (size_t i = 0; i < 56; i++)
-			{
-				cout << (int)data[i] << endl;
-			}
-
-			int a = 1;
-		}*/
-
+		
 
 		BitStream bs(data, size);
 
 
+
 		nalu.getH264RbspFromNalUnit(bs);
+
+		
 
 		switch ((NaluType)nalu.nal_unit_type)
 		{
@@ -65,8 +59,8 @@ bool AnnexBReader::open(const char* filePath)
 
 				char buf[50];
 				sprintf(buf, "./output/xf-%d-%d.bmp", nal_cnt, lastHeader.slice_type);
-				//"./output/xf1.bmp"
-				//slice->saveBmpFile(buf);
+
+				slice->saveBmpFile(buf);
 
 
 				if (this->slice)
@@ -102,6 +96,7 @@ bool AnnexBReader::open(const char* filePath)
 			}
 			lastHeader = sHeader;
 			SliceData sData;
+			
 			sData.slice_data(bs, slice, dpb, nal_cnt);
 
 			break;

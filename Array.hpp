@@ -5,6 +5,21 @@ template<class T>
 class Array
 {
 public:
+	class Proxy {
+	public:
+		int index;
+		Array& theArr;
+	public:
+
+		Proxy(Array& arr, int idx);
+
+		Proxy& operator=(T val);
+		Proxy& operator=(Array<T>::Proxy Proxy);
+		T operator->();
+
+		operator T() const;
+	};
+public:
 	size_t capacity;
 	size_t length;
 	T* arr;
@@ -15,10 +30,50 @@ public:
 	void clear();
 
 	void deletePointer(size_t idx, int count = -1);
-	T& operator[](int idx);
+	Proxy operator[](int idx);
 	~Array();
 };
+template<class T>
+inline Array<T>::Proxy::Proxy(Array& arr, int idx) :theArr(arr), index(idx)
+{
+}
 
+template<class T>
+typename Array<T>::Proxy& Array<T>::Proxy::operator=(T val)
+{
+	if (index >= 16)
+	{
+		printError("参考帧索引最大16");
+		exit(-1);
+	}
+	if (index >= theArr.length)
+	{
+		theArr.length = index + 1;
+	}
+	theArr.arr[index] = val;
+
+	return *this;
+}
+
+template<class T>
+typename Array<T>::Proxy& Array<T>::Proxy::operator=(const Array<T>::Proxy proxy) {
+
+	int a = proxy.index;
+	this->theArr[this->index] = proxy.theArr.arr[proxy.index];
+
+	return *this;
+}
+
+template<class T>
+T Array<T>::Proxy::operator->() {
+	return theArr.arr[index];
+}
+
+template<class T>
+Array<T>::Proxy::operator T() const
+{
+	return theArr.arr[index];
+}
 
 
 template<class T>
@@ -28,6 +83,8 @@ Array<T>::Array(size_t capacity)
 	this->length = 0;
 	printf("执行几次");
 	this->arr = new T[this->capacity];
+	memset(arr, NULL, sizeof(T) * capacity);
+
 
 }
 
@@ -129,13 +186,13 @@ inline void Array<T>::clear()
 
 
 
-
-
 template<class T>
-T& Array<T>::operator[](int idx)
+typename Array<T>::Proxy Array<T>::operator[](int idx)
 {
-	return arr[idx];
+	return Proxy(*this, idx);
 }
+
+
 
 template<class T>
 Array<T>::~Array()
@@ -151,4 +208,5 @@ Array<T>::~Array()
 		arr = nullptr;
 	}
 }
+
 

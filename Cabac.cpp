@@ -2901,11 +2901,11 @@ int Cabac::Derivation_process_of_ctxIdxInc_for_the_syntax_elements_ref_idx_l0_an
 
 		if (is_ref_idx_l0)
 		{
-			refIdxZeroFlagB = (Slice->macroblock[mbAddrB]->ref_idx_l0[mbAddrB] > 0) ? 0 : 1;
+			refIdxZeroFlagB = (Slice->macroblock[mbAddrB]->ref_idx_l0[mbPartIdxB] > 0) ? 0 : 1;
 		}
 		else
 		{
-			refIdxZeroFlagB = (Slice->macroblock[mbAddrB]->ref_idx_l1[mbAddrB] > 0) ? 0 : 1;
+			refIdxZeroFlagB = (Slice->macroblock[mbAddrB]->ref_idx_l1[mbPartIdxB] > 0) ? 0 : 1;
 		}
 
 

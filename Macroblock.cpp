@@ -255,11 +255,7 @@ bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* s
 		mb_type = bs.readUE(); //2 ue(v) | ae(v)
 	}
 
-	/*if (nal_cnt == 7 && sliceBase->CurrMbAddr == 391)
-	{
-		uint64_t a = bs.readMultiBit(400);
-		int v = 1;
-	}*/
+	
 
 	uint8_t	 slice_type = sHeader.slice_type;
 
@@ -362,9 +358,11 @@ bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* s
 				mode = MbPartPredMode(0);
 			}
 
+			
+
 			mb_pred(bs, cabac, nal_cnt);
 
-
+			
 
 		}
 
@@ -605,7 +603,7 @@ bool Macroblock::mb_pred(BitStream& bs, Cabac& cabac, int nal_cnt)
 	}
 	else if (mode != H264_MB_PART_PRED_MODE::Direct)
 	{
-
+		
 		for (size_t mbPartIdx = 0; mbPartIdx < NumMbPart; mbPartIdx++)
 		{
 			//ref_idx_l0[ mbPartIdx ]   用参考帧队列 L0 进行预测，即前向预测时
@@ -629,6 +627,8 @@ bool Macroblock::mb_pred(BitStream& bs, Cabac& cabac, int nal_cnt)
 				}
 			}
 		}
+
+		
 		//这个句法元素用于参考帧队列 L1，即后向预测
 		for (size_t mbPartIdx = 0; mbPartIdx < NumMbPart; mbPartIdx++)
 		{
@@ -648,7 +648,6 @@ bool Macroblock::mb_pred(BitStream& bs, Cabac& cabac, int nal_cnt)
 		}
 
 		//运动矢量残差MVD
-
 		for (size_t mbPartIdx = 0; mbPartIdx < NumMbPart; mbPartIdx++)
 		{
 			if (MbPartPredMode(mbPartIdx) != H264_MB_PART_PRED_MODE::Pred_L1)
