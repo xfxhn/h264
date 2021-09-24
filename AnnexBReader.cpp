@@ -103,14 +103,17 @@ bool AnnexBReader::open(const char* filePath)
 		}
 		case NaluType::H264_NAL_DPA: //2
 		{
+			int a = 1;
 			break;
 		}
 		case NaluType::H264_NAL_DPB: //3
 		{
+			int a = 1;
 			break;
 		}
 		case NaluType::H264_NAL_DPC: //4
 		{
+			int a = 1;
 			break;
 		}
 		case NaluType::H264_NAL_IDR_SLICE: //5 立即刷新帧（每个GOP的第一帧必须是I帧）
@@ -120,6 +123,7 @@ bool AnnexBReader::open(const char* filePath)
 
 			if (this->slice && this->slice->decodeFinished)
 			{
+				int a = 1;
 				//环路滤波器
 				slice->Deblocking_filter_process(lastHeader);
 
@@ -151,14 +155,6 @@ bool AnnexBReader::open(const char* filePath)
 
 					this->slice = new ParseSlice(sHeader);
 					this->slice->parse();
-				}
-				else
-				{
-					/*if (this->slice)
-					{
-						delete this->slice->sHeader;
-						this->slice->sHeader = sHeader;
-					}*/
 				}
 			}
 

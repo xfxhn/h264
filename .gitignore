@@ -12,8 +12,8 @@ yarn-error.log*
 *.suo
 *.ntvs*
 *.njsproj
-*.sln
 *.vs
 *.yuv
 *.h264
+*.bmp
 demo.h264.1615788140067.yuv

@@ -2858,9 +2858,7 @@ int Cabac::Derivation_process_of_ctxIdxInc_for_the_syntax_elements_ref_idx_l0_an
 		}
 		else if (Slice->macroblock[mbAddrA]->mbType == H264_MB_TYPE::P_8x8 || Slice->macroblock[mbAddrA]->mbType == H264_MB_TYPE::B_8x8)
 		{
-			/*int NumSubMbPart = 0;
-			H264_MB_PART_PRED_MODE SubMbPredMode = Macroblock::getSubMbPredMode(Slice->macroblock[mbAddrA]->subMbType[mbPartIdxA], NumSubMbPart);*/
-			H264_MB_PART_PRED_MODE SubMbPredMode = Slice->macroblock[mbAddrA]->subMode[subMbPartIdxA];
+			H264_MB_PART_PRED_MODE SubMbPredMode = Slice->macroblock[mbAddrA]->subMode[mbPartIdxA];
 			if (((is_ref_idx_l0 && SubMbPredMode != H264_MB_PART_PRED_MODE::Pred_L0) || (!is_ref_idx_l0 && SubMbPredMode != H264_MB_PART_PRED_MODE::Pred_L1)) && SubMbPredMode != H264_MB_PART_PRED_MODE::BiPred)
 			{
 				predModeEqualFlagA = 0;
@@ -2916,8 +2914,7 @@ int Cabac::Derivation_process_of_ctxIdxInc_for_the_syntax_elements_ref_idx_l0_an
 		}
 		else if (Slice->macroblock[mbAddrB]->mbType == H264_MB_TYPE::P_8x8 || Slice->macroblock[mbAddrB]->mbType == H264_MB_TYPE::B_8x8)
 		{
-			/*int NumSubMbPart = 0;
-			H264_MB_PART_PRED_MODE SubMbPredMode = Macroblock::getSubMbPredMode(Slice->macroblock[mbAddrB]->subMbType[mbPartIdxB], NumSubMbPart);*/
+
 			H264_MB_PART_PRED_MODE SubMbPredMode = Slice->macroblock[mbAddrB]->subMode[mbPartIdxB];
 			if (((is_ref_idx_l0 && SubMbPredMode != H264_MB_PART_PRED_MODE::Pred_L0) || (!is_ref_idx_l0 && SubMbPredMode != H264_MB_PART_PRED_MODE::Pred_L1)) && SubMbPredMode != H264_MB_PART_PRED_MODE::BiPred)
 			{

@@ -255,7 +255,7 @@ bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* s
 		mb_type = bs.readUE(); //2 ue(v) | ae(v)
 	}
 
-
+	
 	uint8_t	 slice_type = sHeader.slice_type;
 
 	//修正过后的
@@ -317,7 +317,7 @@ bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* s
 			NumMbPart == 4)
 		{
 			sub_mb_pred(bs, cabac, nal_cnt);
-
+			
 			for (int mbPartIdx = 0; mbPartIdx < 4; mbPartIdx++)
 			{
 				if (subMbType[mbPartIdx] != H264_MB_TYPE::B_Direct_8x8)
@@ -736,7 +736,7 @@ bool Macroblock::sub_mb_pred(BitStream& bs, Cabac& cabac, int nal_cnt)
 		}
 	}
 
-
+	
 	for (size_t mbPartIdx = 0; mbPartIdx < 4; mbPartIdx++)
 	{
 		if ((sliceBase->sHeader.num_ref_idx_l0_active_minus1 > 0 || false)
@@ -759,8 +759,8 @@ bool Macroblock::sub_mb_pred(BitStream& bs, Cabac& cabac, int nal_cnt)
 		}
 	}
 
-
-
+	
+	
 	//这个句法元素用于参考帧队列 L1，即后向预测
 	for (size_t mbPartIdx = 0; mbPartIdx < 4; mbPartIdx++)
 	{

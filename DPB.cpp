@@ -68,8 +68,7 @@ void DPB::Initialisation_process_for_reference_picture_lists(const ParseSlice* s
 	SliceHeader& sHeader = slice->sHeader;
 	SLIECETYPE slice_type = (SLIECETYPE)sHeader.slice_type;
 
-	RefPicList0.deletePointer(0);
-	RefPicList1.deletePointer(0);
+
 	if (slice_type == SLIECETYPE::H264_SLIECE_TYPE_P || slice_type == SLIECETYPE::H264_SLIECE_TYPE_SP)
 	{
 		Initialisation_process_for_the_reference_picture_list_for_P_and_SP_slices_in_frames();
@@ -477,14 +476,16 @@ void DPB::Modification_process_of_reference_picture_lists_for_short_term_referen
 	}
 
 	//num_ref_idx_lX_active_minus1最大参考序号,加1是最大参考数目，不是实际参考数目
-	//将具有短期图片号picNumLX的图片放置到索引位置refIdxLX，将列表中任何其他剩余图片的位置移动到稍后，并增加refIdxLX的值。  
-	for (size_t cIdx = RefPicListX.length; cIdx > refIdxLX; cIdx--)
+	//将具有短期图片号picNumLX的图片放置到索引位置refIdxLX，将列表中任何其他剩余图片的位置移动到稍后，并增加refIdxLX的值。
+
+	const size_t length = (num_ref_idx_lX_active_minus1 + 1) < RefPicListX.length ? (num_ref_idx_lX_active_minus1 + 1) : RefPicListX.length;
+	for (size_t cIdx = length; cIdx > refIdxLX; cIdx--)
 	{
 		RefPicListX[cIdx] = RefPicListX[cIdx - 1];
 	}
 
 	size_t idx = 0;
-	for (; idx < RefPicListX.length; idx++)
+	for (; idx < length; idx++)
 	{
 		if (RefPicListX[idx]->PicNum == picNumLX && RefPicListX[idx]->reference_marked_type == PICTURE_MARKING::SHORT_TERM_REFERENCE)
 		{
@@ -493,7 +494,7 @@ void DPB::Modification_process_of_reference_picture_lists_for_short_term_referen
 	}
 	RefPicListX[refIdxLX++] = RefPicListX[idx];
 	int nIdx = refIdxLX;
-	for (size_t cIdx = refIdxLX; cIdx < RefPicListX.length; cIdx++)
+	for (size_t cIdx = refIdxLX; cIdx < length; cIdx++)
 	{
 
 		int PicNumF = (RefPicListX[cIdx]->reference_marked_type == PICTURE_MARKING::SHORT_TERM_REFERENCE)
@@ -505,19 +506,21 @@ void DPB::Modification_process_of_reference_picture_lists_for_short_term_referen
 
 	}
 
-	/*RefPicListX[num_ref_idx_lX_active_minus1 + 1] = nullptr;*/
+	RefPicListX.deletePointer(num_ref_idx_lX_active_minus1 + 1);
 }
 
 void DPB::Modification_process_of_reference_picture_lists_for_long_term_reference_pictures(int& refIdxLX, int& picNumL0Pred, uint16_t long_term_pic_num,
 	uint8_t num_ref_idx_lX_active_minus1, Array<Picture*>& RefPicListX, const SliceHeader& sHeader)
 {
-	for (size_t cIdx = RefPicListX.length; cIdx > refIdxLX; cIdx--)
+
+	const size_t length = (num_ref_idx_lX_active_minus1 + 1) < RefPicListX.length ? (num_ref_idx_lX_active_minus1 + 1) : RefPicListX.length;
+	for (size_t cIdx = length; cIdx > refIdxLX; cIdx--)
 	{
 		RefPicListX[cIdx] = RefPicListX[cIdx - 1];
 	}
 
 	size_t idx = 0;
-	for (; idx < RefPicListX.length; idx++)
+	for (; idx < length; idx++)
 	{
 		if (RefPicListX[idx]->LongTermPicNum == long_term_pic_num)
 		{
@@ -528,7 +531,7 @@ void DPB::Modification_process_of_reference_picture_lists_for_long_term_referenc
 
 	int nIdx = refIdxLX;
 
-	for (size_t cIdx = refIdxLX; cIdx < RefPicListX.length; cIdx++)
+	for (size_t cIdx = refIdxLX; cIdx < length; cIdx++)
 	{
 		int LongTermPicNumF = (RefPicListX[cIdx]->reference_marked_type == PICTURE_MARKING::LONG_TERM_REFERENCE)
 			? RefPicListX[cIdx]->LongTermPicNum : 0;//(2 * (MaxLongTermFrameIdx + 1));
@@ -540,12 +543,14 @@ void DPB::Modification_process_of_reference_picture_lists_for_long_term_referenc
 		}
 	}
 
-	RefPicListX[num_ref_idx_lX_active_minus1 + 1] = NULL;
+	RefPicListX.deletePointer(num_ref_idx_lX_active_minus1 + 1);
 }
 
 void DPB::Decoding_process_for_reference_picture_lists_construction(ParseSlice* slice)
 {
 	const SliceHeader& sHeader = slice->sHeader;
+	RefPicList0.deletePointer(0);
+	RefPicList1.deletePointer(0);
 	//图像序号的计算
 	Decoding_process_for_picture_numbers(sHeader);
 
@@ -577,8 +582,8 @@ void DPB::Decoded_reference_picture_marking_process(Picture* pic, const SliceHea
 	{
 		//所有参考图像需要被标记为"不用于参考" 
 		dpb.clear();
-		RefPicList0.clear();
-		RefPicList1.clear();
+		RefPicList0.deletePointer(0);
+		RefPicList1.deletePointer(0);
 		/*for (size_t i = 0; i < dpb.length; i++)
 		{
 			dpb[i]->reference_marked_type = PICTURE_MARKING::UNUSED_FOR_REFERENCE;
@@ -638,6 +643,7 @@ void DPB::Decoding_to_complete(ParseSlice* slice, const  SliceHeader& sHeader)
 		Picture* pic = new Picture(slice, sHeader);
 		//标记当前解码完成的帧是什么类型，然后放到DBP里去管理
 		Decoded_reference_picture_marking_process(pic, sHeader);
+
 		dpb.push(pic);
 
 	}
