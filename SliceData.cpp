@@ -93,7 +93,7 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice, DPB& dpb, int nal_c
 
 	do
 	{
-		
+
 
 		if ((SLIECETYPE)sHeader.slice_type != SLIECETYPE::H264_SLIECE_TYPE_I && (SLIECETYPE)sHeader.slice_type != SLIECETYPE::H264_SLIECE_TYPE_SI)
 		{
@@ -174,8 +174,8 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice, DPB& dpb, int nal_c
 			}
 		}
 
-		
 
+		
 		if (moreDataFlag)
 		{
 			if (sHeader.MbaffFrameFlag && (CurrMbAddr % 2 == 0 || (CurrMbAddr % 2 == 1 && prevMbSkipped))) {

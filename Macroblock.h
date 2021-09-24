@@ -208,7 +208,7 @@ private:
 	bool mb_pred(BitStream& bs, Cabac& cabac, int nal_cnt);
 
 	bool residual(BitStream& bs, int startIdx, int endIdx, Cabac& cabac);
-	bool sub_mb_pred(BitStream& bs, Cabac& cabac);
+	bool sub_mb_pred(BitStream& bs, Cabac& cabac, int nal_cnt);
 
 
 	int residual_luma(BitStream& bs, int i16x16DClevel[16], int i16x16AClevel[16][16], int level4x4[16][16],

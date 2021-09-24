@@ -46,7 +46,7 @@ typename Array<T>::Proxy& Array<T>::Proxy::operator=(T val)
 		printError("参考帧索引最大16");
 		exit(-1);
 	}
-	if (index >= theArr.length)
+	if (index >= theArr.length && val != nullptr)
 	{
 		theArr.length = index + 1;
 	}
@@ -56,9 +56,8 @@ typename Array<T>::Proxy& Array<T>::Proxy::operator=(T val)
 }
 
 template<class T>
-typename Array<T>::Proxy& Array<T>::Proxy::operator=(const Array<T>::Proxy proxy) {
-
-	int a = proxy.index;
+typename Array<T>::Proxy& Array<T>::Proxy::operator=(const Array<T>::Proxy proxy)
+{
 	this->theArr[this->index] = proxy.theArr.arr[proxy.index];
 
 	return *this;
@@ -81,7 +80,6 @@ Array<T>::Array(size_t capacity)
 {
 	this->capacity = capacity;
 	this->length = 0;
-	printf("执行几次");
 	this->arr = new T[this->capacity];
 	memset(arr, NULL, sizeof(T) * capacity);
 

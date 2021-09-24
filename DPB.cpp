@@ -493,7 +493,6 @@ void DPB::Modification_process_of_reference_picture_lists_for_short_term_referen
 	}
 	RefPicListX[refIdxLX++] = RefPicListX[idx];
 	int nIdx = refIdxLX;
-	Picture* aa = RefPicListX[4];
 	for (size_t cIdx = refIdxLX; cIdx < RefPicListX.length; cIdx++)
 	{
 
@@ -506,7 +505,7 @@ void DPB::Modification_process_of_reference_picture_lists_for_short_term_referen
 
 	}
 
-	RefPicListX[num_ref_idx_lX_active_minus1 + 1] = nullptr;
+	/*RefPicListX[num_ref_idx_lX_active_minus1 + 1] = nullptr;*/
 }
 
 void DPB::Modification_process_of_reference_picture_lists_for_long_term_reference_pictures(int& refIdxLX, int& picNumL0Pred, uint16_t long_term_pic_num,

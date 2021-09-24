@@ -255,7 +255,6 @@ bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* s
 		mb_type = bs.readUE(); //2 ue(v) | ae(v)
 	}
 
-	
 
 	uint8_t	 slice_type = sHeader.slice_type;
 
@@ -317,7 +316,8 @@ bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* s
 			mode != H264_MB_PART_PRED_MODE::Intra_16x16 &&
 			NumMbPart == 4)
 		{
-			sub_mb_pred(bs, cabac);
+			sub_mb_pred(bs, cabac, nal_cnt);
+
 			for (int mbPartIdx = 0; mbPartIdx < 4; mbPartIdx++)
 			{
 				if (subMbType[mbPartIdx] != H264_MB_TYPE::B_Direct_8x8)
@@ -358,11 +358,11 @@ bool Macroblock::macroblock_layer(BitStream& bs, ParseSlice* Slice, SliceData* s
 				mode = MbPartPredMode(0);
 			}
 
-			
+
 
 			mb_pred(bs, cabac, nal_cnt);
 
-			
+
 
 		}
 
@@ -603,7 +603,7 @@ bool Macroblock::mb_pred(BitStream& bs, Cabac& cabac, int nal_cnt)
 	}
 	else if (mode != H264_MB_PART_PRED_MODE::Direct)
 	{
-		
+
 		for (size_t mbPartIdx = 0; mbPartIdx < NumMbPart; mbPartIdx++)
 		{
 			//ref_idx_l0[ mbPartIdx ]   用参考帧队列 L0 进行预测，即前向预测时
@@ -628,7 +628,7 @@ bool Macroblock::mb_pred(BitStream& bs, Cabac& cabac, int nal_cnt)
 			}
 		}
 
-		
+
 		//这个句法元素用于参考帧队列 L1，即后向预测
 		for (size_t mbPartIdx = 0; mbPartIdx < NumMbPart; mbPartIdx++)
 		{
@@ -697,13 +697,14 @@ bool Macroblock::mb_pred(BitStream& bs, Cabac& cabac, int nal_cnt)
 }
 
 
-bool Macroblock::sub_mb_pred(BitStream& bs, Cabac& cabac)
+bool Macroblock::sub_mb_pred(BitStream& bs, Cabac& cabac, int nal_cnt)
 {
 
 	for (size_t mbPartIdx = 0; mbPartIdx < 4; mbPartIdx++)
 	{
 		if (isAe)
 		{
+
 			sub_mb_type[mbPartIdx] = cabac.decode_sub_mb_type(bs, sliceBase);
 		}
 		else
@@ -757,6 +758,8 @@ bool Macroblock::sub_mb_pred(BitStream& bs, Cabac& cabac)
 			}
 		}
 	}
+
+
 
 	//这个句法元素用于参考帧队列 L1，即后向预测
 	for (size_t mbPartIdx = 0; mbPartIdx < 4; mbPartIdx++)
@@ -821,6 +824,7 @@ bool Macroblock::sub_mb_pred(BitStream& bs, Cabac& cabac)
 				{
 					if (isAe)
 					{
+
 						int mvd_flag = 2 + compIdx;
 						cabac.decode_mvd_lX(sliceBase, bs, mbPartIdx, subMbPartIdx, mvd_flag, mvd_l1[mbPartIdx][subMbPartIdx][compIdx]);
 					}
@@ -834,6 +838,8 @@ bool Macroblock::sub_mb_pred(BitStream& bs, Cabac& cabac)
 
 		}
 	}
+
+
 	return false;
 }
 //获得当前宏块类型所采用的Intra预测方式

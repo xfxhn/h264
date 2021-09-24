@@ -3034,10 +3034,9 @@ int Cabac::Derivation_process_of_ctxIdxInc_for_the_syntax_elements_mvd_l0_and_mv
 		}
 		else if (Slice->macroblock[mbAddrA]->mbType == H264_MB_TYPE::P_8x8 || Slice->macroblock[mbAddrA]->mbType == H264_MB_TYPE::B_8x8)
 		{
-			/*int NumSubMbPart = 0;
 
-			H264_MB_PART_PRED_MODE SubMbPredMode = Macroblock::getSubMbPredMode(Slice->macroblock[mbAddrA]->subMbType[subMbPartIdxA], NumSubMbPart);*/
-			H264_MB_PART_PRED_MODE SubMbPredMode = Slice->macroblock[mbAddrA]->subMode[subMbPartIdxA];
+			H264_MB_PART_PRED_MODE SubMbPredMode = Slice->macroblock[mbAddrA]->subMode[mbPartIdxA];
+
 			if (((is_mvd_10 && SubMbPredMode != H264_MB_PART_PRED_MODE::Pred_L0) || (!is_mvd_10 && SubMbPredMode != H264_MB_PART_PRED_MODE::Pred_L1)) && SubMbPredMode != H264_MB_PART_PRED_MODE::BiPred)
 			{
 				predModeEqualFlagA = 0;
@@ -3077,9 +3076,8 @@ int Cabac::Derivation_process_of_ctxIdxInc_for_the_syntax_elements_mvd_l0_and_mv
 		}
 		else if (Slice->macroblock[mbAddrB]->mbType == H264_MB_TYPE::P_8x8 || Slice->macroblock[mbAddrB]->mbType == H264_MB_TYPE::B_8x8)
 		{
-			/*int NumSubMbPart = 0;
-			H264_MB_PART_PRED_MODE SubMbPredMode = Macroblock::getSubMbPredMode(Slice->macroblock[mbAddrB]->subMbType[subMbPartIdxB], NumSubMbPart);*/
-			H264_MB_PART_PRED_MODE SubMbPredMode = Slice->macroblock[mbAddrB]->subMode[subMbPartIdxB];
+
+			H264_MB_PART_PRED_MODE SubMbPredMode = Slice->macroblock[mbAddrB]->subMode[mbPartIdxB];
 			if (((is_mvd_10 && SubMbPredMode != H264_MB_PART_PRED_MODE::Pred_L0) || (!is_mvd_10 && SubMbPredMode != H264_MB_PART_PRED_MODE::Pred_L1)) && SubMbPredMode != H264_MB_PART_PRED_MODE::BiPred)
 			{
 				predModeEqualFlagB = 0;
@@ -3997,7 +3995,7 @@ int Cabac::decode_sub_mb_type_in_B_slices(BitStream& bs)
 
 	}
 
-	return 0;
+	return synElVal;
 }
 
 //这个过程的输出是已解码的值binVal，以及更新的变量codIRange和codIOffset
