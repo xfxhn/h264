@@ -417,6 +417,7 @@ void ParseSlice::Deblocking_filter_process(SliceHeader& header)
 
 		}
 
+
 		//对顶部水平亮度边缘的过滤
 		if (filterTopMbEdgeFlag)
 		{
@@ -933,11 +934,27 @@ int ParseSlice::Derivation_process_for_the_luma_content_dependent_boundary_filte
 	const int luma4x4BlkIdx_q0 = ParseSlice::Derivation_process_for_4x4_luma_block_indices(mb_q0_x, mb_q0_y);
 	const int luma8x8BlkIdx_q0 = ParseSlice::Derivation_process_for_8x8_luma_block_indices(mb_q0_x, mb_q0_y);
 	int bS = 0;
-	if (mbEdgeFlag)
+	if (mbEdgeFlag &&
+		(
+			header.sps.frame_mbs_only_flag && (isInterMode(macroblock[mbAddr_p0]->mode) || isInterMode(macroblock[mbAddr_q0]->mode))
+			|| (header.sps.frame_mbs_only_flag && (
+				(macroblock[mbAddr_p0]->sliceNumber == macroblock[mbAddr_q0]->sliceNumber)
+				&& ((SLIECETYPE)header.slice_type == SLIECETYPE::H264_SLIECE_TYPE_SP || (SLIECETYPE)header.slice_type == SLIECETYPE::H264_SLIECE_TYPE_SI))
+				)
+			|| ((MbaffFrameFlag || header.field_pic_flag)
+				&& verticalEdgeFlag
+				&& (isInterMode(macroblock[mbAddr_p0]->mode) || isInterMode(macroblock[mbAddr_q0]->mode))
+				)
+			|| ((MbaffFrameFlag || header.field_pic_flag)
+				&& verticalEdgeFlag
+				&& ((SLIECETYPE)header.slice_type == SLIECETYPE::H264_SLIECE_TYPE_SP || (SLIECETYPE)header.slice_type == SLIECETYPE::H264_SLIECE_TYPE_SI)
+				)
+			)
+		)
 	{
 		//样点p0和q0都在帧宏块内，而且两个样点p0和q0之中的两个或者一个在采用帧内宏块预测模式编码的宏块内
-
-		if (header.sps.frame_mbs_only_flag && (isInterMode(macroblock[mbAddr_p0]->mode) || isInterMode(macroblock[mbAddr_q0]->mode))
+		bS = 4;
+		/*if (header.sps.frame_mbs_only_flag && (isInterMode(macroblock[mbAddr_p0]->mode) || isInterMode(macroblock[mbAddr_q0]->mode))
 			|| (header.sps.frame_mbs_only_flag && (
 				(macroblock[mbAddr_p0]->sliceNumber == macroblock[mbAddr_q0]->sliceNumber)
 				&& ((SLIECETYPE)header.slice_type == SLIECETYPE::H264_SLIECE_TYPE_SP || (SLIECETYPE)header.slice_type == SLIECETYPE::H264_SLIECE_TYPE_SI))
@@ -952,8 +969,8 @@ int ParseSlice::Derivation_process_for_the_luma_content_dependent_boundary_filte
 				)
 			)
 		{
-			bS = 4;
-		}
+
+		}*/
 
 	}
 	else if (
@@ -969,7 +986,8 @@ int ParseSlice::Derivation_process_for_the_luma_content_dependent_boundary_filte
 	{
 		bS = 3;
 	}
-	else if ((macroblock[mbAddr_p0]->transform_size_8x8_flag && macroblock[mbAddr_p0]->mb_luma_8x8_non_zero_count_coeff[luma8x8BlkIdx_p0] > 0)
+	else if (
+		(macroblock[mbAddr_p0]->transform_size_8x8_flag && macroblock[mbAddr_p0]->mb_luma_8x8_non_zero_count_coeff[luma8x8BlkIdx_p0] > 0)
 		|| (!macroblock[mbAddr_p0]->transform_size_8x8_flag && macroblock[mbAddr_p0]->mb_luma_4x4_non_zero_count_coeff[luma4x4BlkIdx_p0] > 0)
 		|| (macroblock[mbAddr_q0]->transform_size_8x8_flag && macroblock[mbAddr_q0]->mb_luma_8x8_non_zero_count_coeff[luma8x8BlkIdx_q0] > 0)
 		|| (!macroblock[mbAddr_q0]->transform_size_8x8_flag && macroblock[mbAddr_q0]->mb_luma_4x4_non_zero_count_coeff[luma4x4BlkIdx_q0] > 0)
@@ -977,14 +995,21 @@ int ParseSlice::Derivation_process_for_the_luma_content_dependent_boundary_filte
 	{
 		bS = 2;
 	}
-	else if (mixedModeEdgeFlag || (false)) //帧间相关
+	else if (false)
 	{
-		bS = 1;
+		//(macroblock[mbAddr_p0]->currRefPtr != macroblock[mbAddr_q0]->currRefPtr)
+		macroblock[mbAddr_p0]->currRefPtr;
+		macroblock[mbAddr_q0]->currRefPtr;
 	}
 	else
 	{
 		bS = 0;
 	}
+
+	//if (mixedModeEdgeFlag || (false)) //帧间相关
+	//{
+	//	bS = 1;
+	//}
 
 	return bS;
 
@@ -3434,8 +3459,6 @@ void ParseSlice::Inter_prediction_process(DPB& dpb, uint8_t predPartL[16][16], u
 			//宏块分区subMbPartIdx的左上luma样本相对于子宏块左上样本的位置(x, y)。
 			int xS = 0;
 			int yS = 0;
-			mb->SubMbPartWidth[mbPartIdx];
-			mb->SubMbPartHeight[mbPartIdx];
 			if (macroblock[CurrMbAddr]->mbType == H264_MB_TYPE::P_8x8
 				|| macroblock[CurrMbAddr]->mbType == H264_MB_TYPE::P_8x8ref0
 				|| macroblock[CurrMbAddr]->mbType == H264_MB_TYPE::B_8x8
@@ -3633,8 +3656,8 @@ void ParseSlice::Decoding_process_for_Inter_prediction_samples(
 		//参考图像选择过程
 		//如果当前宏块为帧宏块
 		Picture* refPic = dpb.RefPicList0[refIdxL0];
-
-
+		//存储一下当前宏块参考图像的指针，推导滤波强度的时候使用
+		macroblock[CurrMbAddr]->currRefPtr = refPic;
 		Fractional_sample_interpolation_process(xAL, yAL, mbPartIdx, subMbPartIdx,
 			partWidth, partHeight, partWidthC, partHeightC, mvL0, mvCL0, refPic, predPartL0L, predPartL0Cb, predPartL0Cr);
 
@@ -3645,7 +3668,8 @@ void ParseSlice::Decoding_process_for_Inter_prediction_samples(
 		//参考图像选择过程
 		//如果当前宏块为帧宏块
 		Picture* refPic = dpb.RefPicList1[refIdxL1];
-
+		//存储一下当前宏块参考图像的指针，推导滤波强度的时候使用
+		macroblock[CurrMbAddr]->currRefPtr = refPic;
 		Fractional_sample_interpolation_process(xAL, yAL, mbPartIdx, subMbPartIdx,
 			partWidth, partHeight, partWidthC, partHeightC, mvL1, mvCL1, refPic, predPartL1L, predPartL1Cb, predPartL1Cr);
 
@@ -3786,17 +3810,23 @@ uint8_t ParseSlice::Luma_sample_interpolation_process(int xIntL, int yIntL, int 
 */
 
 
-/*uint8_t* view = new uint8_t[refPic->PicWidthInSamplesL * refPic->PicHeightInSamplesL];
-for (size_t y = 0; y < PicHeightInSamplesL; y++)
-{
-	for (size_t x = 0; x < PicWidthInSamplesL; x++)
+	if (PicOrderCnt == 16 && mbX == 3 && mbY == 10)
 	{
+		uint8_t* view = new uint8_t[refPic->PicWidthInSamplesL * refPic->PicHeightInSamplesL];
+		for (size_t y = 0; y < PicHeightInSamplesL; y++)
+		{
+			for (size_t x = 0; x < PicWidthInSamplesL; x++)
+			{
 
-		uint8_t Y = refPic->lumaData[x][y];
-		view[y * PicWidthInSamplesL + x] = Y;
+				uint8_t Y = refPic->lumaData[x][y];
+				view[y * PicWidthInSamplesL + x] = Y;
 
+			}
+		}
+
+		int a = 1;
 	}
-}*/
+
 
 #define getLumaSample(xDZL,yDZL) refPic->lumaData[Clip3(0, refPic->PicWidthInSamplesL - 1, xIntL+xDZL)][Clip3(0,refPicHeightEffectiveL - 1,yIntL+yDZL)]
 	int A = getLumaSample(0, -2);
@@ -5136,11 +5166,7 @@ void ParseSlice::Derivation_process_for_neighbouring_partitions(int mbPartIdx, i
 
 int ParseSlice::DiffPicOrderCnt(int PicOrderCntA, int PicOrderCntB)
 {
-
-
 	return PicOrderCntA - PicOrderCntB;
-
-
 }
 
 
@@ -5228,6 +5254,7 @@ void ParseSlice::Decoding_process_for_picture_order_count(DPB& dpb)
 	//如果是帧或者场对(帧场自适应) PicOrderCnt( picX ) =  Min( TopFieldOrderCnt, BottomFieldOrderCnt )
 	//不支持场编码
 	PicOrderCnt = std::min(TopFieldOrderCnt, BottomFieldOrderCnt);
+	cout << " POC " << PicOrderCnt << "top " << TopFieldOrderCnt << " bottom " << BottomFieldOrderCnt << endl;
 }
 
 void ParseSlice::Decoding_process_for_picture_order_count_type_0(DPB& dpb)

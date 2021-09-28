@@ -61,7 +61,7 @@ bool AnnexBReader::open(const char* filePath)
 				sprintf(buf, "./output/xf-%d-%d.bmp", nal_cnt, lastHeader.slice_type);
 
 				slice->saveBmpFile(buf);
-
+				nal_cnt++;
 
 				if (this->slice)
 				{
@@ -202,7 +202,7 @@ bool AnnexBReader::open(const char* filePath)
 
 			break;
 		}
-		nal_cnt++;
+
 	}
 
 	return true;

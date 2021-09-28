@@ -5,6 +5,7 @@
 
 
 class SliceData;
+class Picture;
 struct MB_TYPE_SLICES_I
 {
 	uint8_t					mb_type;
@@ -77,6 +78,9 @@ class ParseSlice;
 class Macroblock
 {
 public:
+	Picture* currRefPtr;
+
+
 	uint8_t			mb_type;
 	uint8_t			sub_mb_type[4];
 	H264_MB_TYPE    mbType;

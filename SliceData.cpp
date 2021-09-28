@@ -78,7 +78,7 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice, DPB& dpb, int nal_c
 			|| (SLIECETYPE)sHeader.slice_type == SLIECETYPE::H264_SLIECE_TYPE_B
 			)
 		{
-			
+
 			dpb.Decoding_process_for_reference_picture_lists_construction(Slice);
 		}
 	}
@@ -172,6 +172,7 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice, DPB& dpb, int nal_c
 
 
 
+
 		if (moreDataFlag)
 		{
 			if (sHeader.MbaffFrameFlag && (CurrMbAddr % 2 == 0 || (CurrMbAddr % 2 == 1 && prevMbSkipped))) {
@@ -223,7 +224,10 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice, DPB& dpb, int nal_c
 				uint8_t predPartL[16][16] = { 0 };
 				uint8_t predPartCb[16][16] = { 0 };
 				uint8_t predPartCr[16][16] = { 0 };
-
+				if (sHeader.slice_type == 0 && CurrMbAddr == 23)
+				{
+					int a = 1;
+				}
 
 				Slice->Inter_prediction_process(dpb, predPartL, predPartCb, predPartCr);
 
@@ -242,6 +246,7 @@ bool SliceData::slice_data(BitStream& bs, ParseSlice* Slice, DPB& dpb, int nal_c
 			}
 
 		}
+
 
 
 		if (!sHeader.pps.entropy_coding_mode_flag)
