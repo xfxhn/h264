@@ -67,7 +67,7 @@ bool AnnexBReader::open(const char* filePath)
 
 				this->slice = new ParseSlice(sHeader);
 				this->slice->parse();
-				cout << "解码完这一帧asdasd" << endl;
+				cout << "解码完这一帧" << endl;
 			}
 			else
 			{
