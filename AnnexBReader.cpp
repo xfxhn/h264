@@ -31,14 +31,9 @@ bool AnnexBReader::open(const char* filePath)
 
 		file.readNalUint(data, size, isStopLoop);
 
-
-
 		BitStream bs(data, size);
 
-
-
 		nalu.getH264RbspFromNalUnit(bs);
-
 
 
 		switch ((NaluType)nalu.nal_unit_type)
@@ -72,7 +67,7 @@ bool AnnexBReader::open(const char* filePath)
 
 				this->slice = new ParseSlice(sHeader);
 				this->slice->parse();
-				cout << "解码完这一帧" << endl;
+				cout << "解码完这一帧asdasd" << endl;
 			}
 			else
 			{
