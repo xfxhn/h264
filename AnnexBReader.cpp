@@ -118,7 +118,6 @@ bool AnnexBReader::open(const char* filePath)
 
 			if (this->slice && this->slice->decodeFinished)
 			{
-				int a = 1;
 				//»·Â·ÂË²¨Æ÷
 				slice->Deblocking_filter_process(lastHeader);
 
