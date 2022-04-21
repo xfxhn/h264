@@ -323,11 +323,23 @@ bool ParseSPS::seq_parameter_set_data(BitStream& bs)
 	}
 	vui_parameters_present_flag = bs.readBit();
 
+	uint8_t fps = 25;
 	if (vui_parameters_present_flag)
 	{
 		//视频渲染的一些辅助信息
-		/*ret = m_vui.vui_parameters(bs);
-		RETURN_IF_FAILED(ret != 0, ret);*/
+		vui_parameters(bs);
+
+		if (timing_info_present_flag)
+		{
+			fps = time_scale / num_units_in_tick;
+
+			//if (fixed_frame_rate_flag)
+			{
+				fps /= 2.0;
+			}
+		}
+
+		//todo
 	}
 
 
@@ -412,6 +424,138 @@ bool ParseSPS::seq_parameter_set_data(BitStream& bs)
 	return true;
 
 
+}
+
+
+
+//Table E - 1 – 样品长宽比指标的含义
+
+enum Sample_aspect_ratio {
+	Extended_SAR = 255
+};
+int ParseSPS::vui_parameters(BitStream& bs)
+{
+
+	bool aspect_ratio_info_present_flag = bs.readBit();
+
+	if (aspect_ratio_info_present_flag)
+	{
+		/*Aspect_ratio_idc指定luma样本的样本长宽比值。 表E - 1显示了代码的含义。
+		  当aspect_ratio_idc表示Extended_SAR时，样本长宽比用sar_width和sar_height表示。
+		  当aspect_ratio_idc语法元素不存在时，可以推断aspect_ratio_idc的值为0
+		  */
+		aspect_ratio_idc = bs.readMultiBit(8);
+
+		if (aspect_ratio_idc == Extended_SAR)
+		{
+			//Sar_width和sar_height应相对素数或等于0。 
+			//当aspect_ratio_idc等于0或sar_width等于0或sar_height等于0时，样本长宽比应被视为本推荐|国际标准未指定
+			sar_width = bs.readMultiBit(16);
+			sar_height = bs.readMultiBit(16);
+		}
+	}
+
+	bool overscan_info_present_flag = bs.readBit();
+	if (overscan_info_present_flag)
+	{
+		//Overscan_appropriate_flag = 1表示经过裁剪的解码图片输出适合超扫描显示。
+		//Overscan_appropriate_flag = 0表示经过裁剪的解码图片输出包含了从图片裁剪矩形到边缘的整个区域的重要信息，因此经过裁剪的解码图片输出不应该使用超扫描显示。
+		//相反，它们应该使用显示区域和剪切矩形之间的精确匹配或使用下扫描来显示。 
+		overscan_appropriate_flag = bs.readBit();
+	}
+
+	bool video_signal_type_present_flag = bs.readBit();
+
+	if (video_signal_type_present_flag)
+	{
+		//video_format表示表E-2中指定的图片的表示形式，然后根据本建议|国际标准进行编码。
+		//当video_format语法元素不存在时，可以推断出video_format的值等于5。  
+
+		/*
+		表 E-2
+		0		Component
+		1		PAL
+		2		NTSC
+		3		SECAM
+		4		MAC
+		5		Unspecified video
+		*/
+		video_format = bs.readMultiBit(3);
+
+		//video_full_range_flag 表示范围
+		/*
+		If video_full_range_flag is equal to 0,
+			Y = Round( 219 * E’Y + 16 )
+			Cb = Round( 224 * E’PB + 128 )
+			Cr = Round( 224 * E’PR + 128 )
+		-  Otherwise (video_full_range_flag is equal to 1),
+			Y = Round( 255 * E’Y )
+			Cb = Round( 255 * E’PB + 128 )
+			Cr = Round( 255 * E’PR + 128 )
+		*/
+		video_full_range_flag = bs.readBit();
+		bool colour_description_present_flag = bs.readBit();
+		if (colour_description_present_flag)
+		{
+			colour_primaries = bs.readMultiBit(8);
+			transfer_characteristics = bs.readMultiBit(8);
+			matrix_coefficients = bs.readMultiBit(8);
+		}
+	}
+
+	bool chroma_loc_info_present_flag = bs.readBit();
+
+	if (chroma_loc_info_present_flag)
+	{
+		chroma_sample_loc_type_top_field = bs.readUE();
+		chroma_sample_loc_type_bottom_field = bs.readUE();
+	}
+
+
+	timing_info_present_flag = bs.readBit();
+
+	if (timing_info_present_flag)
+	{
+		//一个增量所用的time units
+		num_units_in_tick = bs.readMultiBit(32);
+		//即将1秒分成多少份
+		time_scale = bs.readMultiBit(32);
+
+		//fixed_frame_rate_flag为1时，两个连续图像的HDR输出时间频率为单位，获取的fps是实际的2倍
+		fixed_frame_rate_flag = bs.readBit();
+	}
+
+	bool nal_hrd_parameters_present_flag = bs.readBit();
+	if (nal_hrd_parameters_present_flag)
+	{
+		//hrd_parameters( )
+	}
+
+	bool vcl_hrd_parameters_present_flag = bs.readBit();
+	if (vcl_hrd_parameters_present_flag)
+	{
+		//hrd_parameters()
+	}
+
+	if (nal_hrd_parameters_present_flag || vcl_hrd_parameters_present_flag)
+	{
+		low_delay_hrd_flag = bs.readBit();
+	}
+
+	bool pic_struct_present_flag = bs.readBit();
+
+	bool bitstream_restriction_flag = bs.readBit();
+	if (bitstream_restriction_flag)
+	{
+		bool motion_vectors_over_pic_boundaries_flag = bs.readBit();
+		uint32_t max_bytes_per_pic_denom = bs.readUE();
+		uint32_t max_bits_per_mb_denom = bs.readUE();
+		uint32_t log2_max_mv_length_horizontal = bs.readUE();
+		uint32_t log2_max_mv_length_vertical = bs.readUE();
+		uint32_t num_reorder_frames = bs.readUE();
+		uint32_t max_dec_frame_buffering = bs.readUE();
+	}
+	return 0;
 }
 
 ParseSPS::~ParseSPS()

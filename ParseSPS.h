@@ -111,10 +111,52 @@ public:
 	uint32_t   MbWidthC;
 	uint32_t   MbHeightC;
 
+
+
+
+
+
+
+
+
+
+
+
+	//辅助信息
+
+
+	uint8_t aspect_ratio_idc{ 0 };
+	//长宽比
+	uint16_t sar_width{ 0 };
+	uint16_t sar_height{ 0 };
+	bool overscan_appropriate_flag{ false };
+
+	uint8_t video_format{ 5 };
+	bool video_full_range_flag{ 0 };
+	uint8_t colour_primaries;
+	uint8_t transfer_characteristics;
+	uint8_t matrix_coefficients;
+
+	//取值范围为0 ~ 5，包括0 ~ 5
+	uint8_t chroma_sample_loc_type_top_field;
+	uint8_t chroma_sample_loc_type_bottom_field;
+
+	bool timing_info_present_flag{ false };
+	uint32_t num_units_in_tick{ 0 };
+	uint32_t time_scale{ 0 };
+	bool fixed_frame_rate_flag{ false };
+
+
+
+	bool low_delay_hrd_flag{ false };
+
 public:
 	ParseSPS();
 
 	bool seq_parameter_set_data(BitStream& bs);
+
+
+	int vui_parameters(BitStream& bs);
 
 	~ParseSPS();
 

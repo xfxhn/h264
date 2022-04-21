@@ -230,6 +230,7 @@ bool SliceHeader::slice_header(BitStream& bs, const ParsePPS* ppsCache, const Pa
 	// 当 gaps_in_frame_num_value_allowed_flag 等于1，前文已经提到，这时若网络阻塞，编码器可以将编码后的若干图像丢弃，而不用另行通知解码器
 	//它的主要作用是在该图像被其他图像引用作运动补偿的参考时提供一个标识
 	//详情参见毕厚杰书frame_num的描述
+
 	frame_num = bs.readMultiBit(sps.log2_max_frame_num_minus4 + 4); //2 u(v)
 	//m_picture_coded_type = H264_PICTURE_CODED_TYPE_FRAME;
 

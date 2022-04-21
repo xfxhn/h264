@@ -31,12 +31,7 @@ bool AnnexBReader::open(const char* filePath)
 
 		file.readNalUint(data, size, isStopLoop);
 
-
-
 		BitStream bs(data, size);
-
-
-
 		nalu.getH264RbspFromNalUnit(bs);
 
 

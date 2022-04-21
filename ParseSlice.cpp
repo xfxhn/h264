@@ -3823,8 +3823,6 @@ uint8_t ParseSlice::Luma_sample_interpolation_process(int xIntL, int yIntL, int 
 
 			}
 		}
-
-		int a = 1;
 	}
 
 
